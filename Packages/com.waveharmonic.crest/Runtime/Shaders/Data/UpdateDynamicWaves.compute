@@ -3,16 +3,19 @@
 
 // Solves 2D wave equation
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestUpdateDynamicWaves
 
 #include "HLSLSupport.cginc"
 
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Constants.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Cascade.hlsl"
 
-RWTexture2DArray<float2> _Crest_Target;
+RWTexture2DArray<m_Float2> _Crest_Target;
 
 CBUFFER_START(CrestPerMaterial)
 float _Crest_Damping;
@@ -45,7 +48,7 @@ void UpdateDynamicWaves(uint3 id)
     if (sliceIndexSource < 0.0 || sliceIndexSource >= cascadeSource._Count)
     {
         // Always initialise with 0 values.
-        _Crest_Target[id] = (float2)0;
+        _Crest_Target[id] = 0.0;
         return;
     }
 
@@ -72,7 +75,7 @@ void UpdateDynamicWaves(uint3 id)
     // Wave reflections off geometry.
     if (waterDepth <= 0.0)
     {
-        _Crest_Target[id] = float2(0.0, 0.0);
+        _Crest_Target[id] = 0.0;
         return;
     }
 
@@ -142,7 +145,7 @@ void UpdateDynamicWaves(uint3 id)
         vtp = 0.0;
     }
 
-    _Crest_Target[id] = float2(ftp, vtp);
+    _Crest_Target[id] = m_Float2Constructor(ftp, vtp);
 }
 
 m_CrestNameSpaceEnd

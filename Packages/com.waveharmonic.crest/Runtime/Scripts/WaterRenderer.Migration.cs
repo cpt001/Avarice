@@ -9,7 +9,7 @@ namespace WaveHarmonic.Crest
     {
         [SerializeField, HideInInspector]
 #pragma warning disable 414
-        int _Version = 1;
+        int _Version = 2;
 #pragma warning restore 414
 
         /// <inheritdoc/>
@@ -32,6 +32,15 @@ namespace WaveHarmonic.Crest
                 _DepthLod._IncludeTerrainHeight = false;
 
                 _Version = 1;
+            }
+
+            if (_Version < 2)
+            {
+#pragma warning disable CS0618 // Type or member is obsolete
+                AnimatedWavesLod.QuerySource = (LodQuerySource)Mathf.Max(0, (int)AnimatedWavesLod.CollisionSource - 1);
+#pragma warning restore CS0618 // Type or member is obsolete
+
+                _Version = 2;
             }
         }
 

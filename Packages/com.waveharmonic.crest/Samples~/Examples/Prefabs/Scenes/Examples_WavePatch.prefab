@@ -58,24 +58,27 @@ MonoBehaviour:
   _Spectrum: {fileID: 0}
   _EvaluateSpectrumAtRunTimeEveryFrame: 0
   _RespectShallowWaterAttenuation: 1
+  _SeaLevelOnly: 0
   _OverrideGlobalWindDirection: 1
   _WaveDirectionHeadingAngle: 0
   _OverrideGlobalWindSpeed: 0
   _WindSpeed: 20
   _Resolution: 32
+  _IncludeInDropDetailHeightBasedOnWaves: 0
   _DrawSlicesInEditor: 0
   _AlphaSource: 0
   _OverrideGlobalWindTurbulence: 1
   _WindTurbulence: 0.145
   _WindAlignment: 0
   _TimeLoopLength: Infinity
+  _OverrideCulling: 0
   _MaximumVerticalDisplacement: 10
   _MaximumHorizontalDisplacement: 15
   _EnableBakedCollision: 0
   _TimeResolution: 4
   _SmallestWavelengthRequired: 2
   _BakedTimeLoopLength: 32
-  _Version: 2
+  _Version: 3
   references:
     version: 2
     RefIds:

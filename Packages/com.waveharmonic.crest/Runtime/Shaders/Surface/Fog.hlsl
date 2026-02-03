@@ -23,13 +23,31 @@ void SetUpFog(bool i_Underwater, float3 i_PositionWS, float i_Multiplier, float 
 {
     s_IsUnderWater = i_Underwater;
 
+    // XR does not like early returns in URP.
+#if !defined(STEREO_INSTANCING_ON) && !defined(STEREO_MULTIVIEW_ON)
+    if (!s_IsUnderWater)
+    {
+        return;
+    }
+#endif
+
 #if (CREST_LEGACY_UNDERWATER != 1)
-    s_PositionSS = i_PositionSS;
-    s_PositionWS = i_PositionWS;
-    s_ViewWS = i_ViewWS;
-    s_FogDistance = i_FogDistance;
-    s_DepthRaw = 0;
-    s_FogMultiplier = i_Multiplier;
+    ApplyUnderwaterEffect
+    (
+        0,                  // Not used (color)
+        0,                  // TIR only
+        0,                  // Caustics only
+        i_FogDistance,
+        i_ViewWS,
+        i_PositionSS,
+        i_PositionWS,
+        false,              // No caustics
+        true,               // TODO: implement
+        false,              // Do not apply lighting
+        1.0,                // TODO: implement
+        s_VolumeOpacity,
+        s_VolumeLighting
+    );
 #endif
 }
 

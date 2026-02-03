@@ -229,7 +229,7 @@ namespace WaveHarmonic.Crest
             }
 
             // Our reflections do not need them.
-            if (camera == WaterReflections.CurrentCamera)
+            if (camera == _Water.Reflections.ReflectionCamera)
             {
                 return;
             }

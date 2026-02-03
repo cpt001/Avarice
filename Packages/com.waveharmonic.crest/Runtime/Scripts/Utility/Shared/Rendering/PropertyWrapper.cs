@@ -23,6 +23,11 @@ namespace WaveHarmonic.Crest
         void SetBlock();
     }
 
+    interface IPropertyWrapperVariants : IPropertyWrapper
+    {
+        void SetKeyword(in LocalKeyword keyword, bool value);
+    }
+
     static class PropertyWrapperConstants
     {
         internal const string k_NoShaderMessage = "Cannot create required material because shader <i>{0}</i> could not be found or loaded."
@@ -72,7 +77,7 @@ namespace WaveHarmonic.Crest
     }
 
     [System.Serializable]
-    readonly struct PropertyWrapperMaterial : IPropertyWrapper
+    readonly struct PropertyWrapperMaterial : IPropertyWrapperVariants
     {
         public Material Material { get; }
 
@@ -124,7 +129,7 @@ namespace WaveHarmonic.Crest
     }
 
     [System.Serializable]
-    readonly struct PropertyWrapperCompute : IPropertyWrapper
+    readonly struct PropertyWrapperCompute : IPropertyWrapperVariants
     {
         readonly CommandBuffer _Buffer;
         readonly ComputeShader _Shader;
@@ -157,7 +162,7 @@ namespace WaveHarmonic.Crest
     }
 
     [System.Serializable]
-    readonly struct PropertyWrapperComputeStandalone : IPropertyWrapper
+    readonly struct PropertyWrapperComputeStandalone : IPropertyWrapperVariants
     {
         readonly ComputeShader _Shader;
         readonly int _Kernel;

@@ -16,7 +16,7 @@
 
 m_CrestNameSpace
 
-half WhiteFoamTexture
+half2 WhiteFoamTexture
 (
     const TiledTexture i_Texture,
     const half i_Foam,
@@ -25,7 +25,8 @@ half WhiteFoamTexture
     const float2 i_WorldXZ1,
     const float2 i_TexelOffset,
     const half i_LodAlpha,
-    const Cascade i_CascadeData0
+    const Cascade i_CascadeData0,
+    const bool i_Sample2ndChannel = false
 )
 {
     const float2 uvOffset = i_TexelOffset + g_Crest_Time * i_Texture._speed / 32.0;
@@ -33,19 +34,32 @@ half WhiteFoamTexture
     // material 'scale' slider into an intuitive range.
     const float scale = i_Texture._scale * i_CascadeData0._Scale / 10.0;
 
-    half ft = lerp
-    (
-        i_Texture.Sample((i_WorldXZ0 + uvOffset) / scale).r,
-        i_Texture.Sample((i_WorldXZ1 + uvOffset) / (2.0 * scale)).r,
-        i_LodAlpha
-    );
+    const half2 f0 = i_Texture.Sample((i_WorldXZ0 + uvOffset) / scale).rg;
+    const half2 f1 = i_Texture.Sample((i_WorldXZ1 + uvOffset) / (2.0 * scale)).rg;
+
+    const half fr = lerp(f0.r, f1.r, i_LodAlpha);
 
     // Black point fade.
-    half result = saturate(1.0 - i_Foam);
-    return smoothstep(result, result + i_Feather, ft);
+    const half result = saturate(1.0 - i_Foam);
+
+#if d_Crest_FoamBioluminescence
+    if (i_Sample2ndChannel)
+    {
+        // Helps with exaggerating at LOD borders. Very specific to sparkles as they do not
+        // overlap leaving a dead zone in the middle.
+        const half fg = f0.g * min(0.5, 1.0 - i_LodAlpha) * 2.0 +
+                        f1.g * min(0.5, i_LodAlpha) * 2.0;
+
+        return smoothstep(result, result + i_Feather, half2(fr, fg));
+    }
+    else
+#endif
+    {
+        return half2(smoothstep(result, result + i_Feather, fr), 0.0);
+    }
 }
 
-half MultiScaleFoamAlbedo
+half2 MultiScaleFoamAlbedo
 (
     const TiledTexture i_Texture,
     const half i_Feather,
@@ -53,7 +67,8 @@ half MultiScaleFoamAlbedo
     const Cascade i_CascadeData0,
     const Cascade i_CascadeData1,
     const half i_LodAlpha,
-    const float2 i_UndisplacedXZ
+    const float2 i_UndisplacedXZ,
+    const bool i_Sample2ndChannel
 )
 {
     float2 worldXZ0 = i_UndisplacedXZ;
@@ -67,7 +82,7 @@ half MultiScaleFoamAlbedo
     worldXZ1 -= ShiftingOriginOffset(i_Texture, i_CascadeData1);
 #endif // CREST_SHIFTING_ORIGIN
 
-    return WhiteFoamTexture(i_Texture, i_FoamData, i_Feather, worldXZ0, worldXZ1, (float2)0.0, i_LodAlpha, i_CascadeData0);
+    return WhiteFoamTexture(i_Texture, i_FoamData, i_Feather, worldXZ0, worldXZ1, (float2)0.0, i_LodAlpha, i_CascadeData0, i_Sample2ndChannel);
 }
 
 half2 MultiScaleFoamNormal
@@ -97,8 +112,8 @@ half2 MultiScaleFoamNormal
 
     // 0.25 is magic number found through tweaking.
     const float2 dd = float2(0.25 * i_PixelZ * i_Texture._texel, 0.0);
-    const half whiteFoam_x = WhiteFoamTexture(i_Texture, i_FoamData, i_Feather, worldXZ0, worldXZ1, dd.xy, i_LodAlpha, i_CascadeData0);
-    const half whiteFoam_z = WhiteFoamTexture(i_Texture, i_FoamData, i_Feather, worldXZ0, worldXZ1, dd.yx, i_LodAlpha, i_CascadeData0);
+    const half whiteFoam_x = WhiteFoamTexture(i_Texture, i_FoamData, i_Feather, worldXZ0, worldXZ1, dd.xy, i_LodAlpha, i_CascadeData0).r;
+    const half whiteFoam_z = WhiteFoamTexture(i_Texture, i_FoamData, i_Feather, worldXZ0, worldXZ1, dd.yx, i_LodAlpha, i_CascadeData0).r;
 
     // Compute a foam normal - manually push in derivatives. If I used blend
     // smooths all the normals towards straight up when there is no foam.
@@ -107,7 +122,7 @@ half2 MultiScaleFoamNormal
     return magicStrengthFactor * i_NormalStrength * half2(whiteFoam_x - i_FoamAlbedo, whiteFoam_z - i_FoamAlbedo) / dd.x;
 }
 
-half MultiScaleFoamAlbedo
+half2 MultiScaleFoamAlbedo
 (
     const Flow i_Flow,
     const TiledTexture i_Texture,
@@ -116,7 +131,8 @@ half MultiScaleFoamAlbedo
     const Cascade i_CascadeData0,
     const Cascade i_CascadeData1,
     const half i_LodAlpha,
-    const float2 i_UndisplacedXZ
+    const float2 i_UndisplacedXZ,
+    const bool i_Sample2ndChannel
 )
 {
     return MultiScaleFoamAlbedo
@@ -127,7 +143,8 @@ half MultiScaleFoamAlbedo
         i_CascadeData0,
         i_CascadeData1,
         i_LodAlpha,
-        i_UndisplacedXZ - i_Flow._Flow * i_Flow._Offset0
+        i_UndisplacedXZ - i_Flow._Flow * i_Flow._Offset0,
+        i_Sample2ndChannel
     ) * i_Flow._Weight0 + MultiScaleFoamAlbedo
     (
         i_Texture,
@@ -136,7 +153,8 @@ half MultiScaleFoamAlbedo
         i_CascadeData0,
         i_CascadeData1,
         i_LodAlpha,
-        i_UndisplacedXZ - i_Flow._Flow * i_Flow._Offset1
+        i_UndisplacedXZ - i_Flow._Flow * i_Flow._Offset1,
+        i_Sample2ndChannel
     ) * i_Flow._Weight1;
 }
 
@@ -214,8 +232,10 @@ void ApplyFoamToSurface
         // as if it had transmission.
         // There is still ugliness around the edges. There will either be black or
         // incorrect reflections depending on the magic value.
-        io_NormalWS.y *= i_Foam > 0.15 ? -1.0 : 1.0;
+        io_NormalWS = i_Foam > 0.0 ? half3(0.0, 1.0, 0.0) : io_NormalWS;
+#if _SPECULAR_SETUP
         io_Specular = lerp(io_Specular, i_Specular, i_Foam);
+#endif
     }
 }
 

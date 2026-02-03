@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using WaveHarmonic.Crest.Editor.Internal;
 using WaveHarmonic.Crest.Internal;
+using WaveHarmonic.Crest.Internal.Compatibility;
 
 namespace WaveHarmonic.Crest.Editor
 {
@@ -25,6 +26,7 @@ namespace WaveHarmonic.Crest.Editor
 
         readonly Dictionary<FieldInfo, object> _MaterialOwners = new();
         readonly Dictionary<Material, MaterialEditor> _MaterialEditors = new();
+        readonly Dictionary<string, DecoratedDrawer> _Lists = new();
 
         public override bool RequiresConstantRepaint() => TexturePreview.s_ActiveInstance?.Open == true;
 
@@ -37,6 +39,9 @@ namespace WaveHarmonic.Crest.Editor
         protected virtual void OnEnable()
         {
             _MaterialOwners.Clear();
+
+            Undo.undoRedoPerformed -= OnUndoRedo;
+            Undo.undoRedoPerformed += OnUndoRedo;
 
             foreach (var field in s_AttachMaterialEditors)
             {
@@ -74,10 +79,17 @@ namespace WaveHarmonic.Crest.Editor
 
         protected virtual void OnDisable()
         {
+            Undo.undoRedoPerformed -= OnUndoRedo;
+
             foreach (var (_, editor) in _MaterialEditors)
             {
                 Helpers.Destroy(editor);
             }
+        }
+
+        protected virtual void OnChange()
+        {
+
         }
 
         protected virtual void RenderBeforeInspectorGUI()
@@ -98,6 +110,8 @@ namespace WaveHarmonic.Crest.Editor
             _Properties.Clear();
 
             serializedObject.Update();
+
+            EditorGUI.BeginChangeCheck();
 
             using var iterator = serializedObject.GetIterator();
             if (iterator.NextVisible(true))
@@ -140,6 +154,33 @@ namespace WaveHarmonic.Crest.Editor
                 using (new EditorGUI.DisabledGroupScope(property.name == "m_Script"))
 #endif
                 {
+                    // Handle lists as PropertyDrawer is not called on the list itself.
+                    if (property.isArray)
+                    {
+                        var field = property.GetFieldInfo(out var _);
+                        var attribute = field?.GetCustomAttribute<Attributes.DecoratedProperty>();
+
+                        if (field != null && attribute != null)
+                        {
+                            var id = GetPropertyIdentifier(property);
+
+                            if (!_Lists.ContainsKey(id))
+                            {
+                                _Lists[id] = new DecoratedDrawer()
+                                {
+                                    _Attribute = attribute,
+                                    _Field = field,
+                                };
+                            }
+
+                            DecoratedDrawer.s_IsList = true;
+                            var label = new GUIContent(property.displayName);
+                            _Lists[id].OnGUI(Rect.zero, property, label);
+                            DecoratedDrawer.s_IsList = false;
+                            continue;
+                        }
+                    }
+
                     // Only support top level ordering for now.
                     EditorGUILayout.PropertyField(property, includeChildren: true);
                 }
@@ -148,11 +189,18 @@ namespace WaveHarmonic.Crest.Editor
             // Need to call just in case there is no decorated property.
             serializedObject.ApplyModifiedProperties();
 
+            if (EditorGUI.EndChangeCheck())
+            {
+                OnChange();
+            }
+
             // Restore previous in case this is a nested editor.
             Current = previous;
 
             // Fixes indented validation etc.
             EditorGUI.indentLevel = 0;
+
+            _UndoRedo = false;
         }
 
         protected virtual void RenderBottomButtons()
@@ -211,6 +259,45 @@ namespace WaveHarmonic.Crest.Editor
                     editor.OnInspectorGUI();
                 }
             }
+        }
+    }
+
+    // Reflection
+    partial class Inspector
+    {
+        static readonly PropertyInfo s_GUIViewCurrent = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GUIView").GetProperty("current", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+        static readonly PropertyInfo s_GUIViewNativeHandle = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GUIView").GetProperty("nativeHandle", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        // Adapted from:
+        // https://github.com/Unity-Technologies/UnityCsReference/blob/59b03b8a0f179c0b7e038178c90b6c80b340aa9f/Editor/Mono/Inspector/ReorderableListWrapper.cs#L77-L88
+        static string GetPropertyIdentifier(SerializedProperty serializedProperty)
+        {
+            // Property may be disposed.
+            try
+            {
+                var handle = -1;
+                var current = s_GUIViewCurrent.GetValue(null);
+
+                if (current != null)
+                {
+                    handle = ((IntPtr)s_GUIViewNativeHandle.GetValue(current)).ToInt32();
+                }
+
+                return serializedProperty?.propertyPath + serializedProperty.serializedObject.targetObject.GetEntityId() + handle;
+            }
+            catch (NullReferenceException)
+            {
+                return string.Empty;
+            }
+        }
+    }
+
+    partial class Inspector
+    {
+        internal bool _UndoRedo;
+        void OnUndoRedo()
+        {
+            _UndoRedo = true;
         }
     }
 

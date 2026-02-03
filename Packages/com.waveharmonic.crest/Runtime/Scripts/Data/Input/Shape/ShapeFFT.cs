@@ -16,19 +16,19 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Whether to use the wind turbulence on this component rather than the global wind turbulence.\n\nGlobal wind turbulence comes from the Water Renderer component.")]
         [@GenerateAPI]
-        [@InlineToggle(order = -3), SerializeField]
+        [@InlineToggle(order = -4), SerializeField]
         bool _OverrideGlobalWindTurbulence;
 
         [Tooltip("How turbulent/chaotic the waves are.")]
         [@Predicated(nameof(_OverrideGlobalWindTurbulence), hide: true)]
         [@ShowComputedProperty(nameof(WindTurbulence))]
-        [@Range(0, 1, order = -4)]
+        [@Range(0, 1, order = -5)]
         [@GenerateAPI(Getter.Custom)]
         [SerializeField]
         float _WindTurbulence = 0.145f;
 
         [Tooltip("How aligned the waves are with wind.")]
-        [@Range(0, 1, order = -5)]
+        [@Range(0, 1, order = -6)]
         [@GenerateAPI]
         [SerializeField]
         float _WindAlignment;
@@ -37,13 +37,18 @@ namespace WaveHarmonic.Crest
         // Generation
 
         [Tooltip("FFT waves will loop with a period of this many seconds.")]
-        [@Range(4f, 128f, Range.Clamp.Minimum)]
+        [@Range(4f, 128f, Range.Clamp.Minimum, order = -6)]
         [@GenerateAPI]
         [SerializeField]
         float _TimeLoopLength = Mathf.Infinity;
 
 
         [Header("Culling")]
+
+        [Tooltip("Whether to override automatic culling based on heuristics.")]
+        [@GenerateAPI]
+        [SerializeField]
+        bool _OverrideCulling;
 
         [Tooltip("Maximum amount the surface will be displaced vertically from sea level.\n\nIncrease this if gaps appear at bottom of screen.")]
         [@GenerateAPI]
@@ -104,8 +109,9 @@ namespace WaveHarmonic.Crest
 #endif
             _TimeLoopLength;
 
+        // WebGPU will crash above at 128.
         private protected override int MinimumResolution => 16;
-        private protected override int MaximumResolution => int.MaxValue;
+        private protected override int MaximumResolution => Helpers.IsWebGPU ? 64 : int.MaxValue;
 
         FFTCompute _FFTCompute;
 
@@ -189,13 +195,28 @@ namespace WaveHarmonic.Crest
         {
             if (!Enabled) return;
 
-            // Apply weight or will cause popping due to scale change.
-            MaximumReportedHorizontalDisplacement = _MaximumHorizontalDisplacement * Weight;
-            MaximumReportedVerticalDisplacement = MaximumReportedWavesDisplacement = _MaximumVerticalDisplacement * Weight;
-
-            if (Mode == LodInputMode.Global)
+            if (_OverrideCulling)
             {
-                water.ReportMaximumDisplacement(MaximumReportedHorizontalDisplacement, MaximumReportedVerticalDisplacement, MaximumReportedVerticalDisplacement);
+                // Apply weight or will cause popping due to scale change.
+                MaximumReportedHorizontalDisplacement = _MaximumHorizontalDisplacement * Weight;
+                MaximumReportedVerticalDisplacement = MaximumReportedWavesDisplacement = _MaximumVerticalDisplacement * Weight;
+            }
+            else
+            {
+                var powerLinear = 0f;
+
+                for (var i = 0; i < WaveSpectrum.k_NumberOfOctaves; i++)
+                {
+                    powerLinear += _ActiveSpectrum._PowerLinearScales[i];
+                }
+
+                // Empirical multiplier (3-5), went with 5 to be safe.
+                // We may be missing some more multipliers from the compute shader.
+                // Look there if this proves insufficient.
+                var wind = Mathf.Clamp01(WindSpeedKPH / 150f);
+                var rms = Mathf.Sqrt(powerLinear) * 5f;
+                MaximumReportedHorizontalDisplacement = rms * _ActiveSpectrum._Chop * Weight * wind;
+                MaximumReportedVerticalDisplacement = MaximumReportedWavesDisplacement = rms * Weight * wind;
             }
         }
 
@@ -267,6 +288,7 @@ namespace WaveHarmonic.Crest
             }
 
             _Version = MigrateV2(_Version);
+            _Version = MigrateV3(_Version);
         }
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()

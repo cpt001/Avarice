@@ -71,3 +71,5 @@ MonoBehaviour:
     _UpdateSWS: {fileID: 7200000, guid: 0af900407c415484e8b1482da8ec3881, type: 3}
     _Whirlpool: {fileID: 7200000, guid: db903c2d7a8274434aa5eef6aa5218f2, type: 3}
     _Clear: {fileID: 7200000, guid: 2641e78378c244c2e8ac89563a8ec9af, type: 3}
+    _Blit: {fileID: 7200000, guid: d18c1734c0d4d4e7b9a09a5da1ad1b2c, type: 3}
+    _Blur: {fileID: 7200000, guid: 5a49c73b133c743caa1d82459943eabf, type: 3}

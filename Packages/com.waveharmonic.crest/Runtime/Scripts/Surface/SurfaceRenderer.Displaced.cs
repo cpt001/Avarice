@@ -22,6 +22,7 @@ namespace WaveHarmonic.Crest
             public static int s_WaterLineSnappedPosition = Shader.PropertyToID("_Crest_WaterLineSnappedPosition");
             public static int s_WaterLineResolution = Shader.PropertyToID("_Crest_WaterLineResolution");
             public static int s_WaterLineTexel = Shader.PropertyToID("_Crest_WaterLineTexel");
+            public static int s_WaterLineFlatWater = Shader.PropertyToID("_Crest_WaterLineFlatWater");
         }
 
         RenderTexture _HeightRT;
@@ -50,6 +51,13 @@ namespace WaveHarmonic.Crest
 
         internal void UpdateDisplacedSurfaceData(Camera camera)
         {
+            Helpers.SetGlobalBoolean(ShaderIDs.s_WaterLineFlatWater, IsQuadMesh);
+
+            if (IsQuadMesh)
+            {
+                return;
+            }
+
             // World size of the texture. Formula should effectively cover the camera.
             var size = 1f + (camera.nearClipPlane * 2f);
 
@@ -84,9 +92,11 @@ namespace WaveHarmonic.Crest
             BindDisplacedSurfaceData(wrapper);
 
             var lod = (int)Builder.PatchType.Interior;
-            var mpb = _PerCascadeMPB.Current[lod];
+            var mpb = PerCascadeMPB[lod];
 
-            if (_Water.Viewpoint != camera.transform && Vector3.Distance(_Water.Viewpoint.position, camera.transform.position) > 0.01f)
+            var viewpoint = _Water.Viewpoint;
+
+            if (viewpoint == null || (viewpoint != camera.transform && Vector3.Distance(viewpoint.position, camera.transform.position) > 0.01f))
             {
                 foreach (var chunk in _Water.Surface.Chunks)
                 {

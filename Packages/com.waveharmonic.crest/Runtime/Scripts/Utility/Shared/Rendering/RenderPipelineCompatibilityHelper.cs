@@ -93,6 +93,7 @@ namespace WaveHarmonic.Crest
             return false;
         }
 
+        // Modified from:
         // https://github.com/Unity-Technologies/Graphics/blob/19ec161f3f752db865597374b3ad1b3eaf110097/Packages/com.unity.render-pipelines.universal/Runtime/RenderingUtils.cs#L697-L729
 
         /// <summary>
@@ -108,7 +109,8 @@ namespace WaveHarmonic.Crest
         /// <param name="mipMapBias">Bias applied to mipmaps during filtering.</param>
         /// <param name="name">Name of the RTHandle.</param>
         /// <returns>If the RTHandle should be re-allocated</returns>
-        public static bool ReAllocateIfNeeded(
+        public static bool ReAllocateIfNeeded
+        (
             ref RTHandle handle,
             Vector2 scaleFactor,
             in RenderTextureDescriptor descriptor,
@@ -117,50 +119,28 @@ namespace WaveHarmonic.Crest
             bool isShadowMap = false,
             int anisoLevel = 1,
             float mipMapBias = 0,
-            string name = "")
+            string name = ""
+        )
         {
-            var usingConstantScale = handle != null && handle.useScaling && handle.scaleFactor == scaleFactor;
-            if (!usingConstantScale || RTHandleNeedsReAlloc(handle, descriptor, filterMode, wrapMode, isShadowMap, anisoLevel, mipMapBias, name, true))
+            // Only HDRP seems to use this?
+            if (RenderPipelineHelper.IsHighDefinition)
             {
-                handle?.Release();
-                handle = RTHandles.Alloc(scaleFactor, descriptor, filterMode, wrapMode, isShadowMap, anisoLevel, mipMapBias, name);
-                return true;
+                var usingConstantScale = handle != null && handle.useScaling && handle.scaleFactor == scaleFactor;
+                if (!usingConstantScale || RTHandleNeedsReAlloc(handle, descriptor, filterMode, wrapMode, isShadowMap, anisoLevel, mipMapBias, name, true))
+                {
+                    handle?.Release();
+                    handle = RTHandles.Alloc(scaleFactor, descriptor, filterMode, wrapMode, isShadowMap, anisoLevel, mipMapBias, name);
+                    return true;
+                }
             }
-            return false;
-        }
-
-        // https://github.com/Unity-Technologies/Graphics/blob/19ec161f3f752db865597374b3ad1b3eaf110097/Packages/com.unity.render-pipelines.universal/Runtime/RenderingUtils.cs#L731-L764
-
-        /// <summary>
-        /// Re-allocate dynamically resized RTHandle if it is not allocated or doesn't match the descriptor
-        /// </summary>
-        /// <param name="handle">RTHandle to check (can be null)</param>
-        /// <param name="scaleFunc">Function used for the RTHandle size computation.</param>
-        /// <param name="descriptor">Descriptor for the RTHandle to match</param>
-        /// <param name="filterMode">Filtering mode of the RTHandle.</param>
-        /// <param name="wrapMode">Addressing mode of the RTHandle.</param>
-        /// <param name="isShadowMap">Set to true if the depth buffer should be used as a shadow map.</param>
-        /// <param name="anisoLevel">Anisotropic filtering level.</param>
-        /// <param name="mipMapBias">Bias applied to mipmaps during filtering.</param>
-        /// <param name="name">Name of the RTHandle.</param>
-        /// <returns>If an allocation was done</returns>
-        public static bool ReAllocateIfNeeded(
-            ref RTHandle handle,
-            ScaleFunc scaleFunc,
-            in RenderTextureDescriptor descriptor,
-            FilterMode filterMode = FilterMode.Point,
-            TextureWrapMode wrapMode = TextureWrapMode.Repeat,
-            bool isShadowMap = false,
-            int anisoLevel = 1,
-            float mipMapBias = 0,
-            string name = "")
-        {
-            var usingScaleFunction = handle != null && handle.useScaling && handle.scaleFactor == Vector2.zero;
-            if (!usingScaleFunction || RTHandleNeedsReAlloc(handle, descriptor, filterMode, wrapMode, isShadowMap, anisoLevel, mipMapBias, name, true))
+            else
             {
-                handle?.Release();
-                handle = RTHandles.Alloc(scaleFunc, descriptor, filterMode, wrapMode, isShadowMap, anisoLevel, mipMapBias, name);
-                return true;
+                if (RTHandleNeedsReAlloc(handle, descriptor, filterMode, wrapMode, isShadowMap, anisoLevel, mipMapBias, name, false))
+                {
+                    handle?.Release();
+                    handle = RTHandles.Alloc(descriptor, filterMode, wrapMode, isShadowMap, anisoLevel, mipMapBias, name);
+                    return true;
+                }
             }
 
             return false;

@@ -57,10 +57,10 @@ namespace WaveHarmonic.Crest.Editor
 
         public override void OnPreviewGUI(Rect rect, GUIStyle background)
         {
-            var texture = Lod.DataTexture;
+            var texture = (RenderTexture)OriginalTexture;
             var descriptor = texture.descriptor;
             _TemporaryTexture = RenderTexture.GetTemporary(descriptor);
-            _TemporaryTexture.name = "Crest Preview (Temporary)";
+            _TemporaryTexture.name = texture.name;
             Graphics.CopyTexture(texture, _TemporaryTexture);
 
             if (VisualizeNegatives)
@@ -80,15 +80,16 @@ namespace WaveHarmonic.Crest.Editor
             if (ForceAlpha)
             {
                 // Set alpha to one otherwise it shows nothing when set to RGB.
-                var clear = WaterResources.Instance.Compute._Clear;
-                if (clear != null)
+                if (WaterResources.Instance.Compute._Clear != null)
                 {
-                    clear.SetTexture(0, ShaderIDs.s_Target, _TemporaryTexture);
-                    clear.SetVector(ShaderIDs.s_ClearMask, Color.black);
-                    clear.SetVector(ShaderIDs.s_ClearColor, Color.black);
-                    clear.Dispatch
+                    var compute = WaterResources.Instance._ComputeLibrary._ClearCompute;
+                    var wrapper = new PropertyWrapperComputeStandalone(compute._Shader, compute._KernelClearTarget);
+                    compute.SetVariantForFormat(wrapper, _TemporaryTexture.graphicsFormat);
+                    wrapper.SetTexture(ShaderIDs.s_Target, _TemporaryTexture);
+                    wrapper.SetVector(ShaderIDs.s_ClearMask, Color.black);
+                    wrapper.SetVector(ShaderIDs.s_ClearColor, Color.black);
+                    wrapper.Dispatch
                     (
-                        0,
                         Lod.Resolution / Lod.k_ThreadGroupSizeX,
                         Lod.Resolution / Lod.k_ThreadGroupSizeY,
                         Lod.Slices
@@ -290,7 +291,16 @@ namespace WaveHarmonic.Crest.Editor
 
         public override GUIContent GetPreviewTitle() => new("Water Reflections");
         protected override Texture OriginalTexture => (target as WaterRenderer)._Reflections._Enabled
-            ? (target as WaterRenderer)._Reflections.ReflectionTexture
+            ? (target as WaterRenderer)._Reflections.ColorTexture
             : s_DefaultReflection?.GetValue(null) as Texture;
     }
+
+#if CREST_DEBUG
+    [CustomPreview(typeof(WaterRenderer))]
+    sealed class ReflectionDepthPreview : TexturePreview
+    {
+        public override GUIContent GetPreviewTitle() => new("Water Reflections (Depth)");
+        protected override Texture OriginalTexture => (target as WaterRenderer)._Reflections.DepthTexture;
+    }
+#endif
 }

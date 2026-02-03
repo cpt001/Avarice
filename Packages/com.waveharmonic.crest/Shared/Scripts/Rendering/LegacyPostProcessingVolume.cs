@@ -34,6 +34,11 @@ namespace WaveHarmonic.Crest.Examples
                 return;
             }
 
+            if (Helpers.IsWebGPU)
+            {
+                return;
+            }
+
             _QuickVolumes.Clear();
 
             foreach (var volume in GetComponents<PostProcessVolume>())

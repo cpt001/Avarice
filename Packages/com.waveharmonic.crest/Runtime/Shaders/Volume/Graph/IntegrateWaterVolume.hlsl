@@ -31,13 +31,8 @@
 m_CrestNameSpace
 
 static bool s_IsUnderWater;
-static float s_FogDistance;
-static half s_FogMultiplier;
-
-static float2 s_PositionSS;
-static float3 s_PositionWS;
-static half3 s_ViewWS;
-static float s_DepthRaw;
+static half3 s_VolumeOpacity;
+static half3 s_VolumeLighting;
 
 float3 ApplyFog(float3 color)
 {
@@ -46,22 +41,11 @@ float3 ApplyFog(float3 color)
     {
         return color;
     }
+    else
 #endif
-
-    return ApplyUnderwaterEffect
-    (
-        color,
-        s_DepthRaw,
-        0, // Caustics only
-        s_FogDistance,
-        s_ViewWS,
-        s_PositionSS,
-        s_PositionWS,
-        false, // No caustics
-        true, // TODO: implement
-        true, // TODO: implement
-        s_FogMultiplier
-    );
+    {
+        return lerp(color, s_VolumeLighting, s_VolumeOpacity * (s_IsUnderWater ? 1.0 : 0.0));
+    }
 }
 
 float3 NoFog(float3 color)
@@ -122,12 +106,23 @@ void SetUpFog(const float2 i_PositionNDC, const float3 i_PositionWS, const float
     }
 
     s_IsUnderWater = true;
-    s_PositionSS = positionSS;
-    s_PositionWS = i_PositionWS;
-    s_ViewWS = GetWorldSpaceNormalizeViewDir(i_PositionWS);
-    s_FogDistance = fogDistance;
-    s_DepthRaw = i_DepthRaw;
-    s_FogMultiplier = i_Multiplier;
+
+    ApplyUnderwaterEffect
+    (
+        0,              // Color
+        0,              // TIR only
+        0,              // Caustics only
+        fogDistance,
+        GetWorldSpaceNormalizeViewDir(i_PositionWS),
+        positionSS,
+        i_PositionWS,
+        false,          // No caustics
+        true,           // TODO: implement
+        true,           // TODO: implement
+        i_Multiplier,
+        s_VolumeOpacity,
+        s_VolumeLighting
+    );
 }
 
 m_CrestNameSpaceEnd
@@ -215,6 +210,11 @@ void CrestNodeIntegrateWaterVolume_float
 {
     o_Color = i_Color;
     o_Emission = i_Emission;
+
+    if (i_Multiplier == 0)
+    {
+        return;
+    }
 
 #ifndef SHADERGRAPH_PREVIEW
     m_Crest::SetUpFog(i_PositionNDC, i_PositionWS, i_DepthRaw, i_Multiplier);

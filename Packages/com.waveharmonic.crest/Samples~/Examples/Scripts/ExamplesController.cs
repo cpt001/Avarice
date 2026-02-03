@@ -1,9 +1,14 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+#if d_Unity_InputSystem && ENABLE_INPUT_SYSTEM
+#define INPUT_SYSTEM_ENABLED
+#endif
+
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace WaveHarmonic.Crest.Examples
 {
@@ -12,12 +17,6 @@ namespace WaveHarmonic.Crest.Examples
 #endif
     sealed class ExamplesController : MonoBehaviour
     {
-        [@DecoratedField, SerializeField]
-        KeyCode _Previous = KeyCode.Comma;
-
-        [@DecoratedField, SerializeField]
-        KeyCode _Next = KeyCode.Period;
-
         [SerializeField]
         List<GameObject> _Prefabs = new();
 
@@ -51,11 +50,19 @@ namespace WaveHarmonic.Crest.Examples
 
         void Update()
         {
-            if (Input.GetKeyUp(_Previous))
+#if INPUT_SYSTEM_ENABLED
+            if (Keyboard.current[Key.N].wasReleasedThisFrame)
+#else
+            if (Input.GetKeyUp(KeyCode.N))
+#endif
             {
                 Previous();
             }
-            else if (Input.GetKeyUp(_Next))
+#if INPUT_SYSTEM_ENABLED
+            else if (Keyboard.current[Key.M].wasReleasedThisFrame)
+#else
+            else if (Input.GetKeyUp(KeyCode.M))
+#endif
             {
                 Next();
             }

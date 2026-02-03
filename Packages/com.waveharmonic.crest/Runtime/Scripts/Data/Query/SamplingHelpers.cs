@@ -1,6 +1,7 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+using System.Collections.Generic;
 using UnityEngine;
 
 // Linter does not support mixing inheritdoc plus defining own parameters.
@@ -20,7 +21,7 @@ namespace WaveHarmonic.Crest.Internal
         private protected readonly Vector3[] _QueryPosition;
         private protected readonly Vector3[] _QueryResult;
 
-        int _LastFrame = -1;
+        readonly Dictionary<int, int> _LastFrame = new();
 
         private protected SampleHelper(int queryCount = 1)
         {
@@ -29,15 +30,29 @@ namespace WaveHarmonic.Crest.Internal
         }
 
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
-        private protected void Validate(bool allowMultipleCallsPerFrame)
+        private protected void Validate(bool allowMultipleCallsPerFrame, int id)
         {
-            if (Application.isPlaying && !Time.inFixedTimeStep && !allowMultipleCallsPerFrame && _LastFrame == Time.frameCount)
+            if (!_LastFrame.ContainsKey(id))
+            {
+                _LastFrame.Add(id, -1);
+            }
+
+#if UNITY_EDITOR
+            // Prevent false positives spamming the console.
+            if (!UnityEditor.EditorApplication.isFocused || (Application.isPlaying && UnityEditor.EditorApplication.isPaused))
+            {
+                _LastFrame[id] = Time.frameCount;
+                return;
+            }
+#endif
+
+            if (!Time.inFixedTimeStep && !allowMultipleCallsPerFrame && _LastFrame[id] == Time.frameCount)
             {
                 var type = GetType().Name;
                 Debug.LogWarning($"Crest: {type} sample called multiple times in one frame which is not expected. Each {type} object services a single sample per frame. To perform multiple queries, create multiple {type} objects or use the query provider API directly.");
             }
 
-            _LastFrame = Time.frameCount;
+            _LastFrame[id] = Time.frameCount;
         }
 
         // The first method is there just to get inheritdoc to work as it does not like
@@ -103,7 +118,7 @@ namespace WaveHarmonic.Crest
             var isVelocity = (options & QueryOptions.Velocity) == QueryOptions.Velocity;
             var isNormal = (options & QueryOptions.Normal) == QueryOptions.Normal;
 
-            Validate(allowMultipleCallsPerFrame);
+            Validate(allowMultipleCallsPerFrame, id);
 
             _QueryPosition[0] = position;
 
@@ -115,7 +130,8 @@ namespace WaveHarmonic.Crest
                 _QueryResult,
                 isNormal ? _QueryResultNormal : null,
                 isVelocity ? _QueryResultVelocity : null,
-                layer
+                layer,
+                position
             );
 
             if (!provider.RetrieveSucceeded(status))
@@ -234,11 +250,13 @@ namespace WaveHarmonic.Crest
                 return false;
             }
 
-            Validate(false);
+            var id = GetHashCode();
+
+            Validate(false, id);
 
             _QueryPosition[0] = position;
 
-            var status = flowProvider.Query(GetHashCode(), minimumLength, _QueryPosition, _QueryResult);
+            var status = flowProvider.Query(id, minimumLength, _QueryPosition, _QueryResult, position);
 
             if (!flowProvider.RetrieveSucceeded(status))
             {
@@ -259,30 +277,35 @@ namespace WaveHarmonic.Crest
     /// </summary>
     public sealed class SampleDepthHelper : Internal.SampleHelper
     {
-        bool Sample(Vector3 position, out Vector2 result)
+        internal bool Sample(int id, Vector3 position, out Vector2 result, bool allowMultipleCallsPerFrame = false)
         {
             var water = WaterRenderer.Instance;
             var depthProvider = water == null ? null : water.DepthLod.Provider;
 
             if (depthProvider == null)
             {
-                result = Vector2.zero;
+                result = new(Mathf.Infinity, Mathf.Infinity);
                 return false;
             }
 
-            Validate(false);
+            Validate(allowMultipleCallsPerFrame, id);
 
             _QueryPosition[0] = position;
 
-            var status = depthProvider.Query(GetHashCode(), minimumLength: 0, _QueryPosition, _QueryResult);
+            var status = depthProvider.Query(id, minimumLength: 0, _QueryPosition, _QueryResult, position);
             if (!depthProvider.RetrieveSucceeded(status))
             {
-                result = Vector2.zero;
+                result = new(Mathf.Infinity, Mathf.Infinity);
                 return false;
             }
 
             result = _QueryResult[0];
             return true;
+        }
+
+        bool Sample(Vector3 position, out Vector2 result)
+        {
+            return Sample(GetHashCode(), position, out result);
         }
 
         /// <summary>
@@ -291,7 +314,7 @@ namespace WaveHarmonic.Crest
         /// <param name="depth">Filled by the water depth at the query position.</param>
         /// <param name="distance">Filled by the distance to water edge at the query position.</param>
         /// <inheritdoc cref="Internal.SampleHelper.Sample" />
-        bool Sample(Vector3 position, out float depth, out float distance)
+        internal bool Sample(Vector3 position, out float depth, out float distance)
         {
             var success = Sample(position, out var result);
             depth = result.x;
@@ -312,7 +335,12 @@ namespace WaveHarmonic.Crest
         /// <inheritdoc cref="Sample(Vector3, out float, out float)"/>
         public bool SampleDistanceToWaterEdge(Vector3 position, out float distance)
         {
-            var success = Sample(position, out var result);
+            return SampleDistanceToWaterEdge(GetHashCode(), position, out distance);
+        }
+
+        internal bool SampleDistanceToWaterEdge(int id, Vector3 position, out float distance)
+        {
+            var success = Sample(id, position, out var result);
             distance = result.y;
             return success;
         }

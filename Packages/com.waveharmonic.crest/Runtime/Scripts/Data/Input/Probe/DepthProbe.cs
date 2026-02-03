@@ -2,9 +2,14 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using WaveHarmonic.Crest.Internal;
 using WaveHarmonic.Crest.Utility;
+
+#if !UNITY_6000_0_OR_NEWER
+using GraphicsFormatUsage = UnityEngine.Experimental.Rendering.FormatUsage;
+#endif
 
 namespace WaveHarmonic.Crest
 {
@@ -358,16 +363,17 @@ namespace WaveHarmonic.Crest
             return texture != null &&
                 texture.width != _Resolution ||
                 texture.height != _Resolution ||
-                texture.format != (target ? RenderTextureFormat.Depth : FinalFormat);
+                texture.graphicsFormat != (target ? SystemInfo.GetGraphicsFormat(DefaultFormat.DepthStencil) : FinalFormat);
         }
 
-        RenderTextureFormat FinalFormat => _GenerateSignedDistanceField ? RenderTextureFormat.RGFloat : RenderTextureFormat.RFloat;
+        GraphicsFormat FinalFormat => _GenerateSignedDistanceField ? Helpers.GetCompatibleTextureFormat(GraphicsFormat.R32G32_SFloat, true) : GraphicsFormat.R32_SFloat;
 
         void MakeRT(RenderTexture texture, bool target)
         {
-            var format = target ? RenderTextureFormat.Depth : FinalFormat;
+            var format = target ? SystemInfo.GetGraphicsFormat(DefaultFormat.DepthStencil) : FinalFormat;
             var descriptor = texture.descriptor;
-            descriptor.colorFormat = format;
+            descriptor.graphicsFormat = target ? GraphicsFormat.None : format;
+            descriptor.depthStencilFormat = target ? format : GraphicsFormat.None;
             descriptor.width = descriptor.height = _Resolution;
             descriptor.depthBufferBits = target ? 24 : 0;
             descriptor.useMipMap = false;
@@ -375,7 +381,11 @@ namespace WaveHarmonic.Crest
             descriptor.enableRandomWrite = !target;
             texture.descriptor = descriptor;
             texture.Create();
-            Debug.Assert(SystemInfo.SupportsRenderTextureFormat(format), "Crest: The graphics device does not support the render texture format " + format.ToString());
+
+            if (!target)
+            {
+                Debug.Assert(SystemInfo.IsFormatSupported(format, GraphicsFormatUsage.Sample), "Crest: The graphics device does not support the render texture format " + format.ToString());
+            }
         }
 
         bool InitObjects()
@@ -704,7 +714,7 @@ namespace WaveHarmonic.Crest
             var descriptor = new RenderTextureDescriptor(_Resolution, _Resolution)
             {
                 autoGenerateMips = false,
-                colorFormat = RenderTextureFormat.RGHalf,
+                graphicsFormat = Helpers.GetCompatibleTextureFormat(GraphicsFormat.R16G16_SFloat, true),
                 useMipMap = false,
                 enableRandomWrite = true,
                 depthBufferBits = 0,

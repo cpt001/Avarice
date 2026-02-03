@@ -20,6 +20,9 @@ namespace WaveHarmonic.Crest
         readonly System.Action<CommandBuffer> _CopyColorTexture;
         readonly System.Action<CommandBuffer> _SetRenderTargetToBackBuffers;
 
+        bool _AllocatedColor;
+        GraphicsFormat _GraphicsFormat;
+
         public UnderwaterEffectPass(UnderwaterRenderer renderer)
         {
             _Renderer = renderer;
@@ -40,6 +43,8 @@ namespace WaveHarmonic.Crest
 
         public void Allocate(GraphicsFormat format)
         {
+            _GraphicsFormat = format;
+
             if (_Renderer.RenderBeforeTransparency && !_Renderer._NeedsColorTexture)
             {
                 return;
@@ -57,6 +62,8 @@ namespace WaveHarmonic.Crest
                 wrapMode: TextureWrapMode.Clamp,
                 name: "_Crest_UnderwaterCameraColorTexture"
             );
+
+            _AllocatedColor = true;
         }
 
         public void ReAllocate(RenderTextureDescriptor descriptor)
@@ -85,6 +92,11 @@ namespace WaveHarmonic.Crest
 
             if (!_Renderer.RenderBeforeTransparency || _Renderer._NeedsColorTexture)
             {
+                if (!_AllocatedColor)
+                {
+                    Allocate(_GraphicsFormat);
+                }
+
                 buffer.SetGlobalTexture(UnderwaterRenderer.ShaderIDs.s_CameraColorTexture, _ColorTexture);
             }
 

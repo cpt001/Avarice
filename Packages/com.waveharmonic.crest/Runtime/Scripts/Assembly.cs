@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Samples")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Samples.Editor")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Samples.Ripples")]
+[assembly: InternalsVisibleTo("WaveHarmonic.Crest.Samples.Waterfall")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.CPUQueries")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.CPUQueries.Editor")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Paint")]

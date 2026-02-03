@@ -79,6 +79,8 @@ Material:
     - _BUILTIN_SrcBlend: 5
     - _BUILTIN_ZWrite: 1
     - _Crest_Anisotropy: 0
+    - _Crest_NormalMapTurbulenceCoverage: 1
+    - _Crest_NormalMapTurbulenceStrength: 1
     - _CullMode: 0
     - _CullModeForward: 0
     - _DstBlend: 10

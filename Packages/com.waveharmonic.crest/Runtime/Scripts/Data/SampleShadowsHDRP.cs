@@ -24,13 +24,6 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-#if UNITY_EDITOR
-            if (!WaterRenderer.IsWithinEditorUpdate)
-            {
-                return;
-            }
-#endif
-
             var camera = context.hdCamera.camera;
 
             // Custom passes execute for every camera. We only support one camera for now.

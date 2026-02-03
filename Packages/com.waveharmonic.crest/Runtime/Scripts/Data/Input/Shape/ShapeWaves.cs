@@ -4,6 +4,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Serialization;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -34,6 +35,13 @@ namespace WaveHarmonic.Crest
         [@GenerateAPI]
         [SerializeField]
         float _RespectShallowWaterAttenuation = 1f;
+
+        [Tooltip("Whether global waves is applied above or below sea level.\n\nWaves are faded out to avoid hard transitionds. They are fully faded by 1m from sea level.")]
+        [@Predicated(nameof(_Mode), inverted: true, nameof(LodInputMode.Global))]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [SerializeField]
+        bool _SeaLevelOnly = true;
 
         [Tooltip("Whether to use the wind direction on this component rather than the global wind direction.\n\nGlobal wind direction comes from the Water Renderer component.")]
         [@GenerateAPI]
@@ -68,9 +76,19 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Resolution to use for wave generation buffers.\n\nLow resolutions are more efficient but can result in noticeable patterns in the shape.")]
         [@Stepped(16, 512, step: 2, power: true)]
-        [@GenerateAPI]
+        [@GenerateAPI(Getter.Custom)]
         [SerializeField]
         private protected int _Resolution = 128;
+
+
+        [@Heading("Level of Detail")]
+
+        [Tooltip("Whether the maximum possible vertical displacement is used for the Drop Detail Height Based On Waves calculation.\n\nThis setting is ignored for global waves, as they always contribute. For local waves, only enable for large areas that are treated like global waves (eg a storm).")]
+        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Global))]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [SerializeField]
+        bool _IncludeInDropDetailHeightBasedOnWaves;
 
 
         // Debug
@@ -92,6 +110,7 @@ namespace WaveHarmonic.Crest
             public static readonly int s_RespectShallowWaterAttenuation = Shader.PropertyToID("_Crest_RespectShallowWaterAttenuation");
             public static readonly int s_MaximumAttenuationDepth = Shader.PropertyToID("_Crest_MaximumAttenuationDepth");
             public static readonly int s_AxisX = Shader.PropertyToID("_Crest_AxisX");
+            public static readonly int s_SeaLevelOnly = Shader.PropertyToID("_Crest_SeaLevelOnly");
         }
 
         private protected virtual WaveSpectrum DefaultSpectrum => WindSpectrum;
@@ -136,7 +155,7 @@ namespace WaveHarmonic.Crest
         /// <summary>
         /// The wind speed in meters per second (MPS).
         /// </summary>
-        /// /// <remarks>
+        /// <remarks>
         /// Wind speed can come from this component or the <see cref="WaterRenderer"/>.
         /// </remarks>
         public float WindSpeedMPS => WindSpeedKPH / 3.6f;
@@ -150,13 +169,15 @@ namespace WaveHarmonic.Crest
         {
             base.Attach();
             _Reporter ??= new(this);
-            WaterChunkRenderer.DisplacementReporters.Add(_Reporter);
+            _DisplacementReporter = _Reporter;
+            _WaveDisplacementReporter = _Reporter;
         }
 
         private protected override void Detach()
         {
             base.Detach();
-            WaterChunkRenderer.DisplacementReporters.Remove(_Reporter);
+            _DisplacementReporter = null;
+            _WaveDisplacementReporter = null;
         }
 
         internal override void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slice = -1)
@@ -189,11 +210,13 @@ namespace WaveHarmonic.Crest
             // Input weight. Weight for each octave calculated in compute.
             wrapper.SetFloat(LodInput.ShaderIDs.s_Weight, Weight);
 
+            wrapper.SetInteger(Crest.ShaderIDs.s_Resolution, Resolution);
+
             var water = shape._Water;
 
             for (var lodIdx = lodCount - 1; lodIdx >= lodCount - slice; lodIdx--)
             {
-                _WaveBufferParameters[lodIdx] = new(-1, -2, 0, 0);
+                _WaveBufferParameters[lodIdx] = new(-1, -2, 0, 1);
 
                 var found = false;
                 var filter = new AnimatedWavesLod.WavelengthFilter(water, lodIdx);
@@ -221,7 +244,11 @@ namespace WaveHarmonic.Crest
             }
 
             // Set transitional weights.
-            _WaveBufferParameters[lodCount - 2].w = 1f - water.ViewerAltitudeLevelAlpha;
+            if (!shape.PreserveWaveQuality)
+            {
+                _WaveBufferParameters[lodCount - 2].w = 1f - water.ViewerAltitudeLevelAlpha;
+            }
+
             _WaveBufferParameters[lodCount - 1].w = water.ViewerAltitudeLevelAlpha;
 
             SetRenderParameters(water, wrapper);
@@ -243,6 +270,8 @@ namespace WaveHarmonic.Crest
 
             if (Mode == LodInputMode.Global)
             {
+                wrapper.SetBoolean(ShaderIDs.s_SeaLevelOnly, _SeaLevelOnly);
+
                 var threads = shape.Resolution / Lod.k_ThreadGroupSize;
                 wrapper.Dispatch(threads, threads, slice);
             }
@@ -411,28 +440,96 @@ namespace WaveHarmonic.Crest
             s_KeywordTextureBlend = WaterResources.Instance.Keywords.AnimatedWavesTransferWavesTextureBlend;
         }
 
-        bool ReportDisplacement(ref Rect bounds, ref float horizontal, ref float vertical)
+        bool ReportDisplacement(WaterRenderer water, ref Rect bounds, ref float horizontal, ref float vertical)
         {
-            if (Mode == LodInputMode.Global || !Enabled)
+            if (!Enabled)
             {
                 return false;
+            }
+
+            if (Mode == LodInputMode.Global)
+            {
+                // Global is always additive.
+                horizontal += MaximumReportedHorizontalDisplacement;
+                vertical += MaximumReportedVerticalDisplacement;
+                return true;
             }
 
             _Rect = Data.Rect;
 
             if (bounds.Overlaps(_Rect, false))
             {
-                horizontal = MaximumReportedHorizontalDisplacement;
-                vertical = MaximumReportedVerticalDisplacement;
+                var nh = horizontal;
+                var nv = vertical;
+                switch (Blend)
+                {
+                    case LodInputBlend.Off:
+                        nh = MaximumReportedHorizontalDisplacement;
+                        nv = MaximumReportedVerticalDisplacement;
+                        break;
+                    case LodInputBlend.Additive:
+                        nh += MaximumReportedHorizontalDisplacement;
+                        nv += MaximumReportedVerticalDisplacement;
+                        break;
+                    case LodInputBlend.Alpha:
+                    case LodInputBlend.AlphaClip:
+                        nh = Mathf.Max(nh, MaximumReportedHorizontalDisplacement);
+                        nv = Mathf.Max(nh, MaximumReportedVerticalDisplacement);
+                        break;
+                }
+
+                if (_Rect.Encapsulates(bounds))
+                {
+                    horizontal = nh;
+                    vertical = nv;
+                }
+                else
+                {
+                    horizontal = Mathf.Max(horizontal, nh);
+                    vertical = Mathf.Max(vertical, nv);
+                }
+
                 return true;
             }
 
             return false;
         }
 
+        float ReportWaveDisplacement(WaterRenderer water, float displacement)
+        {
+            if (Mode == LodInputMode.Global)
+            {
+                return displacement + MaximumReportedWavesDisplacement;
+            }
+
+            if (!_IncludeInDropDetailHeightBasedOnWaves)
+            {
+                return displacement;
+            }
+
+            // TODO: use bounds to transition slowly to avoid pops.
+            if (_Rect.Contains(water.Position.XZ()))
+            {
+                displacement = Blend switch
+                {
+                    LodInputBlend.Off => MaximumReportedWavesDisplacement,
+                    LodInputBlend.Additive => displacement + MaximumReportedWavesDisplacement,
+                    LodInputBlend.Alpha or LodInputBlend.AlphaClip => Mathf.Max(displacement, MaximumReportedWavesDisplacement),
+                    _ => MaximumReportedWavesDisplacement,
+                };
+            }
+
+            return displacement;
+        }
+
         float GetWaveDirectionHeadingAngle()
         {
             return _OverrideGlobalWindDirection || WaterRenderer.Instance == null ? _WaveDirectionHeadingAngle : WaterRenderer.Instance.WindDirection;
+        }
+
+        internal int GetResolution()
+        {
+            return Mathf.Clamp(_Resolution, MinimumResolution, MaximumResolution);
         }
     }
 
@@ -440,11 +537,12 @@ namespace WaveHarmonic.Crest
     {
         Reporter _Reporter;
 
-        sealed class Reporter : IReportsDisplacement
+        sealed class Reporter : IReportsDisplacement, IReportWaveDisplacement
         {
             readonly ShapeWaves _Input;
             public Reporter(ShapeWaves input) => _Input = input;
-            public bool ReportDisplacement(ref Rect bounds, ref float horizontal, ref float vertical) => _Input.ReportDisplacement(ref bounds, ref horizontal, ref vertical);
+            public bool ReportDisplacement(WaterRenderer water, ref Rect bounds, ref float horizontal, ref float vertical) => _Input.ReportDisplacement(water, ref bounds, ref horizontal, ref vertical);
+            public float ReportWaveDisplacement(WaterRenderer water, float displacement) => _Input.ReportWaveDisplacement(water, displacement);
         }
     }
 
@@ -510,6 +608,17 @@ namespace WaveHarmonic.Crest
             {
                 _OverrideGlobalWindDirection = true;
                 version = 2;
+            }
+
+            return version;
+        }
+
+        private protected int MigrateV3(int version)
+        {
+            if (version < 3)
+            {
+                _SeaLevelOnly = false;
+                version = 3;
             }
 
             return version;

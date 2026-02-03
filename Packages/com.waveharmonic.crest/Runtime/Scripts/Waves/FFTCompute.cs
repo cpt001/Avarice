@@ -42,8 +42,9 @@ namespace WaveHarmonic.Crest
 
         float _GenerationTime = -1f;
 
+        // WebGPU claims it does but does not.
         static readonly bool s_SupportsRandomWriteRGFloat =
-            SystemInfo.SupportsRandomWriteOnRenderTextureFormat(RenderTextureFormat.RGFloat);
+            !Helpers.IsWebGPU && SystemInfo.SupportsRandomWriteOnRenderTextureFormat(RenderTextureFormat.RGFloat);
 
         public static class ShaderIDs
         {
@@ -207,7 +208,7 @@ namespace WaveHarmonic.Crest
                 rtd.enableRandomWrite = true;
                 rtd.depthBufferBits = 0;
                 rtd.volumeDepth = k_CascadeCount;
-                rtd.colorFormat = RenderTextureFormat.ARGBFloat;
+                rtd.graphicsFormat = GraphicsFormat.R32G32B32A32_SFloat;
                 rtd.msaaSamples = 1;
 
                 Helpers.SafeCreateRenderTexture(ref _SpectrumInitial, rtd);
@@ -215,7 +216,7 @@ namespace WaveHarmonic.Crest
                 _SpectrumInitial.Create();
 
                 // Raw wave data buffer
-                WaveBuffers = new(resolution, resolution, 0, GraphicsFormat.R16G16B16A16_SFloat)
+                WaveBuffers = new(resolution, resolution, 0, Helpers.GetCompatibleTextureFormat(GraphicsFormat.R16G16B16A16_SFloat, randomWrite: true))
                 {
                     wrapMode = TextureWrapMode.Repeat,
                     antiAliasing = 1,
@@ -263,7 +264,7 @@ namespace WaveHarmonic.Crest
                         offset <<= 1;
                     }
 
-                    var texture = new Texture2D(resolution, Mathf.RoundToInt(Mathf.Log(resolution, 2)), TextureFormat.RGBAFloat, false, true);
+                    var texture = new Texture2D(resolution, Mathf.RoundToInt(Mathf.Log(resolution, 2)), TextureFormat.RGFloat, false, true);
                     texture.SetPixels(colors);
                     texture.Apply();
                     s_ButterflyTextures.Add(resolution, texture);
@@ -300,7 +301,7 @@ namespace WaveHarmonic.Crest
 
                 if (s_SupportsRandomWriteRGFloat)
                 {
-                    descriptor.colorFormat = RenderTextureFormat.RGFloat;
+                    descriptor.graphicsFormat = GraphicsFormat.R32G32_SFloat;
                 }
 
                 // No need to clear as overwritten.

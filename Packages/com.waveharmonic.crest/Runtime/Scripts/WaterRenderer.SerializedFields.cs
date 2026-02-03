@@ -29,6 +29,57 @@ namespace WaveHarmonic.Crest
         BeforeTransparent,
     }
 
+    /// <summary>
+    /// Rules to exclude cameras.
+    /// </summary>
+    [@GenerateDoc]
+    [System.Flags]
+    public enum WaterCameraExclusion
+    {
+        /// <inheritdoc cref="Generated.WaterCameraExclusion.Nothing" />
+        [Tooltip("No exclusion rules applied.")]
+        Nothing = 0,
+
+        /// <inheritdoc cref="Generated.WaterCameraExclusion.Hidden" />
+        [Tooltip("Exclude hidden cameras.\n\nDoes not affect reflection cameras, as they are typically always hidden. Use the Reflection flag for them.")]
+        Hidden = 1 << 1,
+
+        /// <inheritdoc cref="Generated.WaterCameraExclusion.Reflection" />
+        [Tooltip("Exclude reflection cameras.")]
+        Reflection = 1 << 2,
+
+        /// <inheritdoc cref="Generated.WaterCameraExclusion.NonMainCamera" />
+        [Tooltip("Exclude cameras not tagged as MainCamera.")]
+        NonMainCamera = 1 << 3,
+
+        /// <inheritdoc cref="Generated.WaterCameraExclusion.Everything" />
+        [Tooltip("Apply all exclusion rules.")]
+        Everything = ~0,
+    }
+
+    /// <summary>
+    /// The background processing mode for when cameras do not render.
+    /// </summary>
+    [@GenerateDoc]
+    public enum WaterDataBackgroundMode
+    {
+        /// <inheritdoc cref="Generated.WaterDataBackgroundMode.Always" />
+        [Tooltip("Always progress simulations in the background when camera does not render.")]
+        Always,
+
+        /// <inheritdoc cref="Generated.WaterDataBackgroundMode.Inactive" />
+        [Tooltip("Progress simulations in the background when camera is inactive (ie !isActiveAndEnabled).")]
+        Inactive,
+
+        /// <inheritdoc cref="Generated.WaterDataBackgroundMode.Disabled" />
+        [Tooltip("Progress simulations in the background when camera is disabled (ie !enabled).")]
+        Disabled,
+
+        /// <inheritdoc cref="Generated.WaterDataBackgroundMode.Never" />
+        [Tooltip("Never progress simulations in the background.")]
+        Never,
+    }
+
     partial class WaterRenderer
     {
         internal const float k_MaximumWindSpeedKPH = 150f;
@@ -228,12 +279,35 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         internal float _ExtentsSizeMultiplier = 100f;
 
-        [@Heading("Center of Detail")]
+        [@Heading("Center of Detail", alwaysEnabled: true)]
+
+        [Tooltip("Whether to support multiple center-of-detail (per camera).")]
+#if !UNITY_6000_0_OR_NEWER
+        [@Predicated(RenderPipeline.HighDefinition, inverted: true, hide: true)]
+#endif
+        [@DecoratedField]
+        [SerializeField]
+        bool _MultipleViewpoints;
 
         [Tooltip("The viewpoint which drives the water detail - the center of the LOD system.\n\nSetting this is optional. Defaults to the camera.")]
+        [@Predicated(nameof(_MultipleViewpoints), inverted: true)]
         [@GenerateAPI(Getter.Custom)]
         [@DecoratedField, SerializeField]
         Transform _Viewpoint;
+
+        [Tooltip("Rules to exclude cameras from being a center-of-detail.\n\nThese are exclusion rules, so for all cameras, select Nothing.")]
+        [@Predicated(nameof(_MultipleViewpoints))]
+        [@DecoratedField]
+        [@GenerateAPI]
+        [SerializeField]
+        WaterCameraExclusion _CameraExclusions = WaterCameraExclusion.Everything;
+
+        [Tooltip("The background rendering mode when a camera does not render.\n\nWhen switching between multiple cameras, simulations will not progress for cameras which do not render for that frame. This setting tells the system when it should continue to progress the simulations.")]
+        [@Predicated(nameof(_MultipleViewpoints))]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [SerializeField]
+        internal WaterDataBackgroundMode _DataBackgroundMode = WaterDataBackgroundMode.Never;
 
         [@Label("Displacement Correction")]
         [Tooltip("Keep the center of detail from drifting from the viewpoint.\n\nLarge horizontal displacement can displace the center of detail. This uses queries to keep the center of detail aligned.")]
@@ -371,17 +445,20 @@ namespace WaveHarmonic.Crest
         [@DecoratedField, SerializeField]
         internal bool _ShowWaterProxyPlane;
 
-        [Tooltip("Sets the update rate of the water system when in edit mode.\n\nCan be reduced to save power.")]
-        [@Range(0f, 120f, Range.Clamp.Minimum)]
-        [SerializeField]
-        float _EditModeFrameRate = 30f;
-
         [Tooltip("Move water with Scene view camera if Scene window is focused.")]
         [@Predicated(nameof(_ShowWaterProxyPlane), true)]
         [@DecoratedField, SerializeField]
         internal bool _FollowSceneCamera = true;
 
-        [Tooltip("Whether height queries are enabled in edit mode.")]
+        [Tooltip("Each scene view will have its own viewpoint.")]
+#if !UNITY_6000_0_OR_NEWER
+        [@Predicated(RenderPipeline.HighDefinition, inverted: true, hide: true)]
+#endif
+        [@DecoratedField]
+        [SerializeField]
+        bool _EditorMultipleViewpoints = true;
+
+        [Tooltip("Whether height queries are enabled in edit mode.\n\nQueries force enable \"Always Refresh\" scene view option.")]
         [@DecoratedField, SerializeField]
         internal bool _HeightQueries = true;
 #pragma warning restore 414
@@ -395,6 +472,15 @@ namespace WaveHarmonic.Crest
         [System.Serializable]
         internal sealed class DebugFields
         {
+            [@Space(10)]
+
+#if !CREST_DEBUG
+            [HideInInspector]
+#endif
+            [Tooltip("Simulates cameras not rendering.")]
+            [@DecoratedField, SerializeField]
+            public bool _SimulatePaused;
+
             [@Space(10)]
 
             [Tooltip("Attach debug GUI that adds some controls and allows to visualize the water data.")]
@@ -429,23 +515,38 @@ namespace WaveHarmonic.Crest
 #if !CREST_DEBUG
             [HideInInspector]
 #endif
-            [Tooltip("Water will not move with viewpoint.")]
+            [Tooltip("Log scale changes to the console.")]
             [@DecoratedField, SerializeField]
             public bool _LogScaleChange;
 
 #if !CREST_DEBUG
             [HideInInspector]
 #endif
-            [Tooltip("Water will not move with viewpoint.")]
+            [Tooltip("Pause the editor when the scale changes.")]
             [@DecoratedField, SerializeField]
             public bool _PauseOnScaleChange;
 
 #if !CREST_DEBUG
             [HideInInspector]
 #endif
-            [Tooltip("Water will not move with viewpoint.")]
+            [Tooltip("Ignore waves when calculation scale.")]
             [@DecoratedField, SerializeField]
             public bool _IgnoreWavesForScaleChange;
+
+#if !CREST_DEBUG
+            [HideInInspector]
+#endif
+            [@InlineToggle]
+            [SerializeField]
+            public bool _OverrideScale;
+
+#if !CREST_DEBUG
+            [HideInInspector]
+#endif
+            [@Predicated(nameof(_OverrideScale))]
+            [@Range(1, 256, Range.Clamp.Minimum, power: true, step: 2)]
+            [SerializeField]
+            public int _ScaleOverride;
 
             [@Heading("Server")]
 

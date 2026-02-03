@@ -2,6 +2,7 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -10,10 +11,10 @@ namespace WaveHarmonic.Crest
     /// </summary>
     sealed class CollisionQuery : QueryBase, ICollisionProvider
     {
-        public CollisionQuery(WaterRenderer water) : base(water) { }
+        public CollisionQuery(WaterRenderer water) : base(water.AnimatedWavesLod) { }
         protected override int Kernel => 0;
 
-        public int Query(int ownerHash, float minSpatialLength, Vector3[] queryPoints, Vector3[] resultDisplacements, Vector3[] resultNormals, Vector3[] resultVelocities, CollisionLayer layer = CollisionLayer.Everything)
+        public int Query(int ownerHash, float minSpatialLength, Vector3[] queryPoints, Vector3[] resultDisplacements, Vector3[] resultNormals, Vector3[] resultVelocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null)
         {
             var result = (int)QueryStatus.OK;
 
@@ -35,7 +36,7 @@ namespace WaveHarmonic.Crest
             return result;
         }
 
-        public int Query(int ownerHash, float minimumSpatialLength, Vector3[] queryPoints, float[] resultHeights, Vector3[] resultNormals, Vector3[] resultVelocities, CollisionLayer layer = CollisionLayer.Everything)
+        public int Query(int ownerHash, float minimumSpatialLength, Vector3[] queryPoints, float[] resultHeights, Vector3[] resultNormals, Vector3[] resultVelocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null)
         {
             var result = (int)QueryStatus.OK;
 
@@ -58,6 +59,102 @@ namespace WaveHarmonic.Crest
         }
     }
 
+    sealed class CollisionQueryPerCamera : QueryPerCamera<CollisionQueryWithPasses>, ICollisionProvider
+    {
+        public CollisionQueryPerCamera() : base(WaterRenderer.Instance) { }
+        public CollisionQueryPerCamera(WaterRenderer water) : base(water) { }
+
+        public int Query(int hash, float minimumLength, Vector3[] points, float[] heights, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null)
+        {
+            if (_Water._InCameraLoop)
+            {
+                return _Providers[_Water.CurrentCamera].Query(hash, minimumLength, points, heights, normals, velocities, layer, center);
+            }
+
+            var lastStatus = -1;
+            var lastDistance = Mathf.Infinity;
+
+            var newCenter = FindCenter(points, center);
+
+            foreach (var provider in _Providers)
+            {
+                var camera = provider.Key;
+
+                if (!_Water.ShouldExecuteQueries(camera))
+                {
+                    continue;
+                }
+
+                var distance = (newCenter - camera.transform.position.XZ()).sqrMagnitude;
+
+                if (lastStatus == (int)QueryBase.QueryStatus.OK && lastDistance < distance)
+                {
+                    continue;
+                }
+
+                var status = provider.Value.Query(hash, minimumLength, points, heights, normals, velocities, layer, center);
+
+                if (lastStatus < 0 || status == (int)QueryBase.QueryStatus.OK)
+                {
+                    lastStatus = status;
+                    lastDistance = distance;
+                }
+            }
+
+            return lastStatus;
+        }
+
+        public int Query(int hash, float minimumLength, Vector3[] points, Vector3[] displacements, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null)
+        {
+            if (_Water._InCameraLoop)
+            {
+                return _Providers[_Water.CurrentCamera].Query(hash, minimumLength, points, displacements, normals, velocities, layer, center);
+            }
+
+            var lastStatus = -1;
+            var lastDistance = Mathf.Infinity;
+
+            var newCenter = FindCenter(points, center);
+
+            foreach (var provider in _Providers)
+            {
+                var camera = provider.Key;
+
+                if (!_Water.ShouldExecuteQueries(camera))
+                {
+                    continue;
+                }
+
+                var distance = (newCenter - camera.transform.position.XZ()).sqrMagnitude;
+
+                if (lastStatus == (int)QueryBase.QueryStatus.OK && lastDistance < distance)
+                {
+                    continue;
+                }
+
+                var status = provider.Value.Query(hash, minimumLength, points, displacements, normals, velocities, layer, center);
+
+                if (lastStatus < 0 || status == (int)QueryBase.QueryStatus.OK)
+                {
+                    lastStatus = status;
+                    lastDistance = distance;
+                }
+            }
+
+            return lastStatus;
+        }
+
+        public void SendReadBack(WaterRenderer water, CollisionLayers layers)
+        {
+            _Providers[water.CurrentCamera].SendReadBack(water, layers);
+        }
+
+        public void UpdateQueries(WaterRenderer water, CollisionLayer layer)
+        {
+            _Providers[water.CurrentCamera].UpdateQueries(water, layer);
+        }
+    }
+
     sealed class CollisionQueryWithPasses : ICollisionProvider, IQueryable
     {
         readonly CollisionQuery _AnimatedWaves;
@@ -68,6 +165,14 @@ namespace WaveHarmonic.Crest
         public int ResultGuidCount => _AnimatedWaves.ResultGuidCount + _DynamicWaves.ResultGuidCount + _Displacement.ResultGuidCount;
         public int RequestCount => _AnimatedWaves.RequestCount + _DynamicWaves.RequestCount + _Displacement.RequestCount;
         public int QueryCount => _AnimatedWaves.QueryCount + _DynamicWaves.QueryCount + _Displacement.QueryCount;
+
+        public CollisionQueryWithPasses()
+        {
+            _Water = WaterRenderer.Instance;
+            _AnimatedWaves = new(_Water);
+            _DynamicWaves = new(_Water);
+            _Displacement = new(_Water);
+        }
 
         public CollisionQueryWithPasses(WaterRenderer water)
         {
@@ -107,12 +212,12 @@ namespace WaveHarmonic.Crest
             return _AnimatedWaves;
         }
 
-        public int Query(int hash, float minimumLength, Vector3[] points, float[] heights, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything)
+        public int Query(int hash, float minimumLength, Vector3[] points, float[] heights, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null)
         {
             return GetProvider(layer).Query(hash, minimumLength, points, heights, normals, velocities);
         }
 
-        public int Query(int hash, float minimumLength, Vector3[] points, Vector3[] displacements, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything)
+        public int Query(int hash, float minimumLength, Vector3[] points, Vector3[] displacements, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null)
         {
             return GetProvider(layer).Query(hash, minimumLength, points, displacements, normals, velocities);
         }
@@ -151,13 +256,55 @@ namespace WaveHarmonic.Crest
             _DynamicWaves.CleanUp();
             _Displacement.CleanUp();
         }
+
+        public void Initialize(WaterRenderer water)
+        {
+
+        }
     }
 
+    // These are required because of collision layer.
     static partial class Extensions
     {
-        public static void UpdateQueries(this ICollisionProvider self, WaterRenderer water, CollisionLayer layer) => (self as CollisionQueryWithPasses)?.UpdateQueries(water, layer);
+        public static void UpdateQueries(this ICollisionProvider self, WaterRenderer water, CollisionLayer layer)
+        {
+            if (self is CollisionQueryPerCamera a)
+            {
+                a.UpdateQueries(water, layer);
+            }
+            else if (self is CollisionQueryWithPasses b)
+            {
+                b.UpdateQueries(water, layer);
+            }
+            else if (self is ICollisionProvider.NoneProvider c)
+            {
+
+            }
+            else
+            {
+                Debug.LogError("Crest: no valid query provider. Report this to developers!");
+            }
+        }
         public static void UpdateQueries(this ICollisionProvider self, WaterRenderer water) => (self as IQueryable)?.UpdateQueries(water);
-        public static void SendReadBack(this ICollisionProvider self, WaterRenderer water, CollisionLayers layer) => (self as CollisionQueryWithPasses)?.SendReadBack(water, layer);
+        public static void SendReadBack(this ICollisionProvider self, WaterRenderer water, CollisionLayers layer)
+        {
+            if (self is CollisionQueryPerCamera a)
+            {
+                a.SendReadBack(water, layer);
+            }
+            else if (self is CollisionQueryWithPasses b)
+            {
+                b.SendReadBack(water, layer);
+            }
+            else if (self is ICollisionProvider.NoneProvider c)
+            {
+
+            }
+            else
+            {
+                Debug.LogError("Crest: no valid query provider. Report this to developers!");
+            }
+        }
         public static void CleanUp(this ICollisionProvider self) => (self as IQueryable)?.CleanUp();
     }
 }

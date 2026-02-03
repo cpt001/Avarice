@@ -147,6 +147,21 @@ namespace WaveHarmonic.Crest
     /// </summary>
     sealed class Stripped : DecoratedProperty
     {
+        public enum Style
+        {
+            None,
+            PlatformTab,
+        }
+
+        readonly bool _KeepIndent;
+        readonly Style _Style;
+
+        public Stripped(Style style = Style.None, bool indent = false)
+        {
+            _KeepIndent = indent;
+            _Style = style;
+        }
+
         internal override bool NeedsControlRectangle(SerializedProperty property) => false;
 
         internal override void OnGUI(Rect position, SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
@@ -155,11 +170,33 @@ namespace WaveHarmonic.Crest
             DecoratedDrawer.s_TemporaryColor = true;
             DecoratedDrawer.s_PreviousColor = GUI.color;
 
+            if (_Style == Style.PlatformTab)
+            {
+                EditorGUI.indentLevel += 1;
+                EditorGUILayout.LabelField(label);
+                EditorGUI.indentLevel -= 1;
+            }
+
             GUI.color = new(0, 0, 0, 0);
 
-            EditorGUI.indentLevel -= 1;
+            if (!_KeepIndent) EditorGUI.indentLevel -= 1;
             EditorGUI.PropertyField(position, property, label, true);
-            EditorGUI.indentLevel += 1;
+            if (!_KeepIndent) EditorGUI.indentLevel += 1;
+
+            if (_Style == Style.PlatformTab)
+            {
+                EditorGUILayout.Space(4);
+                EditorGUILayout.EndBuildTargetSelectionGrouping();
+            }
+        }
+    }
+
+    sealed class PlatformTabs : DecoratedProperty
+    {
+        static readonly GUIContent s_DefaultTab = new(EditorGUIUtility.IconContent("d_Settings").image, "Default");
+        internal override void OnGUI(Rect position, SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
+        {
+            property.intValue = Editor.Reflected.EditorGUILayout.BeginBuildTargetSelectionGrouping(s_DefaultTab);
         }
     }
 
@@ -621,29 +658,15 @@ namespace WaveHarmonic.Crest
 
     sealed class InlineToggle : DecoratedProperty
     {
-        // Add extra y offset. Needed for foldouts in foldouts so far.
-        readonly bool _Fix;
-
-        public InlineToggle(bool fix = false)
-        {
-            _Fix = fix;
-        }
-
-        internal override bool NeedsControlRectangle(SerializedProperty property)
-        {
-            return false;
-        }
-
         internal override void OnGUI(Rect position, SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
         {
             var r = position;
             r.x -= 16f;
-            // Align with Space offset.
-            if (drawer.Space > 0) r.y += drawer.Space + 2f;
-            if (_Fix) r.y += EditorGUIUtility.singleLineHeight + 2f;
-            // Seems to be needed.
+
+            // Prevent click events blocking next property.
             r.width = 16f * (1f + EditorGUI.indentLevel);
-            r.height = EditorGUIUtility.singleLineHeight;
+
+            // Hide text.
             label.text = "";
 
             using (new EditorGUI.PropertyScope(r, label, property))
@@ -654,6 +677,9 @@ namespace WaveHarmonic.Crest
                 property.boolValue = EditorGUI.Toggle(r, property.boolValue);
                 EditorGUI.EndProperty();
             }
+
+            // Pull up next property. Extra space might be margin/padding.
+            GUILayout.Space(-(EditorGUIUtility.singleLineHeight + 2f));
         }
     }
 

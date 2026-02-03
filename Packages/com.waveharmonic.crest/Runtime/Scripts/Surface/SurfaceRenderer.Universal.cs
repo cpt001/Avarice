@@ -24,9 +24,7 @@ namespace WaveHarmonic.Crest
             {
                 _Water = water;
                 renderPassEvent = RenderPassEvent.BeforeRenderingTransparents;
-
-                // Copy color happens between "after skybox" and "before transparency".
-                ConfigureInput(ScriptableRenderPassInput.Color | ScriptableRenderPassInput.Depth);
+                ConfigureInput(ScriptableRenderPassInput.None);
             }
 
             public static void Enable(WaterRenderer water)
@@ -58,12 +56,14 @@ namespace WaveHarmonic.Crest
                 }
 
                 // Our reflections do not need them.
-                if (camera == WaterReflections.CurrentCamera)
+                if (camera == _Water.Reflections.ReflectionCamera)
                 {
                     return;
                 }
 
-                if (Instance._Water.Surface.Material == null)
+                var material = _Water.Surface.Material;
+
+                if (material == null)
                 {
                     return;
                 }
@@ -71,6 +71,15 @@ namespace WaveHarmonic.Crest
                 if (!IsTransparent(Instance._Water.Surface.Material))
                 {
                     return;
+                }
+
+                {
+                    // Copy color happens between "after skybox" and "before transparency".
+                    var pass = ScriptableRenderPassInput.Color | ScriptableRenderPassInput.Depth;
+#if d_Crest_SimpleTransparency
+                    pass = ScriptableRenderPassInput.None;
+#endif
+                    ConfigureInput(pass);
                 }
 
                 camera.GetUniversalAdditionalCameraData().scriptableRenderer.EnqueuePass(Instance);
@@ -113,6 +122,7 @@ namespace WaveHarmonic.Crest
                     var rld = new RendererListDesc(_ShaderTagID, renderingData.cullResults, cameraData.camera)
                     {
                         layerMask = 1 << _Water.Surface.Layer,
+                        // Required to set the pass. Use shader to keep WB material overrides.
                         overrideShader = _Water.Surface.Material.shader,
                         overrideShaderPassIndex = 0, // UniversalForward
                         renderQueueRange = RenderQueueRange.transparent,
@@ -129,7 +139,10 @@ namespace WaveHarmonic.Crest
                     });
                 }
             }
+#endif
 
+#if URP_COMPATIBILITY_MODE
+#if UNITY_6000_0_OR_NEWER
             [System.Obsolete]
 #endif
             public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
@@ -144,6 +157,7 @@ namespace WaveHarmonic.Crest
                 var rld = new RendererListDesc(_ShaderTagID, renderingData.cullResults, renderingData.cameraData.camera)
                 {
                     layerMask = 1 << _Water.Surface.Layer,
+                    // Required to set the pass. Use shader to keep WB material overrides.
                     overrideShader = _Water.Surface.Material.shader,
                     overrideShaderPassIndex = 0, // UniversalForward
                     renderQueueRange = RenderQueueRange.transparent,
@@ -156,6 +170,7 @@ namespace WaveHarmonic.Crest
                 context.ExecuteCommandBuffer(buffer);
                 CommandBufferPool.Release(buffer);
             }
+#endif
         }
     }
 }

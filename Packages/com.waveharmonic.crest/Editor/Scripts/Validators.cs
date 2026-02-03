@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.Rendering.Universal;
+using WaveHarmonic.Crest.Editor.Settings;
 using WaveHarmonic.Crest.Internal;
 using WaveHarmonic.Crest.Watercraft;
 
@@ -20,6 +21,9 @@ namespace WaveHarmonic.Crest.Editor
     {
         // HDRP sub-shader always first.
         const int k_SubShaderIndexHDRP = 0;
+        const string k_NoneQueryProviderCollisionFloatingObjects = "The floating objects in the scene will use a flat horizontal plane.";
+        const string k_NoneQueryProviderFlowFloatingObjects = "The floating objects in the scene will not receive motion from flow.";
+
         internal static WaterRenderer Water => Utility.Water;
         static readonly System.Collections.Generic.List<Terrain> s_Terrains = new();
         static readonly ShaderTagId s_RenderPipelineShaderTagID = new("RenderPipeline");
@@ -252,18 +256,6 @@ namespace WaveHarmonic.Crest.Editor
             {
                 return isValid;
             }
-
-#if !d_Crest_LegacyUnderwater
-            if (target.AllCameras)
-            {
-                messenger
-                (
-                    "<i>All Cameras</i> requires <i>Legacy Underwater</i> to be enabled.",
-                    "Either disable <i>All Cameras</i> or enable <i>Project Settings > Crest > Legacy Underwater</i>.",
-                    MessageType.Warning, water
-                );
-            }
-#endif
 
             if (target.Material != null)
             {
@@ -554,7 +546,7 @@ namespace WaveHarmonic.Crest.Editor
             {
                 foreach (var simulation in target.Simulations)
                 {
-                    ValidateSimulationAndMaterial(OptionalLod.Get(simulation.GetType()), messenger, water);
+                    ValidateSimulationAndMaterial(OptionalLod.Get(simulation.GetType()), messenger, water, target);
                 }
             }
 
@@ -568,7 +560,7 @@ namespace WaveHarmonic.Crest.Editor
                 );
             }
 
-            if (target.Viewer == null && !target.IsRunningWithoutGraphics)
+            if (target.Viewer == null && !target.IsRunningWithoutGraphics && !target.MultipleViewpoints)
             {
                 messenger
                 (
@@ -727,8 +719,7 @@ namespace WaveHarmonic.Crest.Editor
             if (target.Clipped && water != null)
             {
                 // Validate main material, then overriden material.
-                ValidateLod(OptionalLod.Get(typeof(ClipLod)), messenger, water);
-                ValidateLod(OptionalLod.Get(typeof(ClipLod)), messenger, water, material: target._Material);
+                ValidateLod(OptionalLod.Get(typeof(ClipLod)), messenger, water, material: target._Material, context: target);
 
                 if (water.ClipLod.DefaultClippingState == DefaultClippingState.NothingClipped)
                 {
@@ -738,7 +729,8 @@ namespace WaveHarmonic.Crest.Editor
                         $"The {nameof(WaterBody.Clipped)} option will have no effect.",
                         $"Disable {nameof(WaterBody.Clipped)} or set {nameof(ClipLod.DefaultClippingState)} to {DefaultClippingState.NothingClipped}.",
                         MessageType.Warning,
-                        water
+                        water,
+                        caller: target
                     );
                 }
             }
@@ -758,6 +750,8 @@ namespace WaveHarmonic.Crest.Editor
             {
                 return isValid;
             }
+
+            isValid &= ValidateProjectSettings(target, water, messenger, context);
 
             var simulation = target.GetLod(water);
 
@@ -787,7 +781,8 @@ namespace WaveHarmonic.Crest.Editor
                             simulation._Enabled = false;
                         }
                     },
-                    $"{target.PropertyName}.{nameof(Lod._Enabled)}"
+                    $"{target.PropertyName}.{nameof(Lod._Enabled)}",
+                    context
                 );
 
                 isValid = false;
@@ -802,20 +797,20 @@ namespace WaveHarmonic.Crest.Editor
             {
                 if (material.HasProperty(target.MaterialProperty) && material.GetFloat(target.MaterialProperty) != 1f)
                 {
-                    ShowMaterialValidationMessage(target, material, messenger);
+                    ShowMaterialValidationMessage(target, material, messenger, context);
                     isValid = false;
                 }
             }
 
             if (target.Dependency != null)
             {
-                ValidateLod(OptionalLod.Get(target.Dependency), messenger, water, dependent);
+                ValidateLod(OptionalLod.Get(target.Dependency), messenger, water, dependent, context: context);
             }
 
             return isValid;
         }
 
-        static bool ValidateSignedDistanceFieldsLod(ShowMessage messenger, WaterRenderer water, string feature)
+        static bool ValidateSignedDistanceFieldsLod(ShowMessage messenger, WaterRenderer water, string feature, Object context)
         {
             var isValid = true;
 
@@ -827,7 +822,8 @@ namespace WaveHarmonic.Crest.Editor
                     "Enable <i>Signed Distance Fields</i>",
                     MessageType.Error, water,
                     (_, y) => y.boolValue = true,
-                    $"{nameof(WaterRenderer._DepthLod)}.{nameof(DepthLod._EnableSignedDistanceFields)}"
+                    $"{nameof(WaterRenderer._DepthLod)}.{nameof(DepthLod._EnableSignedDistanceFields)}",
+                    caller: context
                 );
 
                 isValid = false;
@@ -836,7 +832,7 @@ namespace WaveHarmonic.Crest.Editor
             return isValid;
         }
 
-        static void ShowMaterialValidationMessage(OptionalLod target, Material material, ShowMessage messenger)
+        static void ShowMaterialValidationMessage(OptionalLod target, Material material, ShowMessage messenger, Object caller)
         {
             messenger
             (
@@ -847,11 +843,41 @@ namespace WaveHarmonic.Crest.Editor
             );
         }
 
-        static bool ValidateSimulationAndMaterial(OptionalLod target, ShowMessage messenger, WaterRenderer water)
+        static bool ValidateProjectSettings(OptionalLod target, WaterRenderer water, ShowMessage messenger, Object caller)
+        {
+            var isValid = true;
+
+            var lod = target.GetLod(water);
+
+            if (lod._Enabled && !target.GetProjectSettingToggle())
+            {
+                var platform = ScriptingSymbols.CurrentNamedBuildTarget;
+
+                messenger
+                (
+                    $"<i>{target.PropertyLabel}</i> must be enabled for this platform in the project settings.",
+                    $"Enable <i>Project Settings > Crest > Features > Default/{platform.TargetName} > {target.PropertyLabel}</i>. " +
+                    $"It will be in either Default or {platform.TargetName}",
+                    MessageType.Error, ProjectSettings.Instance,
+                    caller: caller
+                );
+
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        static bool ValidateSimulationAndMaterial(OptionalLod target, ShowMessage messenger, WaterRenderer water, Object caller)
         {
             if (target == null)
             {
                 return true;
+            }
+
+            if (!ValidateProjectSettings(target, water, messenger, caller))
+            {
+                return false;
             }
 
             if (!target.HasMaterialToggle)
@@ -875,7 +901,7 @@ namespace WaveHarmonic.Crest.Editor
 
             if (feature._Enabled)
             {
-                ShowMaterialValidationMessage(target, water.Surface.Material, messenger);
+                ShowMaterialValidationMessage(target, water.Surface.Material, messenger, caller);
             }
             else if (messenger != DebugLog)
             {
@@ -903,7 +929,8 @@ namespace WaveHarmonic.Crest.Editor
                 (
                     $"The wave spectrum is limited by the <i>Global Wind Speed</i> on the <i>Water Renderer</i> to {water.WindSpeedKPH} KPH.",
                     $"If you want fully developed waves, either override the wind speed on this component or increase the <i>Global Wind Speed</i>.",
-                    MessageType.Info
+                    MessageType.Info,
+                    caller: target
                 );
             }
 
@@ -921,7 +948,7 @@ namespace WaveHarmonic.Crest.Editor
 
             if (Water != null)
             {
-                isValid &= ValidateLod(OptionalLod.Get(typeof(AnimatedWavesLod)), messenger, Water);
+                isValid &= ValidateLod(OptionalLod.Get(typeof(AnimatedWavesLod)), messenger, Water, context: target);
             }
 
             return isValid;
@@ -935,7 +962,7 @@ namespace WaveHarmonic.Crest.Editor
             // Validate require water feature.
             if (Water != null)
             {
-                isValid &= ValidateLod(OptionalLod.Get(typeof(DynamicWavesLod)), messenger, Water);
+                isValid &= ValidateLod(OptionalLod.Get(typeof(DynamicWavesLod)), messenger, Water, context: target);
             }
 
             return isValid;
@@ -949,19 +976,19 @@ namespace WaveHarmonic.Crest.Editor
             // Validate require water feature.
             if (Water != null)
             {
-                isValid &= !target.UsesClip || ValidateLod(OptionalLod.Get(typeof(ClipLod)), messenger, Water);
-                isValid &= !target.UsesDisplacement || ValidateLod(OptionalLod.Get(typeof(AnimatedWavesLod)), messenger, Water);
+                isValid &= !target.UsesClip || ValidateLod(OptionalLod.Get(typeof(ClipLod)), messenger, Water, context: target);
+                isValid &= !target.UsesDisplacement || ValidateLod(OptionalLod.Get(typeof(AnimatedWavesLod)), messenger, Water, context: target);
                 isValid &= !target.UsesDisplacement || ValidateCollisionLayer(CollisionLayer.AfterDynamicWaves, target, messenger, "mode", target.Mode, required: true);
             }
 
             return isValid;
         }
 
-        internal static void FixSetCollisionSourceToCompute(SerializedObject _, SerializedProperty property)
+        internal static void FixSetQuerySourceToCompute(SerializedObject _, SerializedProperty property)
         {
             if (Water != null)
             {
-                property.enumValueIndex = (int)CollisionSource.GPU;
+                property.enumValueIndex = (int)LodQuerySource.GPU;
             }
         }
 
@@ -978,7 +1005,8 @@ namespace WaveHarmonic.Crest.Editor
             }
 
             isValid &= ValidateCollisionLayer(target.Layer, target, messenger, "layer", target.Layer, required: false);
-            isValid &= ValidateCollisionSource(target, messenger);
+            isValid &= ValidateQuerySource(target, messenger, Water.AnimatedWavesLod, k_NoneQueryProviderCollisionFloatingObjects);
+            isValid &= ValidateQuerySource(target, messenger, Water.FlowLod, k_NoneQueryProviderFlowFloatingObjects);
 
             return isValid;
         }
@@ -994,7 +1022,8 @@ namespace WaveHarmonic.Crest.Editor
             }
 
             isValid &= ValidateCollisionLayer(target._Layer, target, messenger, "layer", target._Layer, required: false);
-            isValid &= ValidateCollisionSource(target, messenger);
+            isValid &= ValidateQuerySource(target, messenger, Water.AnimatedWavesLod, k_NoneQueryProviderCollisionFloatingObjects);
+            isValid &= ValidateQuerySource(target, messenger, Water.FlowLod, k_NoneQueryProviderFlowFloatingObjects);
 
             return isValid;
         }
@@ -1139,7 +1168,31 @@ namespace WaveHarmonic.Crest.Editor
             // Validate that any water feature required for this input is enabled, if any
             if (Water != null)
             {
-                isValid &= ValidateLod(OptionalLod.Get(target.GetType()), messenger, Water);
+                isValid &= ValidateLod(OptionalLod.Get(target.GetType()), messenger, Water, context: target);
+            }
+
+            return isValid;
+        }
+
+        [Validator(typeof(LevelLodInput))]
+        static bool ValidateLevelLodInput(LevelLodInput target, ShowMessage messenger)
+        {
+            var isValid = true;
+
+            if (target.Mode is LodInputMode.Geometry or LodInputMode.Spline)
+            {
+                if (target.Blend is LodInputBlend.Minimum or LodInputBlend.Maximum && target.Weight < 1f)
+                {
+                    messenger
+                    (
+                        "Weight with minimum or maximum blend modes do not always behave correctly. " +
+                        "Any weight less than one will move the value in the simulation towards zero, rather than towards the existing value in the simulation. " +
+                        "For example, this input with a zero weight, and with a blend mode set to maximum, will replace any negative water level instead of not doing anything.",
+                        "", // Nothing to suggest yet, as in cases this is still valid.
+                        MessageType.Warning,
+                        target
+                    );
+                }
             }
 
             return isValid;
@@ -1312,7 +1365,8 @@ namespace WaveHarmonic.Crest.Editor
                                     $"This can cause the <i>{nameof(DepthProbe)}</i> not to work. " +
                                     $"Unity fixed this in 2022.3.23f1.",
                                     $"If you are experiencing problems, disable depth priming or upgrade Unity.",
-                                    MessageType.Info, urpRenderer
+                                    MessageType.Info, urpRenderer,
+                                    caller: target
                                 );
                             }
 
@@ -1326,7 +1380,8 @@ namespace WaveHarmonic.Crest.Editor
                                         $"This can cause the <i>{nameof(DepthProbe)}</i> not to work. " +
                                         $"Unity fixed this in 2022.3.23f1.",
                                         $"If you are experiencing problems, disable SSAO or upgrade Unity.",
-                                        MessageType.Info, urpRenderer
+                                        MessageType.Info, urpRenderer,
+                                        caller: target
                                     );
                                 }
                             }
@@ -1349,7 +1404,8 @@ namespace WaveHarmonic.Crest.Editor
                         "It is not expected that a depth probe object has a Renderer component in its hierarchy." +
                         "The probe is typically attached to an empty GameObject. Please refer to the example content.",
                         "Remove the Renderer component from this object or its children.",
-                        MessageType.Warning, renderer
+                        MessageType.Warning, renderer,
+                        caller: target
                     );
 
                     // Reporting only one renderer at a time will be enough to avoid overwhelming user and UI.
@@ -1364,11 +1420,11 @@ namespace WaveHarmonic.Crest.Editor
             // Validate require water feature.
             if (water != null)
             {
-                isValid = isValid && ValidateLod(OptionalLod.Get(typeof(DepthLod)), messenger, water);
+                isValid = isValid && ValidateLod(OptionalLod.Get(typeof(DepthLod)), messenger, water, context: target);
 
                 if (!water._DepthLod._EnableSignedDistanceFields && target._GenerateSignedDistanceField)
                 {
-                    isValid = isValid && ValidateSignedDistanceFieldsLod(messenger, water, "Generate Signed Distance Field");
+                    isValid = isValid && ValidateSignedDistanceFieldsLod(messenger, water, "Generate Signed Distance Field", target);
                 }
 
                 if (water.DepthLod.IncludeTerrainHeight && Object.FindAnyObjectByType<Terrain>(FindObjectsInactive.Include) != null)
@@ -1380,7 +1436,8 @@ namespace WaveHarmonic.Crest.Editor
                         "But typically, if you are using a DepthProbe, it is best to capture the terrain too, as it is more accurate. " +
                         "One reason to use a DepthProbe together with the auto capture is for better real-time/on-demand depth capture performance.",
                         string.Empty,
-                        MessageType.Info, water
+                        MessageType.Info, water,
+                        caller: target
                     );
                 }
             }
@@ -1397,14 +1454,15 @@ namespace WaveHarmonic.Crest.Editor
 
             if (!target._DistanceFromEdge.IsEmpty())
             {
-                isValid = isValid && ValidateLod(OptionalLod.Get(typeof(DepthLod)), messenger, water);
-                isValid = isValid && ValidateSignedDistanceFieldsLod(messenger, water, "Distance From Edge");
+                isValid = isValid && ValidateLod(OptionalLod.Get(typeof(DepthLod)), messenger, water, context: target);
+                isValid = isValid && ValidateSignedDistanceFieldsLod(messenger, water, "Distance From Edge", target);
             }
 
             if (!target._DistanceFromSurface.IsEmpty())
             {
                 isValid &= ValidateCollisionLayer(target._Layer, target, messenger, "layer", target._Layer, required: false);
-                isValid &= ValidateCollisionSource(target, messenger);
+                isValid &= ValidateQuerySource(target, messenger, Water.AnimatedWavesLod, k_NoneQueryProviderCollisionFloatingObjects);
+                isValid &= ValidateQuerySource(target, messenger, Water.FlowLod, k_NoneQueryProviderFlowFloatingObjects);
             }
 
             return isValid;
@@ -1459,32 +1517,27 @@ namespace WaveHarmonic.Crest.Editor
             var isValid = true;
 
 #if !d_CrestCPUQueries
-            if (target.CollisionSource == CollisionSource.CPU)
+            if (target.QuerySource == LodQuerySource.CPU)
             {
                 messenger
                 (
                     "Collision Source is set to CPU but the <i>CPU Queries</i> package is not installed.",
                     "Install the <i>CPU Queries</i> package or switch to GPU queries.",
                     MessageType.Warning, target.Water,
-                    FixSetCollisionSourceToCompute
+                    FixSetQuerySourceToCompute
                 );
             }
 #endif
 
-            if (target.CollisionSource == CollisionSource.None)
-            {
-                messenger
-                (
-                    "Collision Source in Water Renderer is set to None. The floating objects in the scene will use a flat horizontal plane.",
-                    "Set collision source to GPU.",
-                    MessageType.Warning, target.Water,
-                    FixSetCollisionSourceToCompute,
-                    $"{nameof(WaterRenderer._AnimatedWavesLod)}.{nameof(AnimatedWavesLod._CollisionSource)}"
-
-                );
-            }
+            isValid &= ValidateQuerySource(target.Water, messenger, target, k_NoneQueryProviderCollisionFloatingObjects);
 
             return isValid;
+        }
+
+        [Validator(typeof(FlowLod))]
+        static bool Validate(FlowLod target, ShowMessage messenger)
+        {
+            return ValidateQuerySource(target.Water, messenger, target, k_NoneQueryProviderFlowFloatingObjects);
         }
 
         [Validator(typeof(ScatteringLod))]
@@ -1539,7 +1592,8 @@ namespace WaveHarmonic.Crest.Editor
                 messenger
                 (
                     $"No water present. {nameof(CutsceneTimeProvider)} will have no effect.",
-                    "", MessageType.Warning
+                    "", MessageType.Warning,
+                    caller: target
                 );
 
                 isValid = false;
@@ -1552,7 +1606,8 @@ namespace WaveHarmonic.Crest.Editor
                 (
                     $"No {nameof(UnityEngine.Playables.PlayableDirector)} component assigned. {nameof(CutsceneTimeProvider)} will have no effect.",
                     $"Add a {nameof(UnityEngine.Playables.PlayableDirector)}",
-                    MessageType.Error
+                    MessageType.Error,
+                    caller: target
                 );
 
                 isValid = false;
@@ -1562,7 +1617,8 @@ namespace WaveHarmonic.Crest.Editor
             (
                 $"This component requires the com.unity.modules.director built-in module to function.",
                 $"Enable the com.unity.modules.director built-in module.",
-                MessageType.Error
+                MessageType.Error,
+                caller: target
             );
 
             isValid = false;
@@ -1625,7 +1681,8 @@ namespace WaveHarmonic.Crest.Editor
                 (
                     $"{typeof(T).Name} requires a {typeof(C).Name} to be set or present on same object.",
                     $"Set the {typeof(C).Name} property or add a {typeof(C).Name}.",
-                    MessageType.Error
+                    MessageType.Error,
+                    caller: target
                 );
 
                 isValid = false;
@@ -1659,9 +1716,10 @@ namespace WaveHarmonic.Crest.Editor
                 (
                     $"The {value} {label} requires the {flag} layer which is not enabled.",
                     fix,
-                    required ? MessageType.Error : MessageType.Warning, messenger == DebugLog ? target : Water,
+                    required ? MessageType.Error : MessageType.Warning, Water,
                     (_, y) => y.intValue = (int)(layers | flag),
-                    $"{nameof(WaterRenderer._AnimatedWavesLod)}.{nameof(WaterRenderer._AnimatedWavesLod._CollisionLayers)}"
+                    $"{nameof(WaterRenderer._AnimatedWavesLod)}.{nameof(WaterRenderer._AnimatedWavesLod._CollisionLayers)}",
+                    caller: target
                 );
 
                 return !required;
@@ -1670,21 +1728,28 @@ namespace WaveHarmonic.Crest.Editor
             return true;
         }
 
-        static bool ValidateCollisionSource(Object target, ShowMessage messenger)
+        static bool ValidateQuerySource(Object target, ShowMessage messenger, IQueryableLod<IQueryProvider> lod, string extra)
         {
             if (Water == null)
             {
                 return true;
             }
 
-            if (Water._AnimatedWavesLod.CollisionSource == CollisionSource.None)
+            if (!lod.Enabled)
+            {
+                return true;
+            }
+
+            if (lod.QuerySource == LodQuerySource.None)
             {
                 messenger
                 (
-                    "<i>Collision Source</i> on the <i>Water Renderer</i> is set to <i>None</i>. The floating objects in the scene will use a flat horizontal plane.",
-                    "Set the <i>Collision Source</i> to <i>GPU</i> to incorporate waves into physics.",
-                    MessageType.Warning, Water,
-                    FixSetCollisionSourceToCompute
+                    $"<i>{nameof(WaterRenderer)} > {lod.Name} > {nameof(lod.QuerySource)}</i> is set to <i>None</i>. {extra}",
+                    $"Set the <i>{nameof(lod.QuerySource)}</i> to <i>{nameof(LodQuerySource.GPU)}</i> to use data.",
+                    MessageType.Info, Water,
+                    FixSetQuerySourceToCompute,
+                    $"_{lod.GetType().Name}._{nameof(lod.QuerySource)}",
+                    caller: target
                 );
             }
 

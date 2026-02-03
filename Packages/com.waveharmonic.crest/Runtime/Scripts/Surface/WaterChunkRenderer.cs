@@ -9,12 +9,12 @@ namespace WaveHarmonic.Crest
 {
     interface IReportsHeight
     {
-        bool ReportHeight(ref Rect bounds, ref float minimum, ref float maximum);
+        bool ReportHeight(WaterRenderer water, ref Rect bounds, ref float minimum, ref float maximum);
     }
 
     interface IReportsDisplacement
     {
-        bool ReportDisplacement(ref Rect bounds, ref float horizontal, ref float vertical);
+        bool ReportDisplacement(WaterRenderer water, ref Rect bounds, ref float horizontal, ref float vertical);
     }
 
     /// <summary>
@@ -24,7 +24,7 @@ namespace WaveHarmonic.Crest
     [AddComponentMenu("")]
 #endif
     [@ExecuteDuringEditMode]
-    sealed class WaterChunkRenderer : ManagedBehaviour<WaterRenderer>
+    sealed partial class WaterChunkRenderer : ManagedBehaviour<WaterRenderer>
     {
         [SerializeField]
         internal bool _DrawRenderBounds = false;
@@ -61,8 +61,6 @@ namespace WaveHarmonic.Crest
 
         int _LodIndex = -1;
 
-        public static List<IReportsHeight> HeightReporters { get; } = new();
-        public static List<IReportsDisplacement> DisplacementReporters { get; } = new();
 
         // There is a 1-frame delay with Initialized in edit mode due to setting
         // enableInEditMode in EditorApplication.update. This only really affect this
@@ -75,6 +73,12 @@ namespace WaveHarmonic.Crest
             _Mesh = mesh;
             _PreviousObjectToWorld = _CurrentObjectToWorld = transform.localToWorldMatrix;
             _Transform = transform;
+            WaterRenderer.s_OnLoadCameraData -= LoadCameraData;
+            WaterRenderer.s_OnLoadCameraData += LoadCameraData;
+            WaterRenderer.s_OnStoreCameraData -= StoreCameraData;
+            WaterRenderer.s_OnStoreCameraData += StoreCameraData;
+            WaterRenderer.s_OnRemoveCameraData -= RemoveCameraData;
+            WaterRenderer.s_OnRemoveCameraData += RemoveCameraData;
         }
 
         private protected override void OnStart()
@@ -144,6 +148,7 @@ namespace WaveHarmonic.Crest
                 matProps = _MaterialPropertyBlock,
                 worldBounds = Rend.bounds,
                 layer = surface.Layer,
+                renderingLayerMask = (uint)surface.Layer,
                 receiveShadows = false,
                 shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off,
                 lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off,
@@ -184,11 +189,10 @@ namespace WaveHarmonic.Crest
             };
         }
 
-        // Used by the water mask system if we need to render the water mask in situations
-        // where the water itself doesn't need to be rendered or has otherwise been disabled
         internal void Bind()
         {
-            _MaterialPropertyBlock = _Water.Surface._PerCascadeMPB.Current[_LodIndex];
+            _MaterialPropertyBlock = _Water.Surface.PerCascadeMPB[_LodIndex];
+            new PropertyWrapperMPB(_MaterialPropertyBlock).SetSHCoefficients(_Transform.position);
             Rend.SetPropertyBlock(_MaterialPropertyBlock);
 
             _WaterDataHasBeenBound = true;
@@ -234,20 +238,11 @@ namespace WaveHarmonic.Crest
             var scale = transform.lossyScale;
             var rotation = transform.rotation;
 
-            var boundsPadding = _Water.MaximumHorizontalDisplacement;
-            var expandXZ = boundsPadding / scale.x;
-            var boundsY = _Water.MaximumVerticalDisplacement;
-
             // Extend the kinematic bounds slightly to give room for dynamic waves.
             if (_Water._DynamicWavesLod.Enabled)
             {
-                boundsY += 5f;
+                extents.y += 5f;
             }
-
-            // Extend bounds by global waves.
-            extents.x += expandXZ;
-            extents.y += boundsY;
-            extents.z += expandXZ;
 
             // Get XZ bounds. Doing this manually bypasses updating render bounds call.
             Rect rect;
@@ -268,23 +263,15 @@ namespace WaveHarmonic.Crest
                 var totalHorizontal = 0f;
                 var totalVertical = 0f;
 
-                foreach (var reporter in DisplacementReporters)
+                foreach (var (key, input) in AnimatedWavesLod.s_Inputs)
                 {
-                    var horizontal = 0f;
-                    var vertical = 0f;
-                    if (reporter.ReportDisplacement(ref rect, ref horizontal, ref vertical))
-                    {
-                        totalHorizontal += horizontal;
-                        totalVertical += vertical;
-                    }
+                    input.DisplacementReporter?.ReportDisplacement(_Water, ref rect, ref totalHorizontal, ref totalVertical);
                 }
 
-                boundsPadding = totalHorizontal;
-                expandXZ = boundsPadding / scale.x;
-                boundsY = totalVertical;
+                var expandXZ = totalHorizontal / scale.x;
 
                 extents.x += expandXZ;
-                extents.y += boundsY;
+                extents.y += totalVertical;
                 extents.z += expandXZ;
             }
 
@@ -293,37 +280,59 @@ namespace WaveHarmonic.Crest
                 var minimumWaterLevelBounds = 0f;
                 var maximumWaterLevelBounds = 0f;
 
-                foreach (var reporter in HeightReporters)
+                foreach (var (key, input) in LevelLod.s_Inputs)
                 {
-                    var minimum = 0f;
-                    var maximum = 0f;
-                    if (reporter.ReportHeight(ref rect, ref minimum, ref maximum))
-                    {
-                        minimumWaterLevelBounds = Mathf.Max(minimumWaterLevelBounds, Mathf.Abs(Mathf.Min(minimum, _Water.SeaLevel) - _Water.SeaLevel));
-                        maximumWaterLevelBounds = Mathf.Max(maximumWaterLevelBounds, Mathf.Abs(Mathf.Max(maximum, _Water.SeaLevel) - _Water.SeaLevel));
-                    }
+                    input.HeightReporter?.ReportHeight(_Water, ref rect, ref minimumWaterLevelBounds, ref maximumWaterLevelBounds);
                 }
 
-                minimumWaterLevelBounds *= 0.5f;
-                maximumWaterLevelBounds *= 0.5f;
-
-                boundsY = minimumWaterLevelBounds + maximumWaterLevelBounds;
-                extents.y += boundsY;
+                extents.y += Mathf.Abs((minimumWaterLevelBounds - maximumWaterLevelBounds) * 0.5f);
                 bounds.extents = extents;
 
-                var offset = maximumWaterLevelBounds - minimumWaterLevelBounds;
+                var offset = Mathf.Lerp(minimumWaterLevelBounds, maximumWaterLevelBounds, 0.5f);
                 center.y += offset;
                 bounds.center = center;
             }
 
             return bounds;
         }
+    }
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void InitStatics()
+    partial class WaterChunkRenderer
+    {
+        class AdditionalCameraData
         {
-            HeightReporters.Clear();
-            DisplacementReporters.Clear();
+            public Matrix4x4 _CurrentObjectToWorld;
+            public Matrix4x4 _PreviousObjectToWorld;
+        }
+
+        readonly Dictionary<Camera, AdditionalCameraData> _CameraData = new();
+        AdditionalCameraData _AdditionalCameraData;
+
+        void LoadCameraData(Camera camera)
+        {
+            if (!_CameraData.ContainsKey(camera))
+            {
+                _CameraData[camera] = new();
+            }
+
+            _AdditionalCameraData = _CameraData[camera];
+            _CurrentObjectToWorld = _AdditionalCameraData._CurrentObjectToWorld;
+            _PreviousObjectToWorld = _AdditionalCameraData._PreviousObjectToWorld;
+        }
+
+        void StoreCameraData(Camera camera)
+        {
+            if (_AdditionalCameraData == null) return;
+            _AdditionalCameraData._CurrentObjectToWorld = _CurrentObjectToWorld;
+            _AdditionalCameraData._PreviousObjectToWorld = _PreviousObjectToWorld;
+        }
+
+        void RemoveCameraData(Camera camera)
+        {
+            if (_CameraData.ContainsKey(camera))
+            {
+                _CameraData.Remove(camera);
+            }
         }
     }
 

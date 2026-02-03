@@ -27,6 +27,9 @@ namespace WaveHarmonic.Crest
                 case nameof(_Layer):
                     SetLayer((int)previous, _Layer);
                     break;
+                case nameof(_MeshType):
+                    _Water.Rebuild();
+                    break;
                 case nameof(_ChunkTemplate):
                     // We have to rebuild, as we instantiate entire GO. If we restricted it to just a
                     // MeshRenderer, then we could just replace those.

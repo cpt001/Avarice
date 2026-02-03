@@ -9,7 +9,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings.Crest.hlsl"
 
 SamplerState LODData_linear_clamp_sampler;
-SamplerState LODData_point_clamp_sampler;
+SamplerState sampler_Crest_point_clamp;
 SamplerState sampler_Crest_linear_repeat;
 
 SamplerState _Crest_linear_clamp_sampler;
@@ -24,6 +24,11 @@ float  g_Crest_MeshScaleLerp;
 float  g_Crest_ClipByDefault;
 float  g_Crest_LodAlphaBlackPointFade;
 float  g_Crest_LodAlphaBlackPointWhitePointFade;
+
+// Refraction
+float  g_Crest_WaterDepthAtViewer;
+float  g_Crest_MaximumVerticalDisplacement;
+float2 g_Crest_HorizonNormal;
 
 // Hack - due to SV_IsFrontFace occasionally coming through as true for
 // backfaces, add a param here that forces water to be in undrwater state. I

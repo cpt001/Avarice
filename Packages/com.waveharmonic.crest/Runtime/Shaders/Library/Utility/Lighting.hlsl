@@ -21,24 +21,6 @@
 #define CLUSTER_LIGHT_LOOP_SUBTRACTIVE_LIGHT_CHECK FORWARD_PLUS_SUBTRACTIVE_LIGHT_CHECK
 #endif // FORWARD_PLUS_SUBTRACTIVE_LIGHT_CHECK
 
-#if UNITY_VERSION >= 60000000
-#if defined(STEREO_INSTANCING_ON) || defined(STEREO_MULTIVIEW_ON)
-#if _ALPHATEST_ON
-#if !USE_CLUSTER_LIGHT_LOOP
-// If not clustered and additional light shadows and XR, the shading model
-// completely breaks. It is like shadow attenuation is NaN or some obscure
-// compiler issue. For 2022.3, it is broken for forward+ only, but cannot be fixed.
-#define d_ShadowMaskBroken 1
-#else
-#if _RECEIVE_SHADOWS_OFF
-// Right eye broken rendering similar to above.
-#define d_AdditionalLightsBroken 1
-#endif
-#endif
-#endif
-#endif
-#endif
-
 #endif // CREST_URP
 
 #if CREST_HDRP
@@ -78,7 +60,10 @@ void PrimaryLight
 #elif CREST_BIRP
 #ifndef USING_DIRECTIONAL_LIGHT
     // Yes. This function wants the world position of the surface.
-    o_Direction = normalize(UnityWorldSpaceLightDir(i_PositionWS));
+    o_Direction = UnityWorldSpaceLightDir(i_PositionWS);
+    // Prevents divide by zero.
+    if (all(o_Direction == 0)) o_Direction = half3(0.0, 1.0, 0.0);
+    o_Direction = normalize(o_Direction);
 #else
     o_Direction = _WorldSpaceLightPos0.xyz;
     // Prevents divide by zero.
@@ -152,14 +137,6 @@ half3 AdditionalLighting(const float3 i_PositionWS, const float4 i_ScreenPositio
 LIGHT_LOOP_BEGIN(pixelLightCount)
     // Includes shadows and cookies.
     Light light = GetAdditionalLight(lightIndex, inputData, shadowMask, aoFactor);
-
-#if d_ShadowMaskBroken
-    light.shadowAttenuation = 1.0;
-#endif
-
-#if d_AdditionalLightsBroken
-    light.color = 0.0;
-#endif
 
 #ifdef _LIGHT_LAYERS
     if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))

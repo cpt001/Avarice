@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using WaveHarmonic.Crest.Internal.Compatibility;
 
 namespace WaveHarmonic.Crest.Examples
 {
@@ -21,7 +22,7 @@ namespace WaveHarmonic.Crest.Examples
 #pragma warning restore 414
 
 #if UNITY_EDITOR
-        static int s_Scene;
+        static ulong s_Scene;
         static bool s_SceneChanged;
 
         [InitializeOnLoadMethod]
@@ -29,16 +30,16 @@ namespace WaveHarmonic.Crest.Examples
         {
             EditorSceneManager.sceneClosed -= OnSceneClosed;
             EditorSceneManager.sceneClosed += OnSceneClosed;
-            s_Scene = SceneManager.GetActiveScene().handle;
+            s_Scene = SceneManager.GetActiveScene().GetRawSceneHandle();
         }
 
         static void OnSceneClosed(Scene a)
         {
             // TODO: Report to Unity
             // Does not work if only game view is open. Handles will never update.
-            if (s_Scene == a.handle) return;
+            if (s_Scene == a.GetRawSceneHandle()) return;
             s_SceneChanged = true;
-            s_Scene = a.handle;
+            s_Scene = a.GetRawSceneHandle();
         }
 
         void OnEnable()

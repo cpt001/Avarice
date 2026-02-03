@@ -41,13 +41,6 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-#if UNITY_EDITOR
-            if (!WaterRenderer.IsWithinEditorUpdate)
-            {
-                return;
-            }
-#endif
-
             // Only sample shadows for the main camera.
             if (!ReferenceEquals(water.Viewer, camera))
             {

@@ -66,12 +66,16 @@ namespace WaveHarmonic.Crest.Editor
                         message += $"Scale: {target.CalcLodScale(i)}\n";
                         message += $"Texel: {2f * 2f * target.CalcLodScale(i) / target.LodResolution}\n";
                         message += $"Minimum Slice: {Mathf.Floor(Mathf.Log(Mathf.Max(i / baseTexelSize, 1f), 2f))}";
-                        if (i < target.LodLevels - 1) message += "\n\n";
+                        message += "\n\n";
                     }
+
+                    message += $"Scale: {target.Scale}\n";
+
+                    message += "\n";
 
                     if (target.Surface.Material.HasVector(WaterRenderer.ShaderIDs.s_Absorption))
                     {
-                        message += $"\n\nDepth Fog Density: {target.Surface.Material.GetVector(WaterRenderer.ShaderIDs.s_Absorption)}";
+                        message += $"Depth Fog Density: {target.Surface.Material.GetVector(WaterRenderer.ShaderIDs.s_Absorption)}";
                     }
 
                     EditorGUILayout.HelpBox(message, MessageType.None);

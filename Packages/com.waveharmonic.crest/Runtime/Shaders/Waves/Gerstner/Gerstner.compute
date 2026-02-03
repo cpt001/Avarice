@@ -3,6 +3,8 @@
 
 // Computes a set of patches of waves, one for each scale.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel Gerstner
 
 #include "HLSLSupport.cginc"

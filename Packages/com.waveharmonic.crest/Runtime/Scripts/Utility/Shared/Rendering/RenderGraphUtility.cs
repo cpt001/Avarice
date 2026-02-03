@@ -61,6 +61,7 @@ namespace WaveHarmonic.Crest
                 cameraData = frameData.Get<UniversalCameraData>();
                 renderingData = frameData.Get<UniversalRenderingData>();
 
+#if URP_COMPATIBILITY_MODE
                 if (builder == null)
                 {
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -69,6 +70,7 @@ namespace WaveHarmonic.Crest
 #pragma warning restore CS0618 // Type or member is obsolete
                 }
                 else
+#endif
                 {
                     colorTargetHandle = resources.activeColorTexture;
                     depthTargetHandle = resources.activeDepthTexture;

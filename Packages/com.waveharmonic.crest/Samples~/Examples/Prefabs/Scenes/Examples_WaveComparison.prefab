@@ -212,11 +212,13 @@ MonoBehaviour:
   _Spectrum: {fileID: 11400000, guid: e13a1902b10e34e9fb08e1d09e39b5d4, type: 2}
   _EvaluateSpectrumAtRunTimeEveryFrame: 0
   _RespectShallowWaterAttenuation: 1
+  _SeaLevelOnly: 0
   _OverrideGlobalWindDirection: 1
   _WaveDirectionHeadingAngle: -58.00273
   _OverrideGlobalWindSpeed: 0
   _WindSpeed: 20
   _Resolution: 128
+  _IncludeInDropDetailHeightBasedOnWaves: 0
   _DrawSlicesInEditor: 0
   _AlphaSource: 0
   _Swell: 0
@@ -224,7 +226,7 @@ MonoBehaviour:
   _ComponentsPerOctave: 8
   _RandomSeed: 0
   _ManualGeneration: 0
-  _Version: 2
+  _Version: 3
   references:
     version: 2
     RefIds:
@@ -425,24 +427,27 @@ MonoBehaviour:
   _Spectrum: {fileID: 11400000, guid: e13a1902b10e34e9fb08e1d09e39b5d4, type: 2}
   _EvaluateSpectrumAtRunTimeEveryFrame: 0
   _RespectShallowWaterAttenuation: 1
+  _SeaLevelOnly: 0
   _OverrideGlobalWindDirection: 1
   _WaveDirectionHeadingAngle: 0
   _OverrideGlobalWindSpeed: 0
   _WindSpeed: 20
   _Resolution: 128
+  _IncludeInDropDetailHeightBasedOnWaves: 0
   _DrawSlicesInEditor: 0
   _AlphaSource: 0
   _OverrideGlobalWindTurbulence: 1
   _WindTurbulence: 0.145
   _WindAlignment: 0
   _TimeLoopLength: Infinity
+  _OverrideCulling: 0
   _MaximumVerticalDisplacement: 10
   _MaximumHorizontalDisplacement: 15
   _EnableBakedCollision: 0
   _TimeResolution: 4
   _SmallestWavelengthRequired: 2
   _BakedTimeLoopLength: 32
-  _Version: 2
+  _Version: 3
   references:
     version: 2
     RefIds:

@@ -1,6 +1,8 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestUpdateFoam
 
 #include "HLSLSupport.cginc"
@@ -53,9 +55,16 @@ void UpdateFoam(uint3 id)
     // accumulation of foam and causes overshoots when _Crest_WaveFoamStrength is less than 1.0.
     float simDeltaTime = _Crest_NeedsPrewarming ? max(_Crest_SimDeltaTime, min(1.0, _Crest_WaveFoamStrength - 1.0) / _Crest_FoamFadeRate) : _Crest_SimDeltaTime;
 
+    // Limit wave contributions at low water scales only where filtering is needed.
+    uint filteredSlice = slice0;
+    if (g_Crest_WaterScale <= 8)
+    {
+        filteredSlice = max(_Crest_MinimumWavesSlice, filteredSlice);
+    }
+
     // The determinant of the displacement Jacobian is a good measure for turbulence.
     float det;
-    const half3 displacement = Cascade::MakeAnimatedWaves(max(_Crest_MinimumWavesSlice, slice0)).SampleDisplacement(worldPosXZ, det);
+    const half3 displacement = Cascade::MakeAnimatedWaves(filteredSlice).SampleDisplacement(worldPosXZ, det);
     foam += 5.0 * simDeltaTime * _Crest_WaveFoamStrength * saturate( _Crest_WaveFoamCoverage - det );
 
     // Prewarm shoreline foam. 1.0 / _Crest_FoamFadeRate perfectly matches a paused water in edit mode which is fine for

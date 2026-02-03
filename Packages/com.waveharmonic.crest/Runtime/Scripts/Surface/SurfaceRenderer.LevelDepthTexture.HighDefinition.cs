@@ -1,6 +1,7 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+#if UNITY_EDITOR
 #if d_UnityHDRP
 
 using UnityEngine;
@@ -56,7 +57,7 @@ namespace WaveHarmonic.Crest
                     return;
                 }
 
-                if (camera.cameraType != CameraType.SceneView || camera != _Water.Viewer)
+                if (camera.cameraType != CameraType.SceneView || (_Water.SingleViewpoint && camera != _Water.Viewer))
                 {
                     return;
                 }
@@ -68,3 +69,4 @@ namespace WaveHarmonic.Crest
 }
 
 #endif // d_UnityHDRP
+#endif

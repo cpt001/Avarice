@@ -5,6 +5,12 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/UnderwaterShared.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/Debug.hlsl"
 
+#if (CREST_LEGACY_UNDERWATER == 1) || defined(CREST_URP)
+#define d_Crest_SampleColor 1
+#else
+#define d_Crest_SampleColor 0
+#endif
+
 #ifndef SUPPORTS_FOVEATED_RENDERING_NON_UNIFORM_RASTER
 #define FoveatedRemapLinearToNonUniform(uv) uv
 #endif
@@ -19,7 +25,7 @@ TEXTURE2D_X(_Crest_CameraColorTexture);
 
 m_CrestNameSpace
 
-#if (CREST_LEGACY_UNDERWATER != 0)
+#if (CREST_LEGACY_UNDERWATER != 0) || d_Crest_CustomColorTexture
 float3 SampleSceneColor(float2 i_UV)
 {
     return LOAD_TEXTURE2D_X(_Crest_CameraColorTexture, i_UV * _ScreenSize.xy).rgb;
@@ -147,7 +153,8 @@ half4 Fragment(Varyings input)
 #if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
         positionWS += _WorldSpaceCameraPos;
 #endif
-        sceneColour = ApplyUnderwaterEffect(sceneColour, rawDepth, sceneZ, fogDistance, view, positionSS, positionWS, hasCaustics, outScatterScene, applyLighting, 1.0);
+        half3 vo =0; half3 vl = 0;
+        sceneColour = ApplyUnderwaterEffect(sceneColour, rawDepth, sceneZ, fogDistance, view, positionSS, positionWS, hasCaustics, outScatterScene, applyLighting, 1.0, vo, vl);
     }
 
     return half4(sceneColour, 1.0);
@@ -167,18 +174,14 @@ half4 FragmentPlanarReflections(Varyings input)
         return half4(_Crest_Scattering.xyz, 1.0);
     }
 
+#if d_Crest_SampleColor
     half3 color = SampleSceneColor(positionNDC).rgb;
+#else
+    half3 color = LoadSceneColor(positionSS).rgb;
+#endif
 
     // Calculate position and account for possible NaNs discovered during testing.
-    float3 positionWS;
-    {
-        float4 positionCS  = ComputeClipSpacePosition(positionNDC, depth);
-        float4 hpositionWS = mul(UNITY_MATRIX_I_VP, positionCS);
-
-        // w is sometimes zero when using oblique projection.
-        // Zero is better than NaN.
-        positionWS = hpositionWS.w > 0.0 ? hpositionWS.xyz / hpositionWS.w : 0.0;
-    }
+    float3 positionWS = Utility::SafeComputeWorldSpacePosition(positionNDC, depth, UNITY_MATRIX_I_VP);
 
 #if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
     positionWS += _WorldSpaceCameraPos;
@@ -187,7 +190,8 @@ half4 FragmentPlanarReflections(Varyings input)
     const half3 view = GetWorldSpaceNormalizeViewDir(positionWS);
     const bool hasCaustics = depth > 0.0;
 
-    color = ApplyUnderwaterEffect(color, depth, 0.0, 0.0, view, positionSS, positionWS, hasCaustics, true, true, 1.0);
+    half3 vo = 0; half3 vl = 0;
+    color = ApplyUnderwaterEffect(color, depth, 0.0, 0.0, view, positionSS, positionWS, hasCaustics, true, true, 1.0, vo, vl);
 
     return half4(color, 1.0);
 }

@@ -21,6 +21,7 @@ namespace WaveHarmonic.Crest
 
         public static MaskRenderer Instantiate(WaterRenderer water)
         {
+#pragma warning disable format
 #if d_UnityHDRP
             if (RenderPipelineHelper.IsHighDefinition)
             {
@@ -40,6 +41,7 @@ namespace WaveHarmonic.Crest
             {
                 return new MaskRendererBIRP(water);
             }
+#pragma warning restore format
         }
 
         // For PortalRenderer.
@@ -235,7 +237,7 @@ namespace WaveHarmonic.Crest
                     slices: TextureXR.slices,
                     dimension: TextureXR.dimension,
                     depthBufferBits: DepthBits.None,
-                    colorFormat: GraphicsFormat.R16_SFloat,
+                    colorFormat: Helpers.GetCompatibleTextureFormat(GraphicsFormat.R16_SFloat, randomWrite: true),
                     enableRandomWrite: true,
                     useDynamicScale: true,
                     name: k_MaskColor
@@ -251,7 +253,7 @@ namespace WaveHarmonic.Crest
                     scaleFactor: Vector2.one,
                     slices: TextureXR.slices,
                     dimension: TextureXR.dimension,
-                    depthBufferBits: Helpers.k_DepthBits,
+                    depthBufferBits: Rendering.GetDefaultDepthBufferBits(),
                     colorFormat: GraphicsFormat.None,
                     enableRandomWrite: false,
                     useDynamicScale: true,
@@ -277,7 +279,7 @@ namespace WaveHarmonic.Crest
             if (_Inputs.HasFlag(MaskInput.Depth))
             {
                 descriptor.graphicsFormat = GraphicsFormat.None;
-                descriptor.depthBufferBits = Helpers.k_DepthBufferBits;
+                descriptor.depthBufferBits = (int)Rendering.GetDefaultDepthBufferBits();
 
                 if (RenderPipelineCompatibilityHelper.ReAllocateIfNeeded(ref _DepthRTH, descriptor, name: k_MaskDepth))
                 {
@@ -288,7 +290,8 @@ namespace WaveHarmonic.Crest
             if (_Inputs.HasFlag(MaskInput.Color))
             {
                 // NOTE: Intel iGPU for Metal and DirectX both had issues with R16 (2021.11.18).
-                descriptor.graphicsFormat = GraphicsFormat.R16_SFloat;
+                descriptor.graphicsFormat = Helpers.GetCompatibleTextureFormat(GraphicsFormat.R16_SFloat, randomWrite: true);
+                descriptor.depthStencilFormat = GraphicsFormat.None;
                 descriptor.depthBufferBits = 0;
                 descriptor.enableRandomWrite = true;
 

@@ -5,6 +5,7 @@
 #define CREST_UNDERWATER_EFFECT_SHARED_INCLUDED
 
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings.Crest.hlsl"
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Keywords.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Constants.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
@@ -12,6 +13,9 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Helpers.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Depth.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Helpers.hlsl"
+
+#undef d_Crest_CausticsForceDistortion
+#define d_Crest_CausticsForceDistortion 1
 
 #if d_Crest_Portal
 #include "Packages/com.waveharmonic.crest.portals/Runtime/Shaders/Library/Portals.hlsl"
@@ -199,7 +203,9 @@ half3 ApplyUnderwaterEffect
     const bool hasCaustics,
     const bool i_OutScatterScene,
     const bool i_ApplyLighting,
-    const half i_multiplier
+    const half i_multiplier,
+    out half3 volumeOpacity,
+    out half3 volumeLight
 )
 {
     const bool isUnderwater = true;
@@ -208,8 +214,8 @@ half3 ApplyUnderwaterEffect
     PrimaryLight(i_positionWS, lightColor, lightDirection);
 
     // Uniform effect calculated from camera position.
-    half3 volumeLight = 0.0;
-    half3 volumeOpacity = 1.0;
+    volumeLight = 0.0;
+    volumeOpacity = 1.0;
     {
         half3 absorption = _Crest_Absorption.xyz;
         half3 scattering = _Crest_Scattering.xyz;
@@ -224,19 +230,20 @@ half3 ApplyUnderwaterEffect
         absorption *= _Crest_ExtinctionMultiplier;
         scattering *= _Crest_ExtinctionMultiplier;
 
-        const float waterLevel = g_Crest_WaterCenter.y + Cascade::MakeAnimatedWaves(sliceIndex).Sample(_WorldSpaceCameraPos.xz).w;
+        const float4 displacement = Cascade::MakeAnimatedWaves(sliceIndex).Sample(_WorldSpaceCameraPos.xz);
+        const float waterLevel = g_Crest_WaterCenter.y + displacement.y + displacement.w;
 
         half shadow = 1.0;
+#if d_Crest_ShadowLod
         {
-// #if CREST_SHADOWS_ON
             // Camera should be at center of LOD system so no need for blending (alpha, weights, etc). This might not be
             // the case if there is large horizontal displacement, but the _Crest_DataSliceOffset should help by setting a
             // large enough slice as minimum.
             half2 shadowSoftHard = Cascade::MakeShadow(sliceIndex).SampleShadow(_WorldSpaceCameraPos.xz);
             // Soft in red, hard in green. But hard not computed in HDRP.
             shadow = 1.0 - shadowSoftHard.x;
-// #endif
         }
+#endif
 
         half3 ambientLighting = AmbientLight(_Crest_AmbientLighting);
 
@@ -289,7 +296,7 @@ half3 ApplyUnderwaterEffect
 
         const uint slice0 = PositionToSliceIndex(i_positionWS.xz, 0, g_Crest_WaterScale);
 
-#ifdef CREST_FLOW_ON
+#if d_Crest_FlowLod
         half2 flowData = Cascade::MakeFlow(slice0).SampleFlow(i_positionWS.xz);
         const Flow flow = Flow::Make(flowData, g_Crest_Time);
         blur = _Crest_CausticsMotionBlur;
@@ -300,7 +307,7 @@ half3 ApplyUnderwaterEffect
 
         sceneColour *= Caustics
         (
-#ifdef CREST_FLOW_ON
+#if d_Crest_FlowLod
             flow,
 #endif
             i_positionWS,

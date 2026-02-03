@@ -10,6 +10,10 @@ namespace WaveHarmonic.Crest.Editor
 {
     abstract class TexturePreview : ObjectPreview
     {
+        static readonly System.Reflection.MethodInfo s_DrawPreview = typeof(ObjectPreview).GetMethod("DrawPreview", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+        static readonly object[] s_DrawPreviewArguments = new object[3];
+        static readonly Object[] s_DrawPreviewTargets = new Object[1];
+
         public static TexturePreview s_ActiveInstance;
         public bool Open { get; private set; }
 
@@ -101,6 +105,9 @@ namespace WaveHarmonic.Crest.Editor
                 Helpers.SafeCreateRenderTexture(ref _RenderTexture, descriptor);
                 _RenderTexture.Create();
                 Object.DestroyImmediate(_Editor);
+                // Raises both, but no way to avoid it:
+                // | The targets array should not be used inside OnSceneGUI or OnPreviewGUI. Use the single target property instead.
+                // | The serializedObject should not be used inside OnSceneGUI or OnPreviewGUI. Use the target property directly instead.
                 _Editor = UnityEditor.Editor.CreateEditor(_RenderTexture);
                 // Reset for incompatible copy.
                 descriptor = _OriginalDescriptor;
@@ -121,7 +128,13 @@ namespace WaveHarmonic.Crest.Editor
                 Graphics.CopyTexture(Texture, _RenderTexture);
             }
 
-            _Editor.DrawPreview(rect);
+            s_DrawPreviewTargets[0] = _Editor.target;
+            s_DrawPreviewArguments[0] = _Editor;
+            s_DrawPreviewArguments[1] = rect;
+            s_DrawPreviewArguments[2] = s_DrawPreviewTargets;
+
+            // Use to be _Editor.DrawPreview(rect) but spammed errors with multiple selected.
+            s_DrawPreview?.Invoke(null, s_DrawPreviewArguments);
         }
 
 #if CREST_DEBUG

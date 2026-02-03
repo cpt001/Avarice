@@ -10,7 +10,7 @@ using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.Rendering.Universal;
 using WaveHarmonic.Crest.Internal;
 
-#if !UNITY_2023_2_OR_NEWER
+#if !UNITY_6000_0_OR_NEWER
 using GraphicsFormatUsage = UnityEngine.Experimental.Rendering.FormatUsage;
 #endif
 
@@ -21,18 +21,6 @@ namespace WaveHarmonic.Crest
     /// </summary>
     static partial class Helpers
     {
-        // Adapted from:
-        // Packages/com.unity.render-pipelines.universal/Runtime/UniversalRenderer.cs
-#if UNITY_SWITCH || UNITY_ANDROID || UNITY_EMBEDDED_LINUX || UNITY_QNX
-        internal const GraphicsFormat k_DepthStencilFormat = GraphicsFormat.D24_UNorm_S8_UInt;
-        internal const int k_DepthBufferBits = 24;
-        internal const DepthBits k_DepthBits = DepthBits.Depth24;
-#else
-        internal const GraphicsFormat k_DepthStencilFormat = GraphicsFormat.D32_SFloat_S8_UInt;
-        internal const int k_DepthBufferBits = 32;
-        internal const DepthBits k_DepthBits = DepthBits.Depth32;
-#endif
-
         public static class ShaderIDs
         {
             public static readonly int s_MainTexture = Shader.PropertyToID("_Utility_MainTexture");
@@ -374,6 +362,14 @@ namespace WaveHarmonic.Crest
             return mask == (mask | (1 << layer));
         }
 
+        // https://docs.unity3d.com/6000.3/Documentation/Manual/WebGPU-limitations.html
+        public static bool IsWebGPU =>
+#if UNITY_6000_0_OR_NEWER
+            SystemInfo.graphicsDeviceType is GraphicsDeviceType.WebGPU;
+#else
+            false;
+#endif
+
         // R16G16B16A16_SFloat appears to be the most compatible format.
         // https://docs.unity3d.com/Manual/class-TextureImporterOverride.html#texture-compression-support-platforms
         // https://learn.microsoft.com/en-us/windows/win32/direct3d12/typed-unordered-access-view-loads#supported-formats-and-api-calls
@@ -384,6 +380,16 @@ namespace WaveHarmonic.Crest
             var rtFormat = GraphicsFormatUtility.GetRenderTextureFormat(format);
             return System.Enum.IsDefined(typeof(RenderTextureFormat), rtFormat)
                 && SystemInfo.SupportsRandomWriteOnRenderTextureFormat(rtFormat);
+        }
+
+        static GraphicsFormat GetWebGPUTextureFormat(GraphicsFormat format)
+        {
+            // WebGPU is very limited in format usage - especially read-write.
+            return GraphicsFormatUtility.GetComponentCount(format) switch
+            {
+                1 => GraphicsFormat.R32_SFloat,
+                _ => GraphicsFormat.R32G32B32A32_SFloat,
+            };
         }
 
         internal static GraphicsFormat GetCompatibleTextureFormat(GraphicsFormat format, GraphicsFormatUsage usage, string label, bool randomWrite = false)
@@ -422,7 +428,24 @@ namespace WaveHarmonic.Crest
                 result = s_FallbackGraphicsFormat;
             }
 
+            if (randomWrite && IsWebGPU)
+            {
+                // Pass the requested format otherwise GetCompatibleFormat may change the component
+                // count which we need to pick the right format.
+                result = GetWebGPUTextureFormat(format);
+            }
+
             return result;
+        }
+
+        public static GraphicsFormat GetCompatibleTextureFormat(GraphicsFormat format, bool randomWrite)
+        {
+            if (randomWrite && IsWebGPU)
+            {
+                format = GetWebGPUTextureFormat(format);
+            }
+
+            return format;
         }
 
         public static void SetGlobalKeyword(string keyword, bool enabled)
@@ -760,6 +783,58 @@ namespace WaveHarmonic.Crest
             return false;
         }
 
+        internal static void UniversalRenderCamera(ScriptableRenderContext context, Camera camera, int slice)
+        {
+#if UNITY_6000_0_OR_NEWER
+            // SingleCameraRequest does not render the full camera stack, thus should exclude
+            // overlays which is likely desirable. Alternative approach worth investigating:
+            // https://docs.unity3d.com/6000.0/Documentation/Manual/urp/User-Render-Requests.html
+            // Setting destination silences a warning if Opaque Texture enabled.
+            s_RenderSingleCameraRequest.destination = camera.targetTexture;
+            s_RenderSingleCameraRequest.slice = slice;
+            UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(camera, s_RenderSingleCameraRequest);
+#else
+#pragma warning disable CS0618 // Type or member is obsolete
+            UniversalRenderPipeline.RenderSingleCamera(context, camera);
+#pragma warning restore CS0618 // Type or member is obsolete
+#endif
+        }
+
+        internal static void UniversalRenderCamera(ScriptableRenderContext context, Camera camera, int slice, bool noRenderFeatures)
+        {
+            // Get this every time as it could change.
+            var renderers = (ScriptableRendererData[])s_RenderDataListField.GetValue(UniversalRenderPipeline.asset);
+            var renderer = (UniversalRendererData)renderers[GetRendererIndex(camera)];
+
+            // On Unity 6.3, got exceptions if this was auto with SSAO enabled.
+            var safe = !noRenderFeatures && renderer.intermediateTextureMode == IntermediateTextureMode.Always;
+
+            if (!safe)
+            {
+                foreach (var feature in renderer.rendererFeatures)
+                {
+                    // Null exception reported here. Might be null due to missing render features
+                    if (feature == null) continue;
+                    s_RenderFeatureActiveStates.Add(feature.isActive);
+                    feature.SetActive(false);
+                }
+            }
+
+            UniversalRenderCamera(context, camera, slice);
+
+            if (!safe)
+            {
+                var index = 0;
+                foreach (var feature in renderer.rendererFeatures)
+                {
+                    if (feature == null) continue;
+                    feature.SetActive(s_RenderFeatureActiveStates[index++]);
+                }
+
+                s_RenderFeatureActiveStates.Clear();
+            }
+        }
+
         internal static void RenderCameraWithoutCustomPasses(Camera camera)
         {
             // Get this every time as it could change.
@@ -791,24 +866,12 @@ namespace WaveHarmonic.Crest
 
         static readonly UnityEngine.Rendering.RenderPipeline.StandardRequest s_RenderStandardRequest = new();
 
-        public static void RenderCamera(Camera camera, ScriptableRenderContext context, int slice)
+        public static void RenderCamera(Camera camera, ScriptableRenderContext context, int slice, bool noRenderFeatures = false)
         {
 #if d_UnityURP
             if (RenderPipelineHelper.IsUniversal)
             {
-#if UNITY_6000_0_OR_NEWER
-                // SingleCameraRequest does not render the full camera stack, thus should exclude
-                // overlays which is likely desirable. Alternative approach worth investigating:
-                // https://docs.unity3d.com/6000.0/Documentation/Manual/urp/User-Render-Requests.html
-                // Setting destination silences a warning if Opaque Texture enabled.
-                s_RenderSingleCameraRequest.destination = camera.targetTexture;
-                s_RenderSingleCameraRequest.slice = slice;
-                UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(camera, s_RenderSingleCameraRequest);
-#else
-#pragma warning disable CS0618 // Type or member is obsolete
-                UniversalRenderPipeline.RenderSingleCamera(context, camera);
-#pragma warning restore CS0618 // Type or member is obsolete
-#endif
+                UniversalRenderCamera(context, camera, slice, noRenderFeatures);
                 return;
             }
 #endif
@@ -1111,6 +1174,33 @@ namespace WaveHarmonic.Crest
             public static bool IsEmpty<T>(this UnityEngine.Events.UnityEvent<T> @event)
             {
                 return @event.GetPersistentEventCount() == 0;
+            }
+
+            public static bool Encapsulates(this Rect r1, Rect r2)
+            {
+                return r1.Contains(r2.min) && r1.Contains(r2.max);
+            }
+        }
+
+        namespace Compatibility
+        {
+            static partial class Extensions
+            {
+#if !UNITY_6000_3_OR_NEWER
+                internal static int GetEntityId(this Object @this)
+                {
+                    return @this.GetInstanceID();
+                }
+#endif
+
+                internal static ulong GetRawSceneHandle(this UnityEngine.SceneManagement.Scene @this)
+                {
+#if UNITY_6000_4_OR_NEWER
+                    return @this.handle.GetRawData();
+#else
+                    return (ulong)@this.handle;
+#endif
+                }
             }
         }
     }

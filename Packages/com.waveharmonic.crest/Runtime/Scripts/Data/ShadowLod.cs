@@ -96,6 +96,7 @@ namespace WaveHarmonic.Crest
         private protected override Color ClearColor => Color.black;
         private protected override bool NeedToReadWriteTextureData => true;
         internal override int BufferCount => 2;
+        internal override bool SkipEndOfFrame => true;
 
         private protected override GraphicsFormat RequestedTextureFormat => _TextureFormatMode switch
         {
@@ -150,17 +151,9 @@ namespace WaveHarmonic.Crest
 #if d_UnityURP
                 var asset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
 
-                // TODO: Support single casacades as it is possible.
-                if (asset && asset.shadowCascadeCount < 2)
-                {
-                    Debug.LogError("Crest shadowing requires shadow cascades to be enabled on the pipeline asset.", asset);
-                    _Valid = false;
-                    return;
-                }
-
                 if (asset.mainLightRenderingMode == LightRenderingMode.Disabled)
                 {
-                    Debug.LogError("Crest: Main Light must be enabled to enable water shadowing.", _Water);
+                    Debug.LogWarning("Crest: Main Light must be enabled to enable water shadowing.", _Water);
                     _Valid = false;
                     return;
                 }
@@ -171,7 +164,7 @@ namespace WaveHarmonic.Crest
 
             if (isShadowsDisabled)
             {
-                Debug.LogError("Crest: Shadows must be enabled in the quality settings to enable water shadowing.", _Water);
+                Debug.LogWarning("Crest: Shadows must be enabled in the quality settings to enable water shadowing.", _Water);
                 _Valid = false;
                 return;
             }
@@ -236,8 +229,6 @@ namespace WaveHarmonic.Crest
         {
             base.Allocate();
 
-            _Targets.RunLambda(buffer => Clear(buffer));
-
             {
                 _RenderMaterial = new PropertyWrapperMaterial[Slices];
                 var shader = WaterResources.Instance.Shaders._UpdateShadow;
@@ -261,12 +252,6 @@ namespace WaveHarmonic.Crest
                 SampleShadowsURP.Enable(_Water);
 #endif
             }
-        }
-
-        internal override void ClearLodData()
-        {
-            base.ClearLodData();
-            _Targets.RunLambda(buffer => Clear(buffer));
         }
 
         /// <summary>
@@ -309,7 +294,7 @@ namespace WaveHarmonic.Crest
             {
                 if (_Error != Error.IncorrectLightType)
                 {
-                    Debug.LogError("Crest: Primary light must be of type Directional.", _Light);
+                    Debug.LogWarning("Crest: Primary light must be of type Directional.", _Light);
                     _Error = Error.IncorrectLightType;
                 }
                 return false;
@@ -398,7 +383,7 @@ namespace WaveHarmonic.Crest
             CopyShadowMapBuffer ??= new() { name = WaterRenderer.k_DrawLodData };
             CopyShadowMapBuffer.Clear();
 
-            FlipBuffers();
+            FlipBuffers(buffer);
 
             // clear the shadow collection. it will be overwritten with shadow values IF the shadows render,
             // which only happens if there are (nontransparent) shadow receivers around. this is only reliable
@@ -521,6 +506,7 @@ namespace WaveHarmonic.Crest
         {
             _Enabled = true;
             _TextureFormat = GraphicsFormat.R8G8_UNorm;
+            _Blur = true;
         }
 
         internal static SortedList<int, ILodInput> s_Inputs = new(Helpers.DuplicateComparison);

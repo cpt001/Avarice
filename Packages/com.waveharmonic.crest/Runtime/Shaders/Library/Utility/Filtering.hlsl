@@ -66,6 +66,67 @@ float4 SampleTextureCatmullRom(in Texture2D<float4> tex, in SamplerState linearS
     return result;
 }
 
+float4 CubicWeights(const float f)
+{
+    const float f2 = f * f;
+    const float f3 = f2 * f;
+
+    // Catmull–Rom (a = -0.5)
+    return float4
+    (
+        -0.5 * f3 +       f2 - 0.5 * f,
+         1.5 * f3 - 2.5 * f2 + 1.0,
+        -1.5 * f3 + 2.0 * f2 + 0.5 * f,
+         0.5 * f3 - 0.5 * f2
+    );
+}
+
+float4 SampleBicubicRepeat
+(
+    const Texture2DArray<float4> i_Texture,
+    const float2 i_UV,
+    const uint2 i_Size,
+    const uint i_Slice
+)
+{
+    // Convert to texel space (centered at pixel centers).
+    const float2 samplePosition = i_UV * (float2)i_Size - 0.5;
+    const int2 texelPosition = (int2)floor(samplePosition);
+    const float2 f = samplePosition - (float2)texelPosition;
+
+    // Precompute weights.
+    const float4 wx = CubicWeights(f.x);
+    const float4 wy = CubicWeights(f.y);
+
+    const uint2 size = i_Size - 1;
+
+    const uint4 x = uint4
+    (
+        (texelPosition.x - 1) & size.x,
+        (texelPosition.x + 0) & size.x,
+        (texelPosition.x + 1) & size.x,
+        (texelPosition.x + 2) & size.x
+    );
+
+    // Horizontal pass.
+    float4 row[4];
+    [unroll]
+    for (int j = -1; j <= 2; ++j)
+    {
+        const int y = (texelPosition.y + j) & size.y;
+
+        const float4 t0 = i_Texture[uint3(x.x, y, i_Slice)];
+        const float4 t1 = i_Texture[uint3(x.y, y, i_Slice)];
+        const float4 t2 = i_Texture[uint3(x.z, y, i_Slice)];
+        const float4 t3 = i_Texture[uint3(x.w, y, i_Slice)];
+
+        row[j + 1] = t0 * wx.x + t1 * wx.y + t2 * wx.z + t3 * wx.w;
+    }
+
+    // Vertical pass.
+    return row[0] * wy.x + row[1] * wy.y + row[2] * wy.z + row[3] * wy.w;
+}
+
 m_UtilityNameSpaceEnd
 
 #endif // d_WaveHarmonic_Utility_Filtering

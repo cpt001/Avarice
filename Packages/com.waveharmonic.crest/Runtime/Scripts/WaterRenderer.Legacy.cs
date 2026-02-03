@@ -18,11 +18,6 @@ namespace WaveHarmonic.Crest
             public static readonly int s_ScreenSpaceShadowTexture = Shader.PropertyToID("_Crest_ScreenSpaceShadowTexture");
             public static readonly int s_TemporaryDepthTexture = Shader.PropertyToID("_Crest_TemporaryDepthTexture");
             public static readonly int s_PrimaryLightHasCookie = Shader.PropertyToID("g_Crest_PrimaryLightHasCookie");
-
-            public static class Unity
-            {
-                public static readonly int s_CameraOpaqueTexture = Shader.PropertyToID("_CameraOpaqueTexture");
-            }
         }
 
         bool _DoneMatrices;
@@ -37,7 +32,11 @@ namespace WaveHarmonic.Crest
             ? Rendering.BIRP.FrameBufferFormatOverride.HDR
             : Rendering.BIRP.FrameBufferFormatOverride.LDR;
 
+#if UNITY_EDITOR
+        [UnityEditor.InitializeOnLoadMethod]
+#else
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+#endif
         static void InitializeOnLoad()
         {
             // Fixes error on first frame.
@@ -99,10 +98,11 @@ namespace WaveHarmonic.Crest
                 }
             }
 
-            Shader.SetGlobalTexture(ShaderIDs.Unity.s_CameraOpaqueTexture, Texture2D.grayTexture);
+            Shader.SetGlobalTexture(Crest.ShaderIDs.Unity.s_CameraOpaqueTexture, Texture2D.grayTexture);
         }
 
         // Needs to be separate, as it needs to run after the water volume pass.
+        [System.Diagnostics.Conditional(Constants.Symbols.k_Refraction)]
         void OnLegacyCopyPass(Camera camera)
         {
             if (!ShouldRender(camera, Surface.Layer))
@@ -110,18 +110,20 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            if (Surface.Material == null)
+            var material = Surface.Material;
+
+            if (material == null)
             {
                 return;
             }
 
-            if (!SurfaceRenderer.IsTransparent(Surface.Material))
+            if (!SurfaceRenderer.IsTransparent(material))
             {
                 return;
             }
 
             // Our reflections do not need them.
-            if (camera == WaterReflections.CurrentCamera)
+            if (camera == _Reflections.ReflectionCamera)
             {
                 return;
             }
@@ -176,7 +178,7 @@ namespace WaveHarmonic.Crest
     partial class WaterRenderer
     {
         bool _DoneCameraOpaqueTexture;
-        RenderTexture _CameraOpaqueTexture;
+        RTHandle _CameraOpaqueTexture;
         CommandBuffer _CameraOpaqueTextureCommands;
 
         internal void UpdateCameraOpaqueTexture(Camera camera, CommandBuffer commands)
@@ -192,6 +194,7 @@ namespace WaveHarmonic.Crest
             commands.EndSample(k_DrawCopyColor);
         }
 
+        [System.Diagnostics.Conditional(Constants.Symbols.k_Refraction)]
         internal void OnBeginCameraOpaqueTexture(Camera camera)
         {
             if (_DoneCameraOpaqueTexture)
@@ -199,7 +202,12 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
+            camera.depthTextureMode |= DepthTextureMode.Depth;
+
             var descriptor = Rendering.BIRP.GetCameraTargetDescriptor(camera, FrameBufferFormatOverride);
+
+            // Required, or depth/stencil format will be chosen.
+            descriptor.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None;
 
             // Occurred in a build and caused a black screen.
             if (descriptor.width <= 0)
@@ -207,20 +215,7 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            if (_CameraOpaqueTexture == null)
-            {
-                _CameraOpaqueTexture = new(descriptor)
-                {
-                    name = "_CameraOpaqueTexture",
-                };
-            }
-            else
-            {
-                _CameraOpaqueTexture.Release();
-                _CameraOpaqueTexture.descriptor = descriptor;
-            }
-
-            _CameraOpaqueTexture.Create();
+            RenderPipelineCompatibilityHelper.ReAllocateIfNeeded(ref _CameraOpaqueTexture, descriptor);
 
             _CameraOpaqueTextureCommands ??= new()
             {

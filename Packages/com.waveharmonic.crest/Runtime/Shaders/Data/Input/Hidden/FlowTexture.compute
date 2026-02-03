@@ -3,6 +3,8 @@
 
 // Adds flow from a provided texture. Used by Painted and Texture input modes.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestExecute
 
 #include "HLSLSupport.cginc"
@@ -15,7 +17,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Cascade.hlsl"
 
 Texture2D _Crest_Texture;
-RWTexture2DArray<float2> _Crest_Target;
+RWTexture2DArray<m_Float2> _Crest_Target;
 
 CBUFFER_START(CrestPerMaterial)
 int _Crest_Blend;
@@ -62,7 +64,8 @@ void Execute(uint3 id)
     }
 
     const float2 target = _Crest_Target[id];
-    _Crest_Target[id] = Blend(_Crest_Blend, weight, 1.0, source, target);
+    const float2 result = Blend(_Crest_Blend, weight, 1.0, source, target);
+    _Crest_Target[id] = m_Float2FromFloat2(result);
 }
 
 m_CrestNameSpaceEnd

@@ -43,6 +43,8 @@ namespace WaveHarmonic.Crest
         private protected abstract ComputeShader SimulationShader { get; }
         private protected abstract void GetSubstepData(float timeToSimulate, out int substeps, out float delta);
 
+        private protected override bool Persistent => true;
+
         internal override void Initialize()
         {
             if (SimulationShader == null)
@@ -56,19 +58,13 @@ namespace WaveHarmonic.Crest
             _NeedsPrewarmingThisStep = true;
         }
 
-        internal override void ClearLodData()
-        {
-            base.ClearLodData();
-            _Targets.RunLambda(x => Clear(x));
-        }
-
         internal override void BuildCommandBuffer(WaterRenderer water, CommandBuffer buffer)
         {
             buffer.BeginSample(ID);
 
             if (!SkipFlipBuffers)
             {
-                FlipBuffers();
+                FlipBuffers(buffer);
             }
 
             var slices = water.LodLevels;
@@ -141,7 +137,7 @@ namespace WaveHarmonic.Crest
                 // places.
                 wrapper.SetFloat(Lod.ShaderIDs.s_LodChange, isFirstStep ? _Water.ScaleDifferencePower2 : 0);
 
-                wrapper.SetVectorArray(WaterRenderer.ShaderIDs.s_CascadeDataSource, _Water._CascadeData.Previous(frame));
+                wrapper.SetVectorArray(WaterRenderer.ShaderIDs.s_CascadeDataSource, _Water.CascadeData.Previous(frame));
                 wrapper.SetVectorArray(_SamplingParametersCascadeSourceShaderID, _SamplingParameters.Previous(frame));
 
                 SetAdditionalSimulationParameters(wrapper);
@@ -174,6 +170,8 @@ namespace WaveHarmonic.Crest
             // Set the target texture as to make sure we catch the 'pong' each frame.
             Shader.SetGlobalTexture(_TextureShaderID, DataTexture);
 
+            TryBlur(buffer);
+
             buffer.EndSample(ID);
         }
 
@@ -183,6 +181,60 @@ namespace WaveHarmonic.Crest
         private protected virtual void SetAdditionalSimulationParameters(PropertyWrapperCompute properties)
         {
 
+        }
+    }
+
+    partial class PersistentLod
+    {
+        class AdditionalCameraData
+        {
+            public float _TimeToSimulate;
+            public float _PreviousSubstepDeltaTime;
+        }
+
+        readonly System.Collections.Generic.Dictionary<Camera, AdditionalCameraData> _AdditionalCameraData = new();
+
+        internal override void LoadCameraData(Camera camera)
+        {
+            base.LoadCameraData(camera);
+
+            if (!_Water.SeparateViewpoint)
+            {
+                return;
+            }
+
+            AdditionalCameraData data;
+
+            if (!_AdditionalCameraData.ContainsKey(camera))
+            {
+                data = new()
+                {
+                    _TimeToSimulate = _TimeToSimulate,
+                    _PreviousSubstepDeltaTime = _PreviousSubstepDeltaTime,
+                };
+
+                _AdditionalCameraData.Add(camera, data);
+            }
+            else
+            {
+                data = _AdditionalCameraData[camera];
+            }
+
+            _TimeToSimulate = data._TimeToSimulate;
+            _PreviousSubstepDeltaTime = data._PreviousSubstepDeltaTime;
+        }
+
+        internal override void StoreCameraData(Camera camera)
+        {
+            base.StoreCameraData(camera);
+
+            if (!_Water.SeparateViewpoint)
+            {
+                return;
+            }
+
+            _AdditionalCameraData[camera]._TimeToSimulate = _TimeToSimulate;
+            _AdditionalCameraData[camera]._PreviousSubstepDeltaTime = _PreviousSubstepDeltaTime;
         }
     }
 }

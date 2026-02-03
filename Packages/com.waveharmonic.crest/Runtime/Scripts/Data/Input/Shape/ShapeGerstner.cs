@@ -21,12 +21,12 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Use a swell spectrum as the default.\n\nUses a swell spectrum as default (when none is assigned), and disabled reverse waves.")]
         [@GenerateAPI]
-        [@DecoratedField(order = -3), SerializeField]
+        [@DecoratedField(order = -4), SerializeField]
         bool _Swell = true;
 
         [Tooltip("The weight of the opposing, second pair of Gerstner waves.\n\nEach Gerstner wave is actually a pair of waves travelling in opposite directions (similar to FFT). This weight is applied to the wave travelling in against-wind direction. Set to zero to obtain simple single waves which are useful for shorelines waves.")]
         [Predicated(nameof(_Swell), inverted: true)]
-        [@Range(0f, 1f, order = -4)]
+        [@Range(0f, 1f, order = -5)]
         [@GenerateAPI(Getter.Custom)]
         [SerializeField]
         float _ReverseWaveWeight = 0.5f;
@@ -35,23 +35,25 @@ namespace WaveHarmonic.Crest
         // Generation Settings
 
         [Tooltip("How many wave components to generate in each octave.")]
-        [@Delayed]
+        [@Delayed(order = -5)]
         [@GenerateAPI]
         [SerializeField]
         int _ComponentsPerOctave = 8;
 
         [Tooltip("Change to get a different set of waves.")]
         [@GenerateAPI]
+        [@DecoratedField(order = -6)]
         [SerializeField]
         int _RandomSeed = 0;
 
         [Tooltip("Prevent data arrays from being written to so one can provide their own.")]
         [@GenerateAPI]
+        [@DecoratedField(order = -7)]
         [SerializeField]
         bool _ManualGeneration;
 
         private protected override int MinimumResolution => 8;
-        private protected override int MaximumResolution => 64;
+        private protected override int MaximumResolution => int.MaxValue;
 
         float _WindSpeedWhenGenerated = -1f;
 
@@ -179,7 +181,7 @@ namespace WaveHarmonic.Crest
         {
             if (_WaveBuffers == null)
             {
-                _WaveBuffers = new(_Resolution, _Resolution, 0, GraphicsFormat.R16G16B16A16_SFloat);
+                _WaveBuffers = new(Resolution, Resolution, 0, Helpers.GetCompatibleTextureFormat(GraphicsFormat.R16G16B16A16_SFloat, randomWrite: true));
             }
             else
             {
@@ -187,7 +189,7 @@ namespace WaveHarmonic.Crest
             }
 
             {
-                _WaveBuffers.width = _WaveBuffers.height = _Resolution;
+                _WaveBuffers.width = _WaveBuffers.height = Resolution;
                 _WaveBuffers.wrapMode = TextureWrapMode.Clamp;
                 _WaveBuffers.antiAliasing = 1;
                 _WaveBuffers.filterMode = FilterMode.Bilinear;
@@ -216,7 +218,7 @@ namespace WaveHarmonic.Crest
 
             base.OnUpdate(water);
 
-            if (_WaveBuffers == null || _Resolution != _WaveBuffers.width || _BufferCascadeParameters == null || _BufferWaveData == null)
+            if (_WaveBuffers == null || Resolution != _WaveBuffers.width || _BufferCascadeParameters == null || _BufferWaveData == null)
             {
                 InitData();
             }
@@ -546,23 +548,23 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            var ampSum = 0f;
+            MaximumReportedVerticalDisplacement = 0;
+            MaximumReportedHorizontalDisplacement = 0;
+
             for (var i = 0; i < _Wavelengths.Length; i++)
             {
-                ampSum += _Amplitudes[i] * _ActiveSpectrum._ChopScales[i / _ComponentsPerOctave];
+                var amplitude = _Amplitudes[i];
+                MaximumReportedVerticalDisplacement += amplitude;
+                MaximumReportedHorizontalDisplacement += amplitude * _ActiveSpectrum._ChopScales[i / _ComponentsPerOctave];
             }
+
+            MaximumReportedHorizontalDisplacement *= _ActiveSpectrum._Chop;
 
             // Apply weight or will cause popping due to scale change.
-            ampSum *= Weight;
+            MaximumReportedVerticalDisplacement *= Weight;
+            MaximumReportedHorizontalDisplacement *= Weight;
 
-            MaximumReportedHorizontalDisplacement = ampSum * _ActiveSpectrum._Chop;
-            MaximumReportedVerticalDisplacement = ampSum;
-            MaximumReportedWavesDisplacement = ampSum;
-
-            if (Mode == LodInputMode.Global)
-            {
-                water.ReportMaximumDisplacement(ampSum * _ActiveSpectrum._Chop, ampSum, ampSum);
-            }
+            MaximumReportedWavesDisplacement = MaximumReportedVerticalDisplacement;
         }
 
         private protected override void Initialize()
@@ -644,6 +646,7 @@ namespace WaveHarmonic.Crest
             }
 
             _Version = MigrateV2(_Version);
+            _Version = MigrateV3(_Version);
         }
 
         void ISerializationCallbackReceiver.OnBeforeSerialize()

@@ -428,6 +428,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _Version: 0
   _Source: 1
+  _Viewer: {fileID: 0}
   _Layer: 0
   _MinimumWavelength: 1
   _DistanceFromSurfaceSigned: 0

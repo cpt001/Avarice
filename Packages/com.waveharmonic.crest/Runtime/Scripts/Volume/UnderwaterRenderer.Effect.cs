@@ -140,7 +140,7 @@ namespace WaveHarmonic.Crest
             if (UseStencilBuffer)
             {
                 descriptor.colorFormat = RenderTextureFormat.Depth;
-                descriptor.depthBufferBits = (int)Helpers.k_DepthBits;
+                descriptor.depthBufferBits = (int)Rendering.GetDefaultDepthBufferBits();
                 // bindMS is necessary in this case for depth.
                 descriptor.SetMSAASamples(camera);
                 descriptor.bindMS = descriptor.msaaSamples > 1;
@@ -272,9 +272,9 @@ namespace WaveHarmonic.Crest
             if (camera.cameraType != CameraType.Reflection)
             {
                 // Skip work if camera is far enough below the surface.
-                var forceFullShader = !_Water.Surface.Enabled || (_Water._ViewerHeightAboveWaterPerCamera < -8f && !Portaled);
+                var forceFullShader = !_MaskRead || (_Water._PerCameraHeightReady && _Water._ViewerHeightAboveWaterPerCamera < -8f && !Portaled);
                 _VolumeMaterial.SetKeyword("d_Crest_NoMaskColor", forceFullShader);
-                _VolumeMaterial.SetKeyword("d_Crest_NoMaskDepth", !_Water.Surface.Enabled || RenderBeforeTransparency);
+                _VolumeMaterial.SetKeyword("d_Crest_NoMaskDepth", !_MaskRead || RenderBeforeTransparency);
             }
 
             // Compute ambient lighting SH.

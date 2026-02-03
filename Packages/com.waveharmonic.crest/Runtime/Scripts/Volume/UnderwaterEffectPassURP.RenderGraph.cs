@@ -30,6 +30,7 @@ namespace WaveHarmonic.Crest
             }
         }
 
+#if URP_COMPATIBILITY_MODE
         [System.Obsolete]
         public override void OnCameraSetup(CommandBuffer buffer, ref RenderingData data)
         {
@@ -46,6 +47,7 @@ namespace WaveHarmonic.Crest
             context.ExecuteCommandBuffer(buffer);
             CommandBufferPool.Release(buffer);
         }
+#endif
     }
 
     partial class CopyDepthBufferPassURP
@@ -63,6 +65,7 @@ namespace WaveHarmonic.Crest
                 var resources = frameData.Get<UniversalResourceData>();
                 cameraData = frameData.Get<UniversalCameraData>();
 
+#if URP_COMPATIBILITY_MODE
                 if (builder == null)
                 {
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -71,6 +74,7 @@ namespace WaveHarmonic.Crest
 #pragma warning restore CS0618 // Type or member is obsolete
                 }
                 else
+#endif
                 {
                     // We need reset render targets to these before the next pass, but we do not read
                     // or write to the color target.
@@ -99,6 +103,7 @@ namespace WaveHarmonic.Crest
             }
         }
 
+#if URP_COMPATIBILITY_MODE
         [System.Obsolete]
         public override void OnCameraSetup(CommandBuffer buffer, ref RenderingData data)
         {
@@ -115,6 +120,7 @@ namespace WaveHarmonic.Crest
             context.ExecuteCommandBuffer(buffer);
             CommandBufferPool.Release(buffer);
         }
+#endif
     }
 }
 

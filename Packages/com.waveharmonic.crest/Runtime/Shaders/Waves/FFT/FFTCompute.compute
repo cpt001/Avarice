@@ -3,6 +3,8 @@
 
 // Inspired by https://github.com/speps/GX-EncinoWaves
 
+#pragma exclude_renderers glcore gles3
+
 // First SIZE constant must match FFT_KERNEL_0_RESOLUTION in FFTCompute.cs
 #pragma kernel ComputeFFT SIZE=8 PASSES=3 CHANNEL=x TX=8 TY=1 FINAL=0
 #pragma kernel ComputeFFT SIZE=8 PASSES=3 CHANNEL=y TX=1 TY=8 FINAL=1
@@ -22,11 +24,13 @@
 // Must match CASCADE_COUNT in FFTCompute.cs
 #define CASCADE_COUNT 16
 
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
+
 Texture2D<float2> _Crest_InputButterfly;
 #if !FINAL
-RWTexture2DArray<float2> _Crest_Output1;
-RWTexture2DArray<float2> _Crest_Output2;
-RWTexture2DArray<float2> _Crest_Output3;
+RWTexture2DArray<m_Float2> _Crest_Output1;
+RWTexture2DArray<m_Float2> _Crest_Output2;
+RWTexture2DArray<m_Float2> _Crest_Output3;
 #else
 Texture2DArray<float2> _Crest_InputH;
 Texture2DArray<float2> _Crest_InputX;
@@ -140,9 +144,9 @@ void ComputeFFT(const uint3 id : SV_DispatchThreadID)
 {
     const uint coord = id.CHANNEL;
 #if !FINAL
-    _Crest_IntermediatesH[coord] = conj(_Crest_Output1[id]);
-    _Crest_IntermediatesX[coord] = conj(_Crest_Output2[id]);
-    _Crest_IntermediatesZ[coord] = conj(_Crest_Output3[id]);
+    _Crest_IntermediatesH[coord] = conj(_Crest_Output1[id].xy);
+    _Crest_IntermediatesX[coord] = conj(_Crest_Output2[id].xy);
+    _Crest_IntermediatesZ[coord] = conj(_Crest_Output3[id].xy);
 #else
     _Crest_IntermediatesH[coord] = _Crest_InputH[id];
     _Crest_IntermediatesX[coord] = _Crest_InputX[id];
@@ -164,9 +168,9 @@ void ComputeFFT(const uint3 id : SV_DispatchThreadID)
     const float2 resultZ = pingpong ? _Crest_IntermediatesZ[coord] : _Crest_ScratchZ[coord];
 
 #if !FINAL
-    _Crest_Output1[id] = resultH;
-    _Crest_Output2[id] = resultX;
-    _Crest_Output3[id] = resultZ;
+    _Crest_Output1[id] = m_Float2FromFloat2(resultH);
+    _Crest_Output2[id] = m_Float2FromFloat2(resultX);
+    _Crest_Output3[id] = m_Float2FromFloat2(resultZ);
 #else
     const float sign = ((id.x + id.y) % 2) == 1 ? -1.0 : 1.0;
     const float3 res = float3(sign * resultX.x, sign * resultH.x, sign * resultZ.x);

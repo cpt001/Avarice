@@ -68,7 +68,7 @@ namespace WaveHarmonic.Crest
                 }
 
                 // Our reflections do not need them.
-                if (camera == WaterReflections.CurrentCamera)
+                if (camera == _Water.Reflections.ReflectionCamera)
                 {
                     return;
                 }
@@ -114,6 +114,7 @@ namespace WaveHarmonic.Crest
                 var rld = new RendererListDesc(_ShaderTagID, context.cullingResults, camera)
                 {
                     layerMask = 1 << _Water.Surface.Layer,
+                    // Required to set the pass. Use shader to keep WB material overrides.
                     overrideShader = _Water.Surface.Material.shader,
                     overrideShaderPassIndex = _Water.Surface.Material.FindPass("Forward"),
                     renderQueueRange = RenderQueueRange.transparent,

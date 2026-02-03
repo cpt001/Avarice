@@ -103,13 +103,23 @@ namespace WaveHarmonic.Crest
     sealed class Layer : Decorator { }
 
     [Conditional(Symbols.k_UnityEditor)]
-    sealed class Stripped : Decorator { }
+    sealed class Stripped : Decorator
+    {
+        public enum Style { None, PlatformTab, }
+        public Stripped(Style style = Style.None, bool indent = false) { }
+    }
 
     [Conditional(Symbols.k_UnityEditor)]
     sealed class Delayed : Decorator { }
 
     [Conditional(Symbols.k_UnityEditor)]
     sealed class Disabled : Decorator { }
+
+    [Conditional(Symbols.k_UnityEditor)]
+    sealed class Required : Attribute { }
+
+    [Conditional(Symbols.k_UnityEditor)]
+    sealed class PlatformTabs : Attribute { }
 
     [Conditional(Symbols.k_UnityEditor)]
     sealed class AttachMaterialEditor : Attribute
@@ -153,25 +163,25 @@ namespace WaveHarmonic.Crest
     {
         [Flags]
         public enum Clamp { None = 0, Minimum = 1, Maximum = 2, Both = Minimum | Maximum }
-        public Range(float minimum, float maximum, Clamp clamp = Clamp.Both, float scale = 1f, bool delayed = false, int step = 0, bool power = false) {}
+        public Range(float minimum, float maximum, Clamp clamp = Clamp.Both, float scale = 1f, bool delayed = false, int step = 0, bool power = false) { }
     }
 
     [Conditional(Symbols.k_UnityEditor)]
     sealed class Minimum : Decorator
     {
-        public Minimum(float minimum) {}
+        public Minimum(float minimum) { }
     }
 
     [Conditional(Symbols.k_UnityEditor)]
     sealed class Maximum : Decorator
     {
-        public Maximum(float maximum) {}
+        public Maximum(float maximum) { }
     }
 
     [Conditional(Symbols.k_UnityEditor)]
     sealed class WarnIfAbove : Decorator
     {
-        public WarnIfAbove(float maximum) {}
+        public WarnIfAbove(float maximum) { }
     }
 
     [Conditional(Symbols.k_UnityEditor)]

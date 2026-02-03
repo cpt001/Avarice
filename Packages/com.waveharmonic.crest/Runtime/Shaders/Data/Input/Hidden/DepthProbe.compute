@@ -6,6 +6,8 @@
 // afterwards. It is converted to world-space in another shader before writing into
 // the LOD data.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestCopy
 #pragma kernel CrestFill
 
@@ -17,7 +19,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
 
 Texture2D<float> _CamDepthBuffer;
-RWTexture2D<float2> _Crest_Target;
+RWTexture2D<m_Float2> _Crest_Target;
 
 #if d_Crest_BackFaceInclusion
 Texture2D<float> _Crest_CameraDepthBufferBackfaces;

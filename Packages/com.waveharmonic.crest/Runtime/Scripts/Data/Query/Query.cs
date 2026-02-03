@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -22,8 +23,9 @@ namespace WaveHarmonic.Crest
         /// <param name="minimumLength">The minimum spatial length of the object, such as the width of a boat. Useful for filtering out detail when not needed. Set to zero to get full available detail.</param>
         /// <param name="points">The world space points that will be queried.</param>
         /// <param name="layer">The layer this query targets.</param>
+        /// <param name="center">The center of all the query positions. Used to choose the closest query provider.</param>
         /// <returns>The status of the query.</returns>
-        internal static int Query(int hash, float minimumLength, Vector3[] points, int layer) => 0;
+        internal static int Query(int hash, float minimumLength, Vector3[] points, int layer, Vector3? center) => throw new System.NotImplementedException("Crest: this method is for documentation reuse only. Do not invoke.");
 
         /// <summary>
         /// Check if the query results could be retrieved successfully using the return code
@@ -45,6 +47,12 @@ namespace WaveHarmonic.Crest
         void UpdateQueries(WaterRenderer water);
         void SendReadBack(WaterRenderer water);
         void CleanUp();
+        void Initialize(WaterRenderer water);
+    }
+
+    interface IQueryableSimple : IQueryable
+    {
+        int Query(int hash, float minimumLength, Vector3[] queries, Vector3[] results, Vector3? center);
     }
 
     /// <summary>
@@ -64,6 +72,7 @@ namespace WaveHarmonic.Crest
         const int k_NormalAdditionalQueryCount = 2;
 
         readonly WaterRenderer _Water;
+        readonly IQueryableLod<IQueryProvider> _Lod;
 
         readonly PropertyWrapperCompute _Wrapper;
 
@@ -85,8 +94,8 @@ namespace WaveHarmonic.Crest
 
         internal const int k_DefaultMaximumQueryCount = 4096;
 
-        readonly int _MaximumQueryCount = k_DefaultMaximumQueryCount;
-        readonly Vector3[] _QueryPositionXZ_MinimumGridSize = new Vector3[k_DefaultMaximumQueryCount];
+        readonly int _MaximumQueryCount;
+        readonly Vector3[] _QueryPositionXZ_MinimumGridSize;
 
         /// <summary>
         /// Holds information about all query points. Maps from unique hash code to position in point array.
@@ -253,17 +262,15 @@ namespace WaveHarmonic.Crest
             InvalidDtForVelocity = 16,
         }
 
-        public QueryBase(WaterRenderer water)
+        public QueryBase(IQueryableLod<IQueryProvider> lod)
         {
-            _Water = water;
+            _Water = lod.Water;
+            _Lod = lod;
 
             _DataArrivedAction = new(DataArrived);
 
-            if (_MaximumQueryCount != water._AnimatedWavesLod.MaximumQueryCount)
-            {
-                _MaximumQueryCount = water._AnimatedWavesLod.MaximumQueryCount;
-                _QueryPositionXZ_MinimumGridSize = new Vector3[_MaximumQueryCount];
-            }
+            _MaximumQueryCount = lod.MaximumQueryCount;
+            _QueryPositionXZ_MinimumGridSize = new Vector3[_MaximumQueryCount];
 
             _ComputeBufferQueries = new(_MaximumQueryCount, 12, ComputeBufferType.Default);
             _ComputeBufferResults = new(_MaximumQueryCount, 12, ComputeBufferType.Default);
@@ -277,7 +284,13 @@ namespace WaveHarmonic.Crest
                 Debug.LogError($"Crest: Could not load Query compute shader");
                 return;
             }
-            _Wrapper = new(water.SimulationBuffer, shader, Kernel);
+
+            _Wrapper = new(_Water.SimulationBuffer, shader, Kernel);
+        }
+
+        void LogMaximumQueryCountExceededError()
+        {
+            Debug.LogError($"Crest: Maximum query count ({_MaximumQueryCount}) exceeded, increase the <i>{nameof(WaterRenderer)} > Simulations > {_Lod.Name} > {nameof(_Lod.MaximumQueryCount)}</i> to support a higher number of queries.", _Water);
         }
 
         /// <summary>
@@ -288,7 +301,7 @@ namespace WaveHarmonic.Crest
         {
             if (queryPoints.Length + _SegmentRegistrarRingBuffer.Current._QueryCount > _MaximumQueryCount)
             {
-                Debug.LogError($"Crest: Max query count ({_MaximumQueryCount}) exceeded, increase the max query count in the Animated Waves Settings to support a higher number of queries.");
+                LogMaximumQueryCountExceededError();
                 return false;
             }
 
@@ -348,7 +361,7 @@ namespace WaveHarmonic.Crest
 
             if (countPts + segment.x > _QueryPositionXZ_MinimumGridSize.Length)
             {
-                Debug.LogError("Crest: Too many wave height queries. Increase Max Query Count in the Animated Waves Settings.");
+                LogMaximumQueryCountExceededError();
                 return false;
             }
 
@@ -618,7 +631,23 @@ namespace WaveHarmonic.Crest
             _SegmentRegistrarRingBuffer.ClearAll();
         }
 
-        public virtual int Query(int ownerHash, float minSpatialLength, Vector3[] queryPoints, Vector3[] results)
+        public virtual void Initialize(WaterRenderer water)
+        {
+
+        }
+
+        public int ResultGuidCount => _ResultSegments != null ? _ResultSegments.Count : 0;
+
+        public int RequestCount => _Requests != null ? _Requests.Count : 0;
+
+        public int QueryCount => _SegmentRegistrarRingBuffer != null ? _SegmentRegistrarRingBuffer.Current._QueryCount : 0;
+    }
+
+    abstract class QueryBaseSimple : QueryBase, IQueryableSimple
+    {
+        protected QueryBaseSimple(IQueryableLod<IQueryProvider> lod) : base(lod) { }
+
+        public virtual int Query(int ownerHash, float minSpatialLength, Vector3[] queryPoints, Vector3[] results, Vector3? center)
         {
             var result = (int)QueryStatus.OK;
 
@@ -634,12 +663,159 @@ namespace WaveHarmonic.Crest
 
             return result;
         }
+    }
 
-        public int ResultGuidCount => _ResultSegments != null ? _ResultSegments.Count : 0;
+    abstract class QueryPerCamera<T> : IQueryable where T : IQueryable, new()
+    {
+        internal readonly WaterRenderer _Water;
+        internal readonly Dictionary<Camera, T> _Providers = new();
 
-        public int RequestCount => _Requests != null ? _Requests.Count : 0;
+        public QueryPerCamera(WaterRenderer water)
+        {
+            _Water = water;
+            Initialize(water);
+        }
 
-        public int QueryCount => _SegmentRegistrarRingBuffer != null ? _SegmentRegistrarRingBuffer.Current._QueryCount : 0;
+        public int ResultGuidCount
+        {
+            get
+            {
+                var total = 0;
+                foreach (var (camera, provider) in _Providers)
+                {
+                    if (_Water.ShouldExecuteQueries(camera)) total += provider.ResultGuidCount;
+                }
+                return total;
+            }
+        }
+
+        public int RequestCount
+        {
+            get
+            {
+                var total = 0;
+                foreach (var (camera, provider) in _Providers)
+                {
+                    if (_Water.ShouldExecuteQueries(camera)) total += provider.RequestCount;
+                }
+                return total;
+            }
+        }
+
+        public int QueryCount
+        {
+            get
+            {
+                var total = 0;
+                foreach (var (camera, provider) in _Providers)
+                {
+                    if (_Water.ShouldExecuteQueries(camera)) total += provider.QueryCount;
+                }
+                return total;
+            }
+        }
+
+        public void CleanUp()
+        {
+            foreach (var provider in _Providers.Values)
+            {
+                provider?.CleanUp();
+            }
+        }
+
+        public void Initialize(WaterRenderer water)
+        {
+            var camera = water.CurrentCamera;
+
+            if (camera == null)
+            {
+                camera = water.Viewer;
+            }
+
+            if (camera == null)
+            {
+                return;
+            }
+
+            if (!_Providers.ContainsKey(camera))
+            {
+                // Cannot use parameters. We could use System.Activator.CreateInstance to get
+                // around that, but instead we just use WaterRenderer.Instance.
+                _Providers.Add(camera, new());
+            }
+        }
+
+        public void SendReadBack(WaterRenderer water)
+        {
+            _Providers[water.CurrentCamera].SendReadBack(water);
+        }
+
+        public void UpdateQueries(WaterRenderer water)
+        {
+            _Providers[water.CurrentCamera].UpdateQueries(water);
+        }
+
+        public Vector2 FindCenter(Vector3[] queries, Vector3? center)
+        {
+            if (center != null)
+            {
+                return ((Vector3)center).XZ();
+            }
+
+            // Calculate center if none provided.
+            var sum = Vector2.zero;
+            foreach (var point in queries)
+            {
+                sum += point.XZ();
+            }
+
+            return new(sum.x / queries.Length, sum.y / queries.Length);
+        }
+    }
+
+    abstract class QueryPerCameraSimple<T> : QueryPerCamera<T>, IQueryableSimple where T : IQueryableSimple, new()
+    {
+        protected QueryPerCameraSimple(WaterRenderer water) : base(water) { }
+
+        public int Query(int id, float length, Vector3[] queries, Vector3[] results, Vector3? center = null)
+        {
+            if (_Water._InCameraLoop)
+            {
+                return _Providers[_Water.CurrentCamera].Query(id, length, queries, results, center);
+            }
+
+            var lastStatus = -1;
+            var lastDistance = Mathf.Infinity;
+
+            var newCenter = FindCenter(queries, center);
+
+            foreach (var provider in _Providers)
+            {
+                var camera = provider.Key;
+
+                if (!_Water.ShouldExecuteQueries(camera))
+                {
+                    continue;
+                }
+
+                var distance = (newCenter - camera.transform.position.XZ()).sqrMagnitude;
+
+                if (lastStatus == (int)QueryBase.QueryStatus.OK && lastDistance < distance)
+                {
+                    continue;
+                }
+
+                var status = provider.Value.Query(id, length, queries, results, center);
+
+                if (lastStatus < 0 || status == (int)QueryBase.QueryStatus.OK)
+                {
+                    lastStatus = status;
+                    lastDistance = distance;
+                }
+            }
+
+            return lastStatus;
+        }
     }
 
     static partial class Extensions

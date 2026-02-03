@@ -108,7 +108,9 @@ namespace WaveHarmonic.Crest
         [UnityEngine.Space(10)]
 
         [Tooltip("Query points for buoyancy.\n\nOnly applicable to Probes model.")]
+        [@Predicated(nameof(_Model), true, nameof(FloatingObjectModel.Probes), hide: true)]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         internal FloatingObjectProbe[] _Probes = new FloatingObjectProbe[] { };
 

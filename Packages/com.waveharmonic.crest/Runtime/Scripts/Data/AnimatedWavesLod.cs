@@ -20,6 +20,7 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// The source of collisions (ie water shape).
     /// </summary>
+    [System.Obsolete("Please use QuerySource and LodQuerySource.")]
     [@GenerateDoc]
     public enum CollisionSource
     {
@@ -67,13 +68,9 @@ namespace WaveHarmonic.Crest
     {
         // NOTE: numbers must be in order for defaults to work (everything first).
 
-        /// <inheritdoc cref="Generated.CollisionLayers.Everything"/>
-        [Tooltip("All layers.")]
-        Everything = -1,
-
         /// <inheritdoc cref="Generated.CollisionLayers.Nothing"/>
         [Tooltip("No extra layers (ie single layer).")]
-        Nothing,
+        Nothing = 0,
 
         /// <inheritdoc cref="Generated.CollisionLayers.DynamicWaves"/>
         [Tooltip("Separate layer for dynamic waves.\n\nDynamic waves are normally combined together for efficiency. By enabling this layer, dynamic waves are combined and added in a separate pass.")]
@@ -82,6 +79,29 @@ namespace WaveHarmonic.Crest
         /// <inheritdoc cref="Generated.CollisionLayers.Displacement"/>
         [Tooltip("Extra displacement layer for visual displacement.")]
         Displacement = 1 << 2,
+
+        /// <inheritdoc cref="Generated.CollisionLayers.Everything"/>
+        [Tooltip("All layers.")]
+        Everything = ~0,
+    }
+
+    /// <summary>
+    /// The wave sampling method to determine quality and performance.
+    /// </summary>
+    [@GenerateDoc]
+    public enum WaveSampling
+    {
+        /// <inheritdoc cref="Generated.WaveSampling.Automatic"/>
+        [Tooltip("Automatically chooses the other options as needed (512+ resolution needs precision).")]
+        Automatic,
+
+        /// <inheritdoc cref="Generated.WaveSampling.Performance"/>
+        [Tooltip("Reduces samples by copying waves from higher LODs to lower LODs.\n\nBest for resolutions lower than 512.")]
+        Performance,
+
+        /// <inheritdoc cref="Generated.WaveSampling.Precision"/>
+        [Tooltip("Samples directly from the wave buffers to preserve wave quality.\n\nNeeded for higher resolutions (512+). Higher LOD counts can also benefit with this enabled.")]
+        Precision,
     }
 
     /// <summary>
@@ -108,13 +128,32 @@ namespace WaveHarmonic.Crest
     [@FilterEnum(nameof(_TextureFormatMode), Filtered.Mode.Exclude, (int)LodTextureFormatMode.Automatic)]
     public sealed partial class AnimatedWavesLod : Lod<ICollisionProvider>
     {
+        [Tooltip("Collision layers to enable.\n\nSome layers will have overhead with CPU, GPU and memory.")]
+        [@Predicated(nameof(_QuerySource), inverted: true, nameof(LodQuerySource.GPU))]
+        [@GenerateAPI]
+        [@DecoratedField, SerializeField]
+        internal CollisionLayers _CollisionLayers = CollisionLayers.Everything;
+
+        [@Predicated(nameof(_QuerySource), true, nameof(LodQuerySource.CPU))]
+        [@DecoratedField, SerializeField]
+        internal BakedWaveData _BakedWaveData;
+
         [@Space(10)]
 
-        [Tooltip("Shifts wavelengths to maintain quality for higher resolutions.\n\nSet this to 2 to improve wave quality. In some cases like flowing rivers, this can make a substantial difference to visual stability. We recommend doubling the Resolution on the WaterRenderer component to preserve detail after making this change.")]
-        [@Range(1f, 4f)]
+        [Tooltip("The wave sampling method to determine quality and performance.")]
         [@GenerateAPI]
+        [@DecoratedField]
+        [SerializeField]
+        internal WaveSampling _WaveSampling;
+
+        [Tooltip("Shifts wavelengths to maintain quality for higher resolutions.\n\nSet this to 2 to improve wave quality. In some cases like flowing rivers, this can make a substantial difference to visual stability. We recommend doubling the Resolution on the WaterRenderer component to preserve detail after making this change.")]
+        [@Predicated(nameof(_WaveSampling), inverted: true, nameof(WaveSampling.Performance))]
+        [@Range(1f, 4f)]
+        [@GenerateAPI(Getter.Custom)]
         [SerializeField]
         float _WaveResolutionMultiplier = 1f;
+
+        [@Space(10)]
 
         [Tooltip("How much waves are dampened in shallow water.")]
         [@Range(0f, 1f)]
@@ -129,30 +168,6 @@ namespace WaveHarmonic.Crest
         float _ShallowsMaximumDepth = 1000f;
 
 
-        [@Heading("Collisions")]
-
-        [Tooltip("Where to obtain water shape on CPU for physics / gameplay.")]
-        [@GenerateAPI(Setter.Internal)]
-        [@DecoratedField, SerializeField]
-        internal CollisionSource _CollisionSource = CollisionSource.GPU;
-
-        [Tooltip("Collision layers to enable.\n\nSome layers will have overhead with CPU, GPU and memory.")]
-        [@Predicated(nameof(_CollisionSource), inverted: true, nameof(CollisionSource.GPU))]
-        [@GenerateAPI]
-        [@DecoratedField, SerializeField]
-        internal CollisionLayers _CollisionLayers = CollisionLayers.Everything;
-
-        [Tooltip("Maximum number of wave queries that can be performed when using GPU queries.")]
-        [@Predicated(nameof(_CollisionSource), true, nameof(CollisionSource.GPU))]
-        [@GenerateAPI(Setter.None)]
-        [@DecoratedField, SerializeField]
-        int _MaximumQueryCount = QueryBase.k_DefaultMaximumQueryCount;
-
-        [@Predicated(nameof(_CollisionSource), true, nameof(CollisionSource.CPU))]
-        [@DecoratedField, SerializeField]
-        internal BakedWaveData _BakedWaveData;
-
-
         const string k_DrawCombine = "Combine";
 
 
@@ -160,7 +175,6 @@ namespace WaveHarmonic.Crest
         {
             public static readonly int s_WaveBuffer = Shader.PropertyToID("_Crest_WaveBuffer");
             public static readonly int s_DynamicWavesTarget = Shader.PropertyToID("_Crest_DynamicWavesTarget");
-            public static readonly int s_AnimatedWavesTarget = Shader.PropertyToID("_Crest_AnimatedWavesTarget");
             public static readonly int s_AttenuationInShallows = Shader.PropertyToID("_Crest_AttenuationInShallows");
         }
 
@@ -170,6 +184,8 @@ namespace WaveHarmonic.Crest
         /// Turn shape combine pass on/off. Debug only - stripped in builds.
         /// </summary>
         internal static bool s_Combine = true;
+
+        WaterResources.ShapeCombineCompute _CombineShader;
 
         internal override string ID => "AnimatedWaves";
         internal override string Name => "Animated Waves";
@@ -187,17 +203,13 @@ namespace WaveHarmonic.Crest
             _ => throw new System.NotImplementedException(),
         };
 
-        ComputeShader _CombineShader;
-
-        int _KernalShapeCombine = -1;
-        int _KernalShapeCombine_DISABLE_COMBINE = -1;
-        int _KernalShapeCombine_FLOW_ON = -1;
-        int _KernalShapeCombine_FLOW_ON_DISABLE_COMBINE = -1;
-        int _KernalShapeCombine_DYNAMIC_WAVE_SIM_ON = -1;
-        int _KernalShapeCombine_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE = -1;
-        int _KernalShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON = -1;
-        int _KernalShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE = -1;
-
+        internal bool PreserveWaveQuality => WaveSampling switch
+        {
+            WaveSampling.Automatic => Resolution >= 512,
+            WaveSampling.Performance => false,
+            WaveSampling.Precision => true,
+            _ => throw new System.NotImplementedException(),
+        };
 
         internal AnimatedWavesLod()
         {
@@ -208,8 +220,8 @@ namespace WaveHarmonic.Crest
 
         internal override void Initialize()
         {
-            _CombineShader = WaterResources.Instance.Compute._ShapeCombine;
-            if (_CombineShader == null)
+            _CombineShader = WaterResources.Instance._ComputeLibrary._ShapeCombineCompute;
+            if (_CombineShader._Shader == null)
             {
                 _Valid = false;
                 return;
@@ -218,31 +230,29 @@ namespace WaveHarmonic.Crest
             base.Initialize();
         }
 
-        private protected override void Allocate()
-        {
-            base.Allocate();
-
-            _KernalShapeCombine = _CombineShader.FindKernel("ShapeCombine");
-            _KernalShapeCombine_DISABLE_COMBINE = _CombineShader.FindKernel("ShapeCombine_DISABLE_COMBINE");
-            _KernalShapeCombine_FLOW_ON = _CombineShader.FindKernel("ShapeCombine_FLOW_ON");
-            _KernalShapeCombine_FLOW_ON_DISABLE_COMBINE = _CombineShader.FindKernel("ShapeCombine_FLOW_ON_DISABLE_COMBINE");
-            _KernalShapeCombine_DYNAMIC_WAVE_SIM_ON = _CombineShader.FindKernel("ShapeCombine_DYNAMIC_WAVE_SIM_ON");
-            _KernalShapeCombine_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE = _CombineShader.FindKernel("ShapeCombine_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE");
-            _KernalShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON = _CombineShader.FindKernel("ShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON");
-            _KernalShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE = _CombineShader.FindKernel("ShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE");
-        }
-
         internal override void BuildCommandBuffer(WaterRenderer water, CommandBuffer buffer)
         {
             buffer.BeginSample(ID);
 
-            FlipBuffers();
+            FlipBuffers(buffer);
 
             Shader.SetGlobalFloat(ShaderIDs.s_AttenuationInShallows, _AttenuationInShallows);
 
             // Get temporary buffer to store waves. They will be copied in the combine pass.
             buffer.GetTemporaryRT(ShaderIDs.s_WaveBuffer, DataTexture.descriptor);
             CoreUtils.SetRenderTarget(buffer, ShaderIDs.s_WaveBuffer, ClearFlag.Color, ClearColor);
+
+            // Custom clear because clear not working.
+            if (Helpers.IsWebGPU && WaterResources.Instance.Compute._Clear != null)
+            {
+                var compute = WaterResources.Instance._ComputeLibrary._ClearCompute;
+                var wrapper = new PropertyWrapperCompute(buffer, compute._Shader, compute._KernelClearTarget);
+                compute.SetVariantForFormat(wrapper, DataTexture.graphicsFormat);
+                wrapper.SetTexture(Crest.ShaderIDs.s_Target, ShaderIDs.s_WaveBuffer);
+                wrapper.SetVector(Crest.ShaderIDs.s_ClearMask, Color.white);
+                wrapper.SetVector(Crest.ShaderIDs.s_ClearColor, ClearColor);
+                wrapper.Dispatch(Resolution / k_ThreadGroupSizeX, Resolution / k_ThreadGroupSizeY, Slices);
+            }
 
             // LOD dependent data.
             // Write to per-octave _WaveBuffers. Not the same as _AnimatedWaves.
@@ -254,54 +264,54 @@ namespace WaveHarmonic.Crest
 
             // Combine the LODs - copy results from biggest LOD down to LOD 0
             {
-                var combineShaderKernel = _KernalShapeCombine;
-                var combineShaderKernel_lastLOD = _KernalShapeCombine_DISABLE_COMBINE;
-                {
-                    var isFlowOn = _Water._FlowLod.Enabled;
-                    var isDynamicWavesOn = _Water._DynamicWavesLod.Enabled && !_CollisionLayers.HasFlag(CollisionLayers.DynamicWaves);
+                var wrapper = new PropertyWrapperCompute
+                (
+                    buffer,
+                    _CombineShader._Shader,
+                    PreserveWaveQuality
+                        ? _CombineShader._CopyAnimatedWavesKernel
+                        : _CombineShader._CombineAnimatedWavesKernel
+                );
 
-                    // Set the shader kernels that we will use.
-                    if (isFlowOn && isDynamicWavesOn)
-                    {
-                        combineShaderKernel = _KernalShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON;
-                        combineShaderKernel_lastLOD = _KernalShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE;
-                    }
-                    else if (isFlowOn)
-                    {
-                        combineShaderKernel = _KernalShapeCombine_FLOW_ON;
-                        combineShaderKernel_lastLOD = _KernalShapeCombine_FLOW_ON_DISABLE_COMBINE;
-                    }
-                    else if (isDynamicWavesOn)
-                    {
-                        combineShaderKernel = _KernalShapeCombine_DYNAMIC_WAVE_SIM_ON;
-                        combineShaderKernel_lastLOD = _KernalShapeCombine_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE;
-                    }
+                if (_Water._DynamicWavesLod.Enabled)
+                {
+                    _Water._DynamicWavesLod.Bind(wrapper);
                 }
 
-                buffer.BeginSample(k_DrawCombine);
+                // Start with last LOD which does not combine.
+                wrapper.SetKeyword(_CombineShader._CombineKeyword, false);
+                wrapper.SetKeyword(_CombineShader._FlowKeyword, _Water._FlowLod.Enabled);
+                wrapper.SetKeyword(_CombineShader._DynamicWavesKeyword, _Water._DynamicWavesLod.Enabled && !PreserveWaveQuality && !_CollisionLayers.HasFlag(CollisionLayers.DynamicWaves));
 
-                // Combine waves.
-                for (var slice = lastSlice; slice >= 0; slice--)
+                // The per-octave wave buffers we read from.
+                wrapper.SetTexture(ShaderIDs.s_WaveBuffer, ShaderIDs.s_WaveBuffer);
+
+                // Set the animated waves texture where we read/write to combine the results.
+                wrapper.SetTexture(Crest.ShaderIDs.s_Target, DataTexture);
+
+                if (PreserveWaveQuality)
                 {
-                    var kernel = slice < lastSlice && s_Combine
-                        ? combineShaderKernel : combineShaderKernel_lastLOD;
-
-                    var wrapper = new PropertyWrapperCompute(buffer, _CombineShader, kernel);
-
-                    // The per-octave wave buffers we read from.
-                    wrapper.SetTexture(ShaderIDs.s_WaveBuffer, ShaderIDs.s_WaveBuffer);
-
-                    if (_Water._DynamicWavesLod.Enabled) _Water._DynamicWavesLod.Bind(wrapper);
-
-                    // Set the animated waves texture where we read/write to combine the results. Use
-                    // compute suffix to avoid collision as a file already uses the normal name.
-                    wrapper.SetTexture(Crest.ShaderIDs.s_Target, DataTexture);
-                    wrapper.SetInteger(Lod.ShaderIDs.s_LodIndex, slice);
-
-                    wrapper.Dispatch(threadSize, threadSize, 1);
+                    wrapper.Dispatch(threadSize, threadSize, Slices);
                 }
+                else
+                {
+                    buffer.BeginSample(k_DrawCombine);
 
-                buffer.EndSample(k_DrawCombine);
+                    // Combine waves.
+                    for (var slice = lastSlice; slice >= 0; slice--)
+                    {
+                        wrapper.SetInteger(Lod.ShaderIDs.s_LodIndex, slice);
+                        wrapper.Dispatch(threadSize, threadSize, 1);
+
+                        if (slice == lastSlice)
+                        {
+                            // From here on, use combine.
+                            wrapper.SetKeyword(_CombineShader._CombineKeyword, s_Combine);
+                        }
+                    }
+
+                    buffer.EndSample(k_DrawCombine);
+                }
             }
 
             buffer.ReleaseTemporaryRT(ShaderIDs.s_WaveBuffer);
@@ -312,20 +322,15 @@ namespace WaveHarmonic.Crest
 
             // Alpha channel is cleared in combine step, but if any inputs draw in post-combine
             // step then alpha may have data.
-            var clear = WaterResources.Instance.Compute._Clear;
-            if (drawn && clear != null)
+            if (drawn && WaterResources.Instance.Compute._Clear != null)
             {
-                buffer.SetComputeTextureParam(clear, 0, Crest.ShaderIDs.s_Target, DataTexture);
-                buffer.SetComputeVectorParam(clear, Crest.ShaderIDs.s_ClearMask, Color.black);
-                buffer.SetComputeVectorParam(clear, Crest.ShaderIDs.s_ClearColor, Color.clear);
-                buffer.DispatchCompute
-                (
-                    clear,
-                    0,
-                    Resolution / k_ThreadGroupSizeX,
-                    Resolution / k_ThreadGroupSizeY,
-                    Slices
-                );
+                var compute = WaterResources.Instance._ComputeLibrary._ClearCompute;
+                var wrapper = new PropertyWrapperCompute(buffer, compute._Shader, compute._KernelClearTarget);
+                compute.SetVariantForFormat(wrapper, DataTexture.graphicsFormat);
+                wrapper.SetTexture(Crest.ShaderIDs.s_Target, DataTexture);
+                wrapper.SetVector(Crest.ShaderIDs.s_ClearMask, Color.black);
+                wrapper.SetVector(Crest.ShaderIDs.s_ClearColor, Color.clear);
+                wrapper.Dispatch(Resolution / k_ThreadGroupSizeX, Resolution / k_ThreadGroupSizeY, Slices);
             }
 
             // Pack height data into alpha channel.
@@ -355,15 +360,21 @@ namespace WaveHarmonic.Crest
             }
 
             // Transfer Dynamic Waves to Animated Waves.
-            if (_CollisionLayers.HasFlag(CollisionLayers.DynamicWaves) && _Water._DynamicWavesLod.Enabled)
+            if ((_CollisionLayers.HasFlag(CollisionLayers.DynamicWaves) || PreserveWaveQuality) && _Water._DynamicWavesLod.Enabled)
             {
                 buffer.BeginSample(k_DrawCombine);
                 // Clearing not required as we overwrite enter texture.
                 buffer.GetTemporaryRT(ShaderIDs.s_DynamicWavesTarget, DataTexture.descriptor);
 
-                var wrapper = new PropertyWrapperCompute(buffer, _CombineShader, 9);
+                var wrapper = new PropertyWrapperCompute(buffer, _CombineShader._Shader, _CombineShader._CombineDynamicWavesKernel);
 
-                wrapper.SetTexture(ShaderIDs.s_DynamicWavesTarget, ShaderIDs.s_DynamicWavesTarget);
+                // Flow keyword is already set, and Dynamic Waves already bound. If binding Dynamic
+                // Waves becomes kernel specific (eg binding textures), then we need to rebind.
+
+                // Start with last LOD which does not combine.
+                wrapper.SetKeyword(_CombineShader._CombineKeyword, false);
+
+                wrapper.SetTexture(Crest.ShaderIDs.s_Target, ShaderIDs.s_DynamicWavesTarget);
 
                 _Water._DynamicWavesLod.Bind(wrapper);
 
@@ -373,18 +384,21 @@ namespace WaveHarmonic.Crest
                     wrapper.SetInteger(Lod.ShaderIDs.s_LodIndex, slice);
                     wrapper.Dispatch(threadSize, threadSize, 1);
 
-                    // Change to kernel with combine enabled.
                     if (slice == lastSlice)
                     {
-                        wrapper = new(buffer, _CombineShader, 8);
+                        // From here on, use combine.
+                        wrapper.SetKeyword(_CombineShader._CombineKeyword, s_Combine);
                     }
                 }
 
                 // Copy Dynamic Waves displacement into Animated Waves.
+                if (WaterResources.Instance.Compute._Blit != null)
                 {
-                    wrapper = new(buffer, _CombineShader, 10);
-                    wrapper.SetTexture(ShaderIDs.s_AnimatedWavesTarget, DataTexture);
-                    wrapper.SetTexture(ShaderIDs.s_DynamicWavesTarget, ShaderIDs.s_DynamicWavesTarget);
+                    var compute = WaterResources.Instance._ComputeLibrary._BlitCompute;
+                    wrapper = new(buffer, compute._Shader, 0);
+                    compute.SetVariantForFormat(wrapper, DataTexture.graphicsFormat);
+                    wrapper.SetTexture(Crest.ShaderIDs.s_Source, ShaderIDs.s_DynamicWavesTarget);
+                    wrapper.SetTexture(Crest.ShaderIDs.s_Target, DataTexture);
                     wrapper.Dispatch(threadSize, threadSize, Slices);
                 }
 
@@ -393,7 +407,10 @@ namespace WaveHarmonic.Crest
 
                 // Query collisions including Dynamic Waves.
                 // Does not require copying the water level as they are added with zero alpha.
-                Provider.UpdateQueries(_Water, CollisionLayer.AfterDynamicWaves);
+                if (_CollisionLayers.HasFlag(CollisionLayers.DynamicWaves))
+                {
+                    Provider.UpdateQueries(_Water, CollisionLayer.AfterDynamicWaves);
+                }
             }
 
             if (_CollisionLayers.HasFlag(CollisionLayers.Displacement))
@@ -432,20 +449,20 @@ namespace WaveHarmonic.Crest
 
             Queryable?.CleanUp();
 
-            if (!enable)
+            if (!enable || _Water.Surface.IsQuadMesh)
             {
                 return ICollisionProvider.None;
             }
 
-            switch (_CollisionSource)
+            switch (QuerySource)
             {
-                case CollisionSource.None:
+                case LodQuerySource.None:
                     result = ICollisionProvider.None;
                     break;
-                case CollisionSource.GPU:
+                case LodQuerySource.GPU:
                     if (_Valid && !_Water.IsRunningWithoutGraphics)
                     {
-                        result = new CollisionQueryWithPasses(_Water);
+                        result = ICollisionProvider.Create(_Water);
                     }
 
                     if (_Water.IsRunningWithoutGraphics)
@@ -453,7 +470,7 @@ namespace WaveHarmonic.Crest
                         Debug.LogError($"Crest: GPU queries not supported in headless/batch mode. To resolve, assign an Animated Wave Settings asset to the {nameof(WaterRenderer)} component and set the Collision Source to be a CPU option.");
                     }
                     break;
-                case CollisionSource.CPU:
+                case LodQuerySource.CPU:
                     if (_BakedWaveData != null)
                     {
                         result = _BakedWaveData.CreateCollisionProvider();
@@ -484,6 +501,7 @@ namespace WaveHarmonic.Crest
             public readonly float _ViewerAltitudeLevelAlpha;
             public readonly int _Slice;
             public readonly int _Slices;
+            public readonly bool _HighQualityCombine;
 
             public WavelengthFilter(WaterRenderer water, int slice)
             {
@@ -493,6 +511,7 @@ namespace WaveHarmonic.Crest
                 _Minimum = _Maximum * 0.5f;
                 _TransitionThreshold = water.MaximumWavelength(_Slices - 1) * 0.5f;
                 _ViewerAltitudeLevelAlpha = water.ViewerAltitudeLevelAlpha;
+                _HighQualityCombine = water.AnimatedWavesLod.PreserveWaveQuality;
             }
         }
 
@@ -513,7 +532,7 @@ namespace WaveHarmonic.Crest
             // If approaching end of lod chain, start smoothly transitioning any large wavelengths across last two lods
             if (wavelength >= filter._TransitionThreshold)
             {
-                if (filter._Slice == filter._Slices - 2)
+                if (filter._Slice == filter._Slices - 2 && !filter._HighQualityCombine)
                 {
                     return 1f - filter._ViewerAltitudeLevelAlpha;
                 }
@@ -529,7 +548,7 @@ namespace WaveHarmonic.Crest
                 return 1f;
             }
 
-            return 0f;
+            return filter._HighQualityCombine ? 1f : 0f;
         }
 
         internal static float FilterByWavelength(WaterRenderer water, int slice, float wavelength)
@@ -550,8 +569,31 @@ namespace WaveHarmonic.Crest
         {
             s_Inputs.Clear();
         }
+    }
+
+    // API
+    partial class AnimatedWavesLod
+    {
+        float GetWaveResolutionMultiplier()
+        {
+            return PreserveWaveQuality ? 1f : _WaveResolutionMultiplier;
+        }
+    }
+
+    partial class AnimatedWavesLod
+    {
+        [@HideInInspector]
+        [@System.Obsolete("Please use QuerySource instead.")]
+        [Tooltip("Where to obtain water shape on CPU for physics / gameplay.")]
+        [@GenerateAPI(Setter.Internal)]
+        [@DecoratedField, SerializeField]
+        internal CollisionSource _CollisionSource = CollisionSource.GPU;
+    }
 
 #if UNITY_EDITOR
+    // Editor
+    partial class AnimatedWavesLod
+    {
         [@OnChange]
         private protected override void OnChange(string propertyPath, object previousValue)
         {
@@ -560,13 +602,10 @@ namespace WaveHarmonic.Crest
             switch (propertyPath)
             {
                 case nameof(_CollisionLayers):
-                case nameof(_CollisionSource):
-                    if (_Water == null || !_Water.isActiveAndEnabled || !Enabled) return;
-                    Queryable?.CleanUp();
-                    InitializeProvider(true);
+                    ResetQueryChange();
                     break;
             }
         }
-#endif
     }
+#endif
 }

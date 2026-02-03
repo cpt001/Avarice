@@ -30,11 +30,6 @@ namespace WaveHarmonic.Crest.Generated
     enum CollisionLayers
     {
         /// <summary>
-        /// All layers.
-        /// </summary>
-        Everything,
-
-        /// <summary>
         /// No extra layers (ie single layer).
         /// </summary>
         Nothing,
@@ -51,6 +46,11 @@ namespace WaveHarmonic.Crest.Generated
         /// Extra displacement layer for visual displacement.
         /// </summary>
         Displacement,
+
+        /// <summary>
+        /// All layers.
+        /// </summary>
+        Everything,
     }
 }
 
@@ -290,6 +290,31 @@ namespace WaveHarmonic.Crest.Generated
 
 namespace WaveHarmonic.Crest.Generated
 {
+    enum LodQuerySource
+    {
+        /// <summary>
+        /// No query source.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// Uses AsyncGPUReadback to retrieve data from GPU to CPU.
+        /// </summary>
+        /// <remarks>
+        /// This is the most optimal approach.
+        /// </remarks>
+        GPU,
+
+        /// <summary>
+        /// Computes data entirely on the CPU.
+        /// </summary>
+        CPU,
+    }
+}
+
+
+namespace WaveHarmonic.Crest.Generated
+{
     enum LodTextureFormatMode
     {
         /// <summary>
@@ -387,6 +412,68 @@ namespace WaveHarmonic.Crest.Generated
 
 namespace WaveHarmonic.Crest.Generated
 {
+    enum WaterCameraExclusion
+    {
+        /// <summary>
+        /// No exclusion rules applied.
+        /// </summary>
+        Nothing,
+
+        /// <summary>
+        /// Exclude hidden cameras.
+        /// </summary>
+        /// <remarks>
+        /// Does not affect reflection cameras, as they are typically always hidden. Use the Reflection flag for them.
+        /// </remarks>
+        Hidden,
+
+        /// <summary>
+        /// Exclude reflection cameras.
+        /// </summary>
+        Reflection,
+
+        /// <summary>
+        /// Exclude cameras not tagged as MainCamera.
+        /// </summary>
+        NonMainCamera,
+
+        /// <summary>
+        /// Apply all exclusion rules.
+        /// </summary>
+        Everything,
+    }
+}
+
+
+namespace WaveHarmonic.Crest.Generated
+{
+    enum WaterDataBackgroundMode
+    {
+        /// <summary>
+        /// Always progress simulations in the background when camera does not render.
+        /// </summary>
+        Always,
+
+        /// <summary>
+        /// Progress simulations in the background when camera is inactive (ie !isActiveAndEnabled).
+        /// </summary>
+        Inactive,
+
+        /// <summary>
+        /// Progress simulations in the background when camera is disabled (ie !enabled).
+        /// </summary>
+        Disabled,
+
+        /// <summary>
+        /// Never progress simulations in the background.
+        /// </summary>
+        Never,
+    }
+}
+
+
+namespace WaveHarmonic.Crest.Generated
+{
     enum WaterInjectionPoint
     {
         /// <summary>
@@ -449,5 +536,33 @@ namespace WaveHarmonic.Crest.Generated
         /// This option is more precise and can be submerged.
         /// </remarks>
         Clip,
+    }
+}
+
+
+namespace WaveHarmonic.Crest.Generated
+{
+    enum WaveSampling
+    {
+        /// <summary>
+        /// Automatically chooses the other options as needed (512+ resolution needs precision).
+        /// </summary>
+        Automatic,
+
+        /// <summary>
+        /// Reduces samples by copying waves from higher LODs to lower LODs.
+        /// </summary>
+        /// <remarks>
+        /// Best for resolutions lower than 512.
+        /// </remarks>
+        Performance,
+
+        /// <summary>
+        /// Samples directly from the wave buffers to preserve wave quality.
+        /// </summary>
+        /// <remarks>
+        /// Needed for higher resolutions (512+). Higher LOD counts can also benefit with this enabled.
+        /// </remarks>
+        Precision,
     }
 }

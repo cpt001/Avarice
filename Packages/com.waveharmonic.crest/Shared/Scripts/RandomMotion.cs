@@ -18,6 +18,9 @@ namespace WaveHarmonic.Crest.Examples
         int _Version = 0;
 #pragma warning restore 414
 
+        [SerializeField]
+        bool _WorldSpace;
+
         [Header("Translation")]
 
         [SerializeField]
@@ -52,7 +55,7 @@ namespace WaveHarmonic.Crest.Examples
 
         void Start()
         {
-            _Origin = transform.position;
+            _Origin = _WorldSpace ? transform.position : transform.localPosition;
 
             _OrthogonalAxis = Quaternion.AngleAxis(90f, Vector3.up) * _Axis;
         }
@@ -64,10 +67,21 @@ namespace WaveHarmonic.Crest.Examples
                 // Do circles in perlin noise
                 var rnd = 2f * (Mathf.PerlinNoise(0.5f + 0.5f * Mathf.Cos(_Frequency * Time.time), 0.5f + 0.5f * Mathf.Sin(_Frequency * Time.time)) - 0.5f);
 
+                // Prevent jump at start.
+                var amplitude = Mathf.Min(_Amplitude, _Amplitude * Time.timeSinceLevelLoad);
+
                 var orthoPhaseOff = Mathf.PI / 2f;
                 var rndOrtho = 2f * (Mathf.PerlinNoise(0.5f + 0.5f * Mathf.Cos(_Frequency * Time.time + orthoPhaseOff), 0.5f + 0.5f * Mathf.Sin(_Frequency * Time.time + orthoPhaseOff)) - 0.5f);
+                var position = _Origin + (_Axis * rnd + _OrthogonalMotion * rndOrtho * _OrthogonalAxis) * amplitude;
 
-                transform.position = _Origin + (_Axis * rnd + _OrthogonalMotion * rndOrtho * _OrthogonalAxis) * _Amplitude;
+                if (_WorldSpace)
+                {
+                    transform.position = position;
+                }
+                else
+                {
+                    transform.localPosition = position;
+                }
             }
 
             // Rotation

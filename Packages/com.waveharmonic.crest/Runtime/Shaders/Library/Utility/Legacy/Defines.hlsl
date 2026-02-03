@@ -86,6 +86,9 @@
 // Transparent Objects Receives Shadows
 //
 
+// WebGPU does not like the binding.
+#ifndef SHADER_API_WEBGPU
+
 #if _SURFACE_TYPE_TRANSPARENT
 #if _TRANSPARENT_RECEIVES_SHADOWS
 #if SHADERPASS == SHADERPASS_FORWARD || SHADERPASS == SHADERPASS_FORWARD_ADD
@@ -107,5 +110,7 @@ float4 _ShadowMapTexture_TexelSize;
 #endif
 #endif
 #endif
+
+#endif // SHADER_API_WEBGPU
 
 #endif // d_WaveHarmonic_Utility_ShaderGraphDefines

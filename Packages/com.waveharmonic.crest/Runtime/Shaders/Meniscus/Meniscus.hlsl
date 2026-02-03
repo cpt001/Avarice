@@ -13,6 +13,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Depth.hlsl"
 
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Shim.hlsl"
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Keywords.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Lighting.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/VolumeLighting.hlsl"
 
@@ -39,6 +40,8 @@ int   _Crest_DataSliceOffset;
 
 half _Crest_Radius;
 half _Crest_RefractionStrength;
+
+bool _Crest_PortalInverted;
 
 m_CrestNameSpace
 
@@ -87,7 +90,7 @@ half4 Fragment(Varyings input)
 
 #if d_Masked
     // Prevent rendering inside of new portal modules.
-    if (LOAD_TEXTURE2D_X(_Crest_WaterMaskTexture, input.positionCS.xy).r == k_Crest_MaskInsidePortal)
+    if ((LOAD_TEXTURE2D_X(_Crest_WaterMaskTexture, input.positionCS.xy).r == k_Crest_MaskInsidePortal) == _Crest_PortalInverted)
     {
         discard;
     }

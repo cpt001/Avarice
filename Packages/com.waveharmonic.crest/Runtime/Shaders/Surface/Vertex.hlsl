@@ -20,6 +20,7 @@
 #ifndef SHADERGRAPH_PREVIEW
 
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Shim.hlsl"
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Keywords.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
@@ -29,13 +30,7 @@
 
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Depth.hlsl"
 
-#ifndef CREST_HDRP
-#if (SHADERPASS == SHADERPASS_MOTION_VECTORS)
-#define _TRANSPARENT_WRITES_MOTION_VEC 1
-#endif
-#endif
-
-#if _TRANSPARENT_WRITES_MOTION_VEC
+#if d_Crest_MotionVectors
 #define m_Slice clamp((int)_Crest_LodIndex + (isMotionVectors ? g_Crest_LodChange : 0), 0, g_Crest_LodCount)
 #define m_Make(slice) Make(slice, isMotionVectors)
 #else
@@ -50,20 +45,20 @@ void Vertex(m_Properties)
     // This will get called twice.
     // With current and previous time respectively.
 
-    o_UndisplacedXZ = 0.0;
+    o_PositionWS = i_PositionWS;
+    o_UndisplacedXZ = i_PositionWS.xz;
     o_LodAlpha = 0.0;
     o_WaterLevelOffset = 0.0;
     o_WaterLevelDerivatives = 0.0;
     o_Flow = 0.0;
 
+#if !d_Crest_CustomMesh
     const bool isMotionVectors = i_Time < _Time.y;
 
     const float slice0 = m_Slice;
     const float slice1 = slice0 + 1;
     const Cascade cascade0 = Cascade::m_Make(slice0);
     const Cascade cascade1 = Cascade::m_Make(slice1);
-
-    o_PositionWS = i_PositionWS;
 
     // Vertex snapping and LOD transition.
     SnapAndTransitionVertLayout
@@ -99,48 +94,48 @@ void Vertex(m_Properties)
     // Data that needs to be sampled at the undisplaced position.
     if (weight0 > m_CrestSampleLodThreshold)
     {
-#if _TRANSPARENT_WRITES_MOTION_VEC
+#if d_Crest_MotionVectors
         if (isMotionVectors)
         {
-            Cascade::MakeAnimatedWavesSource(slice0).SampleDisplacement(o_UndisplacedXZ, weight0, o_PositionWS, o_WaterLevelDerivatives);
+            Cascade::MakeAnimatedWavesSource(slice0).SampleDisplacement(o_UndisplacedXZ, weight0, o_PositionWS, o_WaterLevelDerivatives, o_WaterLevelOffset);
         }
         else
 #endif
         {
-            Cascade::MakeAnimatedWaves(slice0).SampleDisplacement(o_UndisplacedXZ, weight0, o_PositionWS, o_WaterLevelDerivatives);
+            Cascade::MakeAnimatedWaves(slice0).SampleDisplacement(o_UndisplacedXZ, weight0, o_PositionWS, o_WaterLevelDerivatives, o_WaterLevelOffset);
         }
     }
 
     if (weight1 > m_CrestSampleLodThreshold)
     {
-#if _TRANSPARENT_WRITES_MOTION_VEC
+#if d_Crest_MotionVectors
         if (isMotionVectors)
         {
-            Cascade::MakeAnimatedWavesSource(slice1).SampleDisplacement(o_UndisplacedXZ, weight1, o_PositionWS, o_WaterLevelDerivatives);
+            Cascade::MakeAnimatedWavesSource(slice1).SampleDisplacement(o_UndisplacedXZ, weight1, o_PositionWS, o_WaterLevelDerivatives, o_WaterLevelOffset);
         }
         else
 #endif
         {
-            Cascade::MakeAnimatedWaves(slice1).SampleDisplacement(o_UndisplacedXZ, weight1, o_PositionWS, o_WaterLevelDerivatives);
+            Cascade::MakeAnimatedWaves(slice1).SampleDisplacement(o_UndisplacedXZ, weight1, o_PositionWS, o_WaterLevelDerivatives, o_WaterLevelOffset);
         }
     }
 
     // Data that needs to be sampled at the displaced position.
     if (weight0 > m_CrestSampleLodThreshold)
     {
-#if CREST_FLOW_ON
+#if d_Crest_FlowLod
         Cascade::MakeFlow(slice0).SampleFlow(o_UndisplacedXZ, weight0, o_Flow);
 #endif
     }
 
     if (weight1 > m_CrestSampleLodThreshold)
     {
-#if CREST_FLOW_ON
+#if d_Crest_FlowLod
         Cascade::MakeFlow(slice1).SampleFlow(o_UndisplacedXZ, weight1, o_Flow);
 #endif
     }
 
-#if _TRANSPARENT_WRITES_MOTION_VEC
+#if d_Crest_MotionVectors
     if (isMotionVectors)
     {
         o_PositionWS.xz -= g_Crest_WaterCenter.xz;
@@ -148,6 +143,7 @@ void Vertex(m_Properties)
         o_PositionWS.xz += g_Crest_WaterCenter.xz;
         o_PositionWS.xz += g_Crest_WaterCenterDelta;
     }
+#endif
 #endif
 }
 

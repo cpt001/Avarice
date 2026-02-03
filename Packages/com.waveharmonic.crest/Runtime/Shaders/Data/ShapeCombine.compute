@@ -1,21 +1,19 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
-// Compute shader to perform combine of displacements. Reads and writes to texture array which saves
-// needing to do ping pong of render targets. Unfortunately reading/writing float4s is not supported
-// on pre-DX11.3 hardware (aka typed UAV loads), so this path is not the default, for now..
+#pragma exclude_renderers glcore gles3
 
-#pragma kernel ShapeCombine
-#pragma kernel ShapeCombine_DISABLE_COMBINE _DISABLE_COMBINE
-#pragma kernel ShapeCombine_FLOW_ON _FLOW_ON
-#pragma kernel ShapeCombine_FLOW_ON_DISABLE_COMBINE _FLOW_ON _DISABLE_COMBINE
-#pragma kernel ShapeCombine_DYNAMIC_WAVE_SIM_ON _DYNAMIC_WAVE_SIM_ON
-#pragma kernel ShapeCombine_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE _DYNAMIC_WAVE_SIM_ON _DISABLE_COMBINE
-#pragma kernel ShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON _FLOW_ON _DYNAMIC_WAVE_SIM_ON
-#pragma kernel ShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE _FLOW_ON _DYNAMIC_WAVE_SIM_ON _DISABLE_COMBINE
-#pragma kernel ShapeCombineDynamicWaves
-#pragma kernel ShapeCombineDynamicWaves_DISABLE_COMBINE _DISABLE_COMBINE
-#pragma kernel ShapeCombineCopyDynamicWaves
+#pragma kernel CrestShapeCombineAnimatedWaves
+#pragma kernel CrestShapeCopyAnimatedWaves
+#pragma kernel CrestShapeCombineDynamicWaves d_CombineDynamicWaves
+
+#pragma multi_compile_local _ d_Combine
+#pragma multi_compile_local _ d_DynamicWaves
+#pragma multi_compile_local _ d_Flow
+
+#if d_CombineDynamicWaves
+#define d_DynamicWaves 1
+#endif
 
 #include "HLSLSupport.cginc"
 
@@ -30,11 +28,10 @@ float _Crest_DisplaceClamp;
 
 Texture2DArray _Crest_WaveBuffer;
 RWTexture2DArray<float4> _Crest_Target;
-RWTexture2DArray<float4> _Crest_DynamicWavesTarget;
-RWTexture2DArray<float4> _Crest_AnimatedWavesTarget;
 
 m_CrestNameSpace
 
+#if d_Flow
 void Flow(const float texel, out float2 offsets, out float2 weights)
 {
     const float period = max(3.0 * texel, 1.0);
@@ -44,7 +41,9 @@ void Flow(const float texel, out float2 offsets, out float2 weights)
     if (weights.x > 1.0) weights.x = 2.0 - weights.x;
     weights.y = 1.0 - weights.x;
 }
+#endif
 
+#if d_Combine
 void SampleDisplacementsCompute(
     in RWTexture2DArray<float4> i_dispSampler,
     in float i_resolution, in float3 i_uv_slice,
@@ -82,10 +81,11 @@ void SampleDisplacementsCompute(
 
     io_worldPos += i_wt * dataLerped.xyz;
 }
+#endif
 
-void ShapeCombineBase(uint3 id)
+void ShapeCombine(uint3 id)
 {
-    const uint slice0 = _Crest_LodIndex;
+    const uint slice0 = id.z;
     const Cascade cascade = Cascade::MakeAnimatedWaves(slice0);
 
     const float3 uv = cascade.IDToUV(id.xy);
@@ -93,23 +93,25 @@ void ShapeCombineBase(uint3 id)
 
     float3 result = 0.0;
 
+#if !d_CombineDynamicWaves
     // Sample in waves for this cascade.
     {
-#if _FLOW_ON
+#if d_Flow
         const half2 flow = Cascade::MakeFlow(slice0).SampleFlow(positionWSXZ);
 
         float2 offsets, weights;
         Flow(cascade._Texel, offsets, weights);
 
-        result += cascade.Sample(_Crest_WaveBuffer, positionWSXZ - offsets[0] * flow).xyz * weights[0];
-        result += cascade.Sample(_Crest_WaveBuffer, positionWSXZ - offsets[1] * flow).xyz * weights[1];
+        result += cascade.SampleAnimatedWavesOverflow(_Crest_WaveBuffer, positionWSXZ - offsets.x * flow, 1.0).xyz * weights.x;
+        result += cascade.SampleAnimatedWavesOverflow(_Crest_WaveBuffer, positionWSXZ - offsets.y * flow, 1.0).xyz * weights.y;
 #else
-        result += cascade.Sample(_Crest_WaveBuffer, uv).xyz;
-#endif // _FLOW_ON
+        result += _Crest_WaveBuffer[id].xyz;
+#endif
     }
+#endif
 
     // Disabled for last LOD.
-#if !_DISABLE_COMBINE
+#if d_Combine
     {
         const Cascade cascade = Cascade::MakeAnimatedWaves(slice0 + 1);
         // Sample the shape 1 texture at this world position.
@@ -119,61 +121,37 @@ void ShapeCombineBase(uint3 id)
     }
 #endif
 
-#if _DYNAMIC_WAVE_SIM_ON
+#if d_DynamicWaves
     {
         // Convert dynamic wave sim to displacements.
         result += Cascade::MakeDynamicWaves(slice0)
             .SampleDynamicWavesDisplacement(positionWSXZ, _Crest_HorizontalDisplace, _Crest_DisplaceClamp);
     }
-#endif // _DYNAMIC_WAVE_SIM_ON
+#endif
 
-    _Crest_Target[uint3(id.xy, slice0)] = float4(result, 0.0);
+    _Crest_Target[id] = float4(result, 0.0);
+}
+
+void ShapeCombineAnimatedWaves(uint3 id)
+{
+    id.z = _Crest_LodIndex;
+    ShapeCombine(id);
+}
+
+void ShapeCopyAnimatedWaves(uint3 id)
+{
+    ShapeCombine(id);
 }
 
 void ShapeCombineDynamicWaves(uint3 id)
 {
-    const uint slice0 = _Crest_LodIndex;
-    const Cascade cascade = Cascade::MakeAnimatedWaves(slice0);
-    const float3 uv = cascade.IDToUV(id.xy);
-    const float2 positionWSXZ = cascade.UVToWorld(uv);
-    float3 result = 0.0;
-
-    // Disabled for last LOD.
-#if !_DISABLE_COMBINE
-    {
-        // We are sampling from the target which matches Animated Waves descriptor.
-        const Cascade cascade = Cascade::MakeAnimatedWaves(slice0 + 1);
-        const float3 uv = cascade.WorldToUV(positionWSXZ);
-        // Waves to combine down from the next lod up the chain.
-        SampleDisplacementsCompute(_Crest_DynamicWavesTarget, cascade._Resolution, uv, 1.0, result);
-    }
-#endif
-
-    {
-        // We are sampling from Dynamic Waves.
-        const Cascade cascade = Cascade::MakeDynamicWaves(slice0);
-        const float3 uv = cascade.WorldToUV(positionWSXZ);
-        result += cascade.SampleDynamicWavesDisplacement(uv, _Crest_HorizontalDisplace, _Crest_DisplaceClamp);
-    }
-
-    _Crest_DynamicWavesTarget[uint3(id.xy, slice0)] = float4(result, 0.0);
-}
-
-void ShapeCombineCopyDynamicWaves(uint3 id)
-{
-    _Crest_AnimatedWavesTarget[id] += _Crest_DynamicWavesTarget[id];
+    // We are combining from the target which matches the Animated Waves descriptor.
+    id.z = _Crest_LodIndex;
+    ShapeCombine(id);
 }
 
 m_CrestNameSpaceEnd
 
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombine(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineBase(id); }
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombine_DISABLE_COMBINE(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineBase(id); }
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombine_FLOW_ON(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineBase(id); }
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombine_FLOW_ON_DISABLE_COMBINE(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineBase(id); }
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombine_DYNAMIC_WAVE_SIM_ON(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineBase(id); }
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombine_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineBase(id); }
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineBase(id); }
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombine_FLOW_ON_DYNAMIC_WAVE_SIM_ON_DISABLE_COMBINE(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineBase(id); }
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombineDynamicWaves(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineDynamicWaves(id); }
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombineDynamicWaves_DISABLE_COMBINE(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineDynamicWaves(id); }
-[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] void ShapeCombineCopyDynamicWaves(uint3 id : SV_DispatchThreadID) { m_Crest::ShapeCombineCopyDynamicWaves(id); }
+m_CrestKernelDefault(ShapeCombineAnimatedWaves)
+m_CrestKernelDefault(ShapeCopyAnimatedWaves)
+m_CrestKernelDefault(ShapeCombineDynamicWaves)

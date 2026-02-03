@@ -3,6 +3,8 @@
 
 // Soft shadow term is red, hard shadow term is green.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestUpdateShadowsBRP _BRP
 #pragma kernel CrestUpdateShadowsHRP _HRP
 #pragma kernel CrestUpdateShadowsURP _URP
@@ -33,7 +35,7 @@ bool   _Crest_SampleColorMap;
 float3 _Crest_Absorption;
 float3 _Crest_Scattering;
 
-RWTexture2DArray<float2> _Crest_Target;
+RWTexture2DArray<m_Float2> _Crest_Target;
 
 
 m_CrestNameSpace
@@ -146,7 +148,7 @@ void UpdateShadows(const uint3 id)
         shadow = lerp(shadow, shadowThisFrame, _Crest_JitterDiameters_CurrentFrameWeights.zw * _Crest_SimDeltaTime * 60.0);
     }
 
-    _Crest_Target[id] = shadow;
+    _Crest_Target[id] = m_Float2FromFloat2(shadow);
 }
 
 m_CrestNameSpaceEnd

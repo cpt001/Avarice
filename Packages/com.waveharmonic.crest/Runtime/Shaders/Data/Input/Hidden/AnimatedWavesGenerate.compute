@@ -1,6 +1,8 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestTransferWaves
 
 #pragma multi_compile_local __ d_Texture d_TextureBlend
@@ -11,6 +13,7 @@
 
 #include "HLSLSupport.cginc"
 
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Filtering.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Constants.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
@@ -32,6 +35,8 @@ float _Crest_RespectShallowWaterAttenuation;
 float _Crest_MaximumAttenuationDepth;
 float _Crest_WaveResolutionMultiplier;
 float _Crest_TransitionalWavelengthThreshold;
+uint _Crest_Resolution;
+bool _Crest_SeaLevelOnly;
 
 // Texture
 #if d_Texture
@@ -59,6 +64,8 @@ void TransferWaves(uint3 id)
     const uint first = parameters.x;
     const uint last = parameters.y;
     const half transition = parameters.w;
+
+    const uint2 resolution = uint2(_Crest_Resolution, _Crest_Resolution);
 
 #if !d_TextureBlend
     // Additive only. All wavelengths filtered out for this LOD so nothing to do.
@@ -154,11 +161,12 @@ void TransferWaves(uint3 id)
         axisZ1.x = -axisX1.y; axisZ1.y = axisX1.x;
     }
 #else
+
     const float2 positionWaves = float2(dot(positionWS, _Crest_AxisX), dot(positionWS, float2(-_Crest_AxisX.y, _Crest_AxisX.x)));
 #endif // d_Texture
 
-    const half depth = Cascade::MakeDepth(slice0).SampleSignedDepthFromSeaLevel(positionWS) +
-        Cascade::MakeLevel(slice0).SampleLevel(positionWS);
+    const half level = Cascade::MakeLevel(slice0).SampleLevel(positionWS);
+    const half depth = Cascade::MakeDepth(slice0).SampleSignedDepthFromSeaLevel(positionWS) + level;
 
     half3 _displacement = 0.0;
 
@@ -217,8 +225,8 @@ void TransferWaves(uint3 id)
             const float2 uv1 = float2(dot(positionScaledWS, axisX1), dot(positionScaledWS, axisZ1));
 
             // Sample displacement, rotate into frame.
-            float3 displacement0 = _Crest_WaveBuffer.SampleLevel(sampler_Crest_linear_repeat, float3(uv0, waveBufferIndex), 0).xyz;
-            float3 displacement1 = _Crest_WaveBuffer.SampleLevel(sampler_Crest_linear_repeat, float3(uv1, waveBufferIndex), 0).xyz;
+            const float3 displacement0 = Utility::SampleBicubicRepeat(_Crest_WaveBuffer, uv0, resolution, waveBufferIndex).xyz;
+            const float3 displacement1 = Utility::SampleBicubicRepeat(_Crest_WaveBuffer, uv1, resolution, waveBufferIndex).xyz;
 
             float3 displacement = lerp(displacement0, displacement1, t);
             displacement.xz = displacement.x * axis + displacement.z * float2(-axis.y, axis.x);
@@ -227,7 +235,9 @@ void TransferWaves(uint3 id)
 
 #else // !d_Texture
             // Sample displacement, rotate into frame defined by global wind direction.
-            half3 displacement = _Crest_WaveBuffer.SampleLevel(sampler_Crest_linear_repeat, float3(positionWaves / waveBufferSize, waveBufferIndex), 0).xyz;
+            // Hardware bilinear produces small noise artifacts. Custom bilinear solves that,
+            // but we still get texel artifacts that show up in normals, so use bicubic.
+            float3 displacement = Utility::SampleBicubicRepeat(_Crest_WaveBuffer, positionWaves / waveBufferSize, resolution, waveBufferIndex).xyz;
             displacement.xz = displacement.x * _Crest_AxisX + displacement.z * float2(-_Crest_AxisX.y, _Crest_AxisX.x);
             _displacement += displacement * weight;
 #endif // d_Texture
@@ -237,6 +247,13 @@ void TransferWaves(uint3 id)
 #if d_TextureBlend
     // Global waves are always additive.
     _Crest_Target[id] *= 1.0 - saturate(alpha);
+#endif
+
+#if !d_Texture
+    if (_Crest_SeaLevelOnly)
+    {
+        _displacement *= saturate(1.0 - abs(level));
+    }
 #endif
 
     // Always write full alpha so textures show up in previews.

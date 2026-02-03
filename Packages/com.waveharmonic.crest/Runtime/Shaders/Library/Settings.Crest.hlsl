@@ -1,19 +1,27 @@
-//
-// This file was automatically generated. Please don't edit by hand. Execute Editor command [ Edit > Rendering > Generate Shader Includes ] instead
-//
+// Crest Water System
+// Copyright © 2024 Wave Harmonic. All rights reserved.
 
-#ifndef SETTINGS_CREST_HLSL
-#define SETTINGS_CREST_HLSL
-//
-// WaveHarmonic.Crest.Editor.ShaderSettings:  static fields
-//
-#define CREST_PACKAGE_HDRP (0)
-#define CREST_PACKAGE_URP (1)
-#define CREST_PORTALS (0)
-#define CREST_SHIFTING_ORIGIN (0)
-#define CREST_FULL_PRECISION_DISPLACEMENT (1)
-#define CREST_DISCARD_ATMOSPHERIC_SCATTERING (1)
-#define CREST_LEGACY_UNDERWATER (0)
+#ifndef d_WaveHarmonic_Crest_Settings
+#define d_WaveHarmonic_Crest_Settings
 
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.hlsl"
 
+#if   CREST_PLATFORM_STANDALONE
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.Standalone.hlsl"
+#elif CREST_PLATFORM_SERVER
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.Server.hlsl"
+#elif CREST_PLATFORM_ANDROID
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.Android.hlsl"
+#elif CREST_PLATFORM_IOS
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.iOS.hlsl"
+#elif CREST_PLATFORM_WEB
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.Web.hlsl"
+#elif CREST_PLATFORM_TVOS
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.tvOS.hlsl"
+#elif CREST_PLATFORM_VISIONOS
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.visionOS.hlsl"
+#else
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.Default.hlsl"
 #endif
+
+#endif // d_WaveHarmonic_Crest_Settings

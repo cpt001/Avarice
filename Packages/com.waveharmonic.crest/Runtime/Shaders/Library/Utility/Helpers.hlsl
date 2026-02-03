@@ -43,6 +43,16 @@ float2 WorldNormalToScreenDirection(const float3 i_PositionWS, const float3 i_No
     return direction;
 }
 
+float3 SafeComputeWorldSpacePosition(float2 positionNDC, float deviceDepth, float4x4 invViewProjMatrix)
+{
+    float4 positionCS  = ComputeClipSpacePosition(positionNDC, deviceDepth);
+    float4 hpositionWS = mul(invViewProjMatrix, positionCS);
+
+    // w is sometimes zero when using oblique projection.
+    // Zero is better than NaN.
+    return hpositionWS.w > 0.0 ? hpositionWS.xyz / hpositionWS.w : 0.0;
+}
+
 m_UtilityNameSpaceEnd
 
 #endif // d_WaveHarmonic_Utility_Helpers

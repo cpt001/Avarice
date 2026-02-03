@@ -179,11 +179,62 @@
         },
         {
             "m_Id": "e4a54526c6204b5badd66e158dcf0b1d"
+        },
+        {
+            "m_Id": "eb89085b4d7c46c7bf82f63a3b43a0c6"
+        },
+        {
+            "m_Id": "a12a11f74d174f1d8a63d18ee8743b25"
+        },
+        {
+            "m_Id": "9f311e65704646e48b52019d389d3cd0"
+        },
+        {
+            "m_Id": "d209a2766f5546688fe4bc92416cd548"
+        },
+        {
+            "m_Id": "8ec616eaa4964d38b92b904775e34f7e"
+        },
+        {
+            "m_Id": "feb1793feb264a239de366d730977489"
+        },
+        {
+            "m_Id": "cc11871fc2f74ea2821e2c9f78d3d58e"
+        },
+        {
+            "m_Id": "a485464528a74269852b53d441f1f0a8"
+        },
+        {
+            "m_Id": "bc35f605d4fc49869c24479f827fbfa8"
+        },
+        {
+            "m_Id": "dd752976323845b0aad610adb0672e38"
+        },
+        {
+            "m_Id": "8c45cfde06fb4d5ca12db7bcfa8f6316"
+        },
+        {
+            "m_Id": "30ad385314c946f5a3cbd7adefe9c270"
+        },
+        {
+            "m_Id": "c06c8782d1b742d189925deba54c21bc"
+        },
+        {
+            "m_Id": "38e9cee298f8483e8ca80e75574c2175"
+        },
+        {
+            "m_Id": "4a21e5afa49f40d38aef98a49226fa6e"
+        },
+        {
+            "m_Id": "a6704108884e487799aa5f653566e56b"
         }
     ],
     "m_Keywords": [
         {
             "m_Id": "b91141f3e4cf4131ab732e6ae5828231"
+        },
+        {
+            "m_Id": "ada9e52f38cd4e66a4e97c1fd2a5bd65"
         }
     ],
     "m_Dropdowns": [],
@@ -204,6 +255,12 @@
             "m_Id": "9475b0c108bc456eb09f35111542022b"
         },
         {
+            "m_Id": "72dfddd5562c42e4bf73f41a47cd4863"
+        },
+        {
+            "m_Id": "0c1d5d0d16af4922b19d366983ea194e"
+        },
+        {
             "m_Id": "330cb63ecb704ddebac4935cb0b85ab7"
         },
         {
@@ -213,6 +270,9 @@
             "m_Id": "76dfbf9d02da4e2b9a7cffa11a17b81d"
         },
         {
+            "m_Id": "475b6b25b79b44d19bf94d0af92bc9a1"
+        },
+        {
             "m_Id": "76a4c02b522d4e1d84eca095e84b1f30"
         },
         {
@@ -220,6 +280,9 @@
         },
         {
             "m_Id": "d65753c4eac547c5a73c35da6956d9e2"
+        },
+        {
+            "m_Id": "9125a3c8387e4d38987cc5707394b95b"
         }
     ],
     "m_Nodes": [
@@ -851,13 +914,13 @@
                 "m_Id": "b7891fe7e5a34f03adebd8a45505c5fc"
             },
             {
-                "m_Id": "8e8aee51883445f1b08bfbec696cb18d"
-            },
-            {
                 "m_Id": "e207931e020242bba83058a59f3fb07d"
             },
             {
                 "m_Id": "01717f91918a4191a16ca9eb0a394f85"
+            },
+            {
+                "m_Id": "8e8aee51883445f1b08bfbec696cb18d"
             },
             {
                 "m_Id": "641a42645cc2483bb33d553093357479"
@@ -1208,6 +1271,30 @@
         "y": 0.0
     },
     "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.CategoryData",
+    "m_ObjectId": "0c1d5d0d16af4922b19d366983ea194e",
+    "m_Name": "Reflections (Planar)",
+    "m_ChildObjectList": [
+        {
+            "m_Id": "d6af4ca8280b4d56b6f2bf1c8b7a0bbd"
+        },
+        {
+            "m_Id": "2d31998b356d41179aa5291dcedc7850"
+        },
+        {
+            "m_Id": "eb89085b4d7c46c7bf82f63a3b43a0c6"
+        },
+        {
+            "m_Id": "0d81099c729342968bf4ee002d378dcf"
+        },
+        {
+            "m_Id": "e632a014145542d8a0f6bad7aac6cb63"
+        }
+    ]
 }
 
 {
@@ -1886,18 +1973,35 @@
 
 {
     "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.BooleanShaderProperty",
+    "m_ObjectId": "30ad385314c946f5a3cbd7adefe9c270",
+    "m_Guid": {
+        "m_GuidSerialized": "23c5d086-28d3-4f64-a7c7-b7bec078341f"
+    },
+    "m_Name": "Foam Bioluminescence Enabled",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Foam Bioluminescence Enabled",
+    "m_DefaultReferenceName": "_Foam_Bioluminescence_Enabled",
+    "m_OverrideReferenceName": "_Crest_FoamBioluminescenceEnabled",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": false
+}
+
+{
+    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.CategoryData",
     "m_ObjectId": "330cb63ecb704ddebac4935cb0b85ab7",
     "m_Name": "Refraction",
     "m_ChildObjectList": [
         {
             "m_Id": "14f5135a4bf8f5868cb55001b6472657"
-        },
-        {
-            "m_Id": "bbd2579dfd7f38879fab18706b09b5fb"
-        },
-        {
-            "m_Id": "d33c23a144f9400888ebc0b17741ceea"
         }
     ]
 }
@@ -1921,6 +2025,34 @@
         "y": 0.0
     },
     "m_Labels": []
+}
+
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "38e9cee298f8483e8ca80e75574c2175",
+    "m_Guid": {
+        "m_GuidSerialized": "eb0230f0-4d3b-4348-b7af-d0c613693fbe"
+    },
+    "m_Name": "Foam Bioluminescence Intensity",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Foam Bioluminescence Intensity",
+    "m_DefaultReferenceName": "_Foam_Bioluminescence_Intensity",
+    "m_OverrideReferenceName": "_Crest_FoamBioluminescenceIntensity",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": 1.0,
+    "m_FloatType": 0,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
 }
 
 {
@@ -1961,6 +2093,15 @@
         },
         {
             "m_Id": "e608dd8f43794f5d8b3995446b21467f"
+        },
+        {
+            "m_Id": "a12a11f74d174f1d8a63d18ee8743b25"
+        },
+        {
+            "m_Id": "9f311e65704646e48b52019d389d3cd0"
+        },
+        {
+            "m_Id": "d209a2766f5546688fe4bc92416cd548"
         }
     ]
 }
@@ -2240,6 +2381,45 @@
 
 {
     "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.CategoryData",
+    "m_ObjectId": "475b6b25b79b44d19bf94d0af92bc9a1",
+    "m_Name": "Bioluminescence",
+    "m_ChildObjectList": [
+        {
+            "m_Id": "30ad385314c946f5a3cbd7adefe9c270"
+        },
+        {
+            "m_Id": "feb1793feb264a239de366d730977489"
+        },
+        {
+            "m_Id": "38e9cee298f8483e8ca80e75574c2175"
+        },
+        {
+            "m_Id": "8c45cfde06fb4d5ca12db7bcfa8f6316"
+        },
+        {
+            "m_Id": "4a21e5afa49f40d38aef98a49226fa6e"
+        },
+        {
+            "m_Id": "cc11871fc2f74ea2821e2c9f78d3d58e"
+        },
+        {
+            "m_Id": "c06c8782d1b742d189925deba54c21bc"
+        },
+        {
+            "m_Id": "dd752976323845b0aad610adb0672e38"
+        },
+        {
+            "m_Id": "a485464528a74269852b53d441f1f0a8"
+        },
+        {
+            "m_Id": "bc35f605d4fc49869c24479f827fbfa8"
+        }
+    ]
+}
+
+{
+    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector4MaterialSlot",
     "m_ObjectId": "486351168fc04951b80963ed0d2e51df",
     "m_Id": 17,
@@ -2282,6 +2462,29 @@
         "y": 0.0
     },
     "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.BooleanShaderProperty",
+    "m_ObjectId": "4a21e5afa49f40d38aef98a49226fa6e",
+    "m_Guid": {
+        "m_GuidSerialized": "b17934e1-f74e-4c4b-8313-3f5274067918"
+    },
+    "m_Name": "Foam Bioluminescence Sea Level Only",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Foam Bioluminescence Sea Level Only",
+    "m_DefaultReferenceName": "_Foam_Bioluminescence_Sea_Level_Only",
+    "m_OverrideReferenceName": "_Crest_FoamBioluminescenceSeaLevelOnly",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": true
 }
 
 {
@@ -3368,7 +3571,7 @@
     "overrideHLSLDeclaration": false,
     "hlslDeclarationOverride": 0,
     "m_Hidden": false,
-    "m_Value": 0.03,
+    "m_Value": 0.0,
     "m_FloatType": 1,
     "m_RangeValues": {
         "x": -1.0,
@@ -3397,6 +3600,24 @@
     "hlslDeclarationOverride": 0,
     "m_Hidden": false,
     "m_Value": false
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.CategoryData",
+    "m_ObjectId": "72dfddd5562c42e4bf73f41a47cd4863",
+    "m_Name": "Reflections (Underwater)",
+    "m_ChildObjectList": [
+        {
+            "m_Id": "21db17a76f094b19ba523148b6f7aa41"
+        },
+        {
+            "m_Id": "bbd2579dfd7f38879fab18706b09b5fb"
+        },
+        {
+            "m_Id": "d33c23a144f9400888ebc0b17741ceea"
+        }
+    ]
 }
 
 {
@@ -3443,6 +3664,9 @@
         },
         {
             "m_Id": "91e9a577d315a3848dfb1f48a6743f9c"
+        },
+        {
+            "m_Id": "a6704108884e487799aa5f653566e56b"
         },
         {
             "m_Id": "4b09daebd022cf89bc77ad473c95586c"
@@ -3997,6 +4221,34 @@
 }
 
 {
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "8c45cfde06fb4d5ca12db7bcfa8f6316",
+    "m_Guid": {
+        "m_GuidSerialized": "c201c2da-d89e-4a7b-bc1f-358cac6ea74e"
+    },
+    "m_Name": "Foam Bioluminescence Maximum Depth",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Foam Bioluminescence Maximum Depth",
+    "m_DefaultReferenceName": "_Foam_Bioluminescence_Maximum_Depth",
+    "m_OverrideReferenceName": "_Crest_FoamBioluminescenceMaximumDepth",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": Infinity,
+    "m_FloatType": 0,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
     "m_ObjectId": "8cd7130e53ca418f98027d1a6ec5db0d",
@@ -4054,6 +4306,34 @@
 }
 
 {
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "8ec616eaa4964d38b92b904775e34f7e",
+    "m_Guid": {
+        "m_GuidSerialized": "025be3df-ddb1-4553-894c-4cbcafe64fda"
+    },
+    "m_Name": "Transparency Minimum Alpha",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Transparency Minimum Alpha",
+    "m_DefaultReferenceName": "_Transparency_Minimum_Alpha",
+    "m_OverrideReferenceName": "_Crest_TransparencyMinimumAlpha",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": 0.95,
+    "m_FloatType": 1,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.BlockNode",
     "m_ObjectId": "8f7d3c6acd8c40a993fe189ad3b6e808",
@@ -4106,6 +4386,18 @@
         "y": 0.0
     },
     "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.CategoryData",
+    "m_ObjectId": "9125a3c8387e4d38987cc5707394b95b",
+    "m_Name": "Simple Transparency",
+    "m_ChildObjectList": [
+        {
+            "m_Id": "8ec616eaa4964d38b92b904775e34f7e"
+        }
+    ]
 }
 
 {
@@ -4244,9 +4536,6 @@
             "m_Id": "c700bce5ef10cf8e9e5b69ba043d383b"
         },
         {
-            "m_Id": "21db17a76f094b19ba523148b6f7aa41"
-        },
-        {
             "m_Id": "7b2f0f23d232ab88bcacd3e88392015a"
         },
         {
@@ -4260,18 +4549,6 @@
         },
         {
             "m_Id": "71f6994de656018baa684da1128e623c"
-        },
-        {
-            "m_Id": "d6af4ca8280b4d56b6f2bf1c8b7a0bbd"
-        },
-        {
-            "m_Id": "2d31998b356d41179aa5291dcedc7850"
-        },
-        {
-            "m_Id": "0d81099c729342968bf4ee002d378dcf"
-        },
-        {
-            "m_Id": "e632a014145542d8a0f6bad7aac6cb63"
         }
     ]
 }
@@ -4448,6 +4725,34 @@
 }
 
 {
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "9f311e65704646e48b52019d389d3cd0",
+    "m_Guid": {
+        "m_GuidSerialized": "04aa688a-8387-4eda-bda1-edead599c4f0"
+    },
+    "m_Name": "Normal Map Turbulence Strength",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Normal Map Turbulence Strength",
+    "m_DefaultReferenceName": "_Normal_Map_Turbulence_Strength",
+    "m_OverrideReferenceName": "_Crest_NormalMapTurbulenceStrength",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": 0.6,
+    "m_FloatType": 1,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Internal.Texture2DShaderProperty",
     "m_ObjectId": "a11232afc69f728f9691066ce697feee",
@@ -4475,6 +4780,29 @@
     "useTilingAndOffset": false,
     "m_Modifiable": true,
     "m_DefaultType": 0
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.BooleanShaderProperty",
+    "m_ObjectId": "a12a11f74d174f1d8a63d18ee8743b25",
+    "m_Guid": {
+        "m_GuidSerialized": "709317fe-af13-425b-90cf-63507779f13c"
+    },
+    "m_Name": "Normal Map Turbulence Enabled",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Normal Map Turbulence Enabled",
+    "m_DefaultReferenceName": "_Normal_Map_Turbulence_Enabled",
+    "m_OverrideReferenceName": "_Crest_NormalMapTurbulenceEnabled",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": true
 }
 
 {
@@ -4603,6 +4931,34 @@
 }
 
 {
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "a485464528a74269852b53d441f1f0a8",
+    "m_Guid": {
+        "m_GuidSerialized": "dbd6fa2d-e2ba-4ea9-b67c-e21877462ec6"
+    },
+    "m_Name": "Foam Bioluminescence Sparkles Intensity",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Foam Bioluminescence Sparkles Intensity",
+    "m_DefaultReferenceName": "_Foam_Bioluminescence_Sparkles_Intensity",
+    "m_OverrideReferenceName": "_Crest_FoamBioluminescenceSparklesIntensity",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": 500.0,
+    "m_FloatType": 0,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
     "m_SGVersion": 2,
     "m_Type": "UnityEditor.Rendering.Universal.ShaderGraph.UniversalLitSubTarget",
     "m_ObjectId": "a52dd0dd7c42405cabd2b96b877532a3",
@@ -4668,6 +5024,29 @@
         "x": 0.0,
         "y": 1.0
     }
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.BooleanShaderProperty",
+    "m_ObjectId": "a6704108884e487799aa5f653566e56b",
+    "m_Guid": {
+        "m_GuidSerialized": "c4fdecae-cdbb-4529-8ad0-3ef2226477a5"
+    },
+    "m_Name": "Caustics Force Distortion",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Caustics Force Distortion",
+    "m_DefaultReferenceName": "_Caustics_Force_Distortion",
+    "m_OverrideReferenceName": "_Crest_CausticsForceDistortion",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": false
 }
 
 {
@@ -4809,6 +5188,9 @@
         },
         {
             "m_Id": "aa75e7087fa330809fdc753edcd8995b"
+        },
+        {
+            "m_Id": "ada9e52f38cd4e66a4e97c1fd2a5bd65"
         }
     ]
 }
@@ -4877,6 +5259,31 @@
         "z": 0.0
     },
     "m_Labels": []
+}
+
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.ShaderKeyword",
+    "m_ObjectId": "ada9e52f38cd4e66a4e97c1fd2a5bd65",
+    "m_Guid": {
+        "m_GuidSerialized": "787edb3a-324f-493b-b3da-febad061005c"
+    },
+    "m_Name": "Custom Mesh",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Custom Mesh",
+    "m_DefaultReferenceName": "_CUSTOM_MESH",
+    "m_OverrideReferenceName": "_CREST_CUSTOM_MESH",
+    "m_GeneratePropertyBlock": false,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_KeywordType": 0,
+    "m_KeywordDefinition": 1,
+    "m_KeywordScope": 0,
+    "m_KeywordStages": 63,
+    "m_Entries": [],
+    "m_Value": 0,
+    "m_IsEditable": true
 }
 
 {
@@ -5043,7 +5450,7 @@
     "m_DefaultRefNameVersion": 0,
     "m_RefNameGeneratedByDisplayName": "",
     "m_DefaultReferenceName": "BOOLEAN_547DED44_ON",
-    "m_OverrideReferenceName": "CREST_FLOW_ON",
+    "m_OverrideReferenceName": "_CREST_FLOW_LOD",
     "m_GeneratePropertyBlock": true,
     "m_UseCustomSlotLabel": false,
     "m_CustomSlotLabel": "",
@@ -5141,6 +5548,34 @@
 }
 
 {
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "bc35f605d4fc49869c24479f827fbfa8",
+    "m_Guid": {
+        "m_GuidSerialized": "be221cdb-d9a6-46a9-8e5c-899bb77b9ba5"
+    },
+    "m_Name": "Foam Bioluminescence Sparkles Coverage",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Foam Bioluminescence Sparkles Coverage",
+    "m_DefaultReferenceName": "_Foam_Bioluminescence_Sparkles_Coverage",
+    "m_OverrideReferenceName": "_Crest_FoamBioluminescenceSparklesCoverage",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": 0.5,
+    "m_FloatType": 1,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Internal.BooleanShaderProperty",
     "m_ObjectId": "bd96da68193149a4a37e60284d87b160",
@@ -5187,6 +5622,34 @@
     "m_FloatType": 1,
     "m_RangeValues": {
         "x": 0.0010000000474974514,
+        "y": 1.0
+    }
+}
+
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "c06c8782d1b742d189925deba54c21bc",
+    "m_Guid": {
+        "m_GuidSerialized": "ed5634bc-281c-4def-8a6e-9956331f4a20"
+    },
+    "m_Name": "Foam Bioluminescence Glow Coverage",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Foam Bioluminescence Glow Coverage",
+    "m_DefaultReferenceName": "_Foam_Bioluminescence_Glow_Coverage",
+    "m_OverrideReferenceName": "_Crest_FoamBioluminescenceGlowCoverage",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": 0.4,
+    "m_FloatType": 1,
+    "m_RangeValues": {
+        "x": 0.0,
         "y": 1.0
     }
 }
@@ -5338,6 +5801,34 @@
     "m_Hidden": false,
     "m_Value": 3.0,
     "m_FloatType": 0,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "cc11871fc2f74ea2821e2c9f78d3d58e",
+    "m_Guid": {
+        "m_GuidSerialized": "db78df35-c8ae-45f7-b19b-6873133e270d"
+    },
+    "m_Name": "Foam Bioluminescence Glow Intensity",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Foam Bioluminescence Glow Intensity",
+    "m_DefaultReferenceName": "_Foam_Bioluminescence_Glow_Intensity",
+    "m_OverrideReferenceName": "_Crest_FoamBioluminescenceGlowIntensity",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": 0.7,
+    "m_FloatType": 1,
     "m_RangeValues": {
         "x": 0.0,
         "y": 1.0
@@ -5504,6 +5995,34 @@
     "m_Value": 0.0,
     "m_DefaultValue": 0.0,
     "m_Labels": []
+}
+
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "d209a2766f5546688fe4bc92416cd548",
+    "m_Guid": {
+        "m_GuidSerialized": "187a910c-bd28-405b-b1e4-f495ca40e9f9"
+    },
+    "m_Name": "Normal Map Turbulence Coverage",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Normal Map Turbulence Coverage",
+    "m_DefaultReferenceName": "_Normal_Map_Turbulence_Coverage",
+    "m_OverrideReferenceName": "_Crest_NormalMapTurbulenceCoverage",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": 0.8999999761581421,
+    "m_FloatType": 1,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
 }
 
 {
@@ -5840,6 +6359,29 @@
 
 {
     "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.BooleanShaderProperty",
+    "m_ObjectId": "dd752976323845b0aad610adb0672e38",
+    "m_Guid": {
+        "m_GuidSerialized": "4f72390b-2958-4755-9633-fdce875f1c0e"
+    },
+    "m_Name": "Foam Bioluminescence Sparkles Enabled",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Foam Bioluminescence Sparkles Enabled",
+    "m_DefaultReferenceName": "_Foam_Bioluminescence_Sparkles_Enabled",
+    "m_OverrideReferenceName": "_Crest_FoamBioluminescenceSparklesEnabled",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": true
+}
+
+{
+    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
     "m_ObjectId": "de2797e54cc7464ea2e88533681e7485",
     "m_Id": 9,
@@ -6031,6 +6573,29 @@
     },
     "m_Labels": [],
     "m_Space": 2
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.BooleanShaderProperty",
+    "m_ObjectId": "eb89085b4d7c46c7bf82f63a3b43a0c6",
+    "m_Guid": {
+        "m_GuidSerialized": "bdc2d1fe-238b-4105-83e0-87f8ef392283"
+    },
+    "m_Name": "Planar Reflections Apply Smoothness",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Planar Reflections Apply Smoothness",
+    "m_DefaultReferenceName": "_Planar_Reflections_Apply_Smoothness",
+    "m_OverrideReferenceName": "_Crest_PlanarReflectionsApplySmoothness",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": false
 }
 
 {
@@ -6343,6 +6908,36 @@
         "z": 0.0
     },
     "m_Labels": []
+}
+
+{
+    "m_SGVersion": 3,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.ColorShaderProperty",
+    "m_ObjectId": "feb1793feb264a239de366d730977489",
+    "m_Guid": {
+        "m_GuidSerialized": "87224bff-8cf6-4adb-83d2-8ec6ed30c979"
+    },
+    "m_Name": "Foam Bioluminescence Color",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "Foam Bioluminescence Color",
+    "m_DefaultReferenceName": "_Foam_Bioluminescence_Color",
+    "m_OverrideReferenceName": "_Crest_FoamBioluminescenceColor",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": {
+        "r": 0.0,
+        "g": 1.55,
+        "b": 6.0,
+        "a": 1.0
+    },
+    "isMainColor": false,
+    "m_ColorMode": 1
 }
 
 {

@@ -40,6 +40,13 @@ namespace WaveHarmonic.Crest
         [@DecoratedField, SerializeField]
         QuerySource _Source;
 
+        [Tooltip("The viewer as the source of the queries.\n\nOnly needs to be set if using multiple viewpoints on the Water Renderer.")]
+        [@Predicated(nameof(_Source), inverted: false, nameof(QuerySource.Viewer), hide: true)]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [SerializeField]
+        Camera _Viewer;
+
         [Tooltip(ICollisionProvider.k_LayerTooltip)]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
@@ -174,6 +181,11 @@ namespace WaveHarmonic.Crest
 
             var distance = water.ViewerHeightAboveWater;
 
+            if (water.MultipleViewpoints && (_Viewer == null || !water.GetViewerHeightAboveWater(_Viewer, out distance)))
+            {
+                return;
+            }
+
             if (_Source == QuerySource.Transform)
             {
                 if (!_SampleHeightHelper.SampleHeight(transform.position, out var height, minimumLength: 2f * _MinimumWavelength, _Layer)) return;
@@ -232,6 +244,11 @@ namespace WaveHarmonic.Crest
             }
 
             var distance = water.ViewerDistanceToShoreline;
+
+            if (water.MultipleViewpoints && (_Viewer == null || !water.GetViewerDistanceToShoreline(_Viewer, out distance)))
+            {
+                return;
+            }
 
             if (_Source == QuerySource.Transform)
             {

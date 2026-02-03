@@ -38,12 +38,17 @@ namespace WaveHarmonic.Crest
 
         internal static NoneProvider None { get; } = new();
 
+        internal static ICollisionProvider Create(WaterRenderer water)
+        {
+            return water.MultipleViewpoints ? new CollisionQueryPerCamera(water) : new CollisionQueryWithPasses(water);
+        }
+
         /// <summary>
         /// Gives a flat, still water.
         /// </summary>
         internal sealed class NoneProvider : ICollisionProvider
         {
-            public int Query(int _0, float _1, Vector3[] _2, Vector3[] result0, Vector3[] result1, Vector3[] result2, CollisionLayer _3 = CollisionLayer.Everything)
+            public int Query(int _0, float _1, Vector3[] _2, Vector3[] result0, Vector3[] result1, Vector3[] result2, CollisionLayer _3 = CollisionLayer.Everything, Vector3? _4 = null)
             {
                 if (result0 != null) System.Array.Fill(result0, Vector3.zero);
                 if (result1 != null) System.Array.Fill(result1, Vector3.up);
@@ -51,7 +56,7 @@ namespace WaveHarmonic.Crest
                 return 0;
             }
 
-            public int Query(int _0, float _1, Vector3[] _2, float[] result0, Vector3[] result1, Vector3[] result2, CollisionLayer _3 = CollisionLayer.Everything)
+            public int Query(int _0, float _1, Vector3[] _2, float[] result0, Vector3[] result1, Vector3[] result2, CollisionLayer _3 = CollisionLayer.Everything, Vector3? _4 = null)
             {
                 if (result0 != null) System.Array.Fill(result0, WaterRenderer.Instance.SeaLevel);
                 if (result1 != null) System.Array.Fill(result1, Vector3.up);
@@ -66,12 +71,12 @@ namespace WaveHarmonic.Crest
         /// <param name="heights">Resulting heights (displacement Y + sea level) at the query positions. Pass null if this information is not required.</param>
         /// <param name="normals">Resulting normals at the query positions. Pass null if this information is not required.</param>
         /// <param name="velocities">Resulting velocities at the query positions. Pass null if this information is not required.</param>
-        /// <inheritdoc cref="IQueryProvider.Query(int, float, Vector3[], int)" />
-        int Query(int hash, float minimumLength, Vector3[] points, float[] heights, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything);
+        /// <inheritdoc cref="IQueryProvider.Query(int, float, Vector3[], int, Vector3?)" />
+        int Query(int hash, float minimumLength, Vector3[] points, float[] heights, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null);
 
         /// <param name="displacements">Resulting displacement vectors at the query positions. Add sea level to Y to get world space height.</param>
-        /// <inheritdoc cref="IQueryProvider.Query(int, float, Vector3[], int)" />
-        /// <inheritdoc cref="Query(int, float, Vector3[], float[], Vector3[], Vector3[], CollisionLayer)" />
-        int Query(int hash, float minimumLength, Vector3[] points, Vector3[] displacements, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything);
+        /// <inheritdoc cref="IQueryProvider.Query(int, float, Vector3[], int, Vector3?)" />
+        /// <inheritdoc cref="Query(int, float, Vector3[], float[], Vector3[], Vector3[], CollisionLayer, Vector3?)" />
+        int Query(int hash, float minimumLength, Vector3[] points, Vector3[] displacements, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null);
     }
 }

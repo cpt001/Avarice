@@ -1,6 +1,8 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestExecute
 
 #include "HLSLSupport.cginc"
@@ -12,7 +14,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Cascade.hlsl"
 
-RWTexture2DArray<float2> _Crest_Target;
+RWTexture2DArray<m_Float2> _Crest_Target;
 
 CBUFFER_START(CrestPerWaterInput)
 float3 _Crest_Position;
@@ -116,7 +118,7 @@ void Execute(uint3 id)
     // Helps interaction to work at different scales
     acceleration /= minimumWavelength;
 
-    _Crest_Target[id] = float2(_Crest_Target[id].x, _Crest_Target[id].y + acceleration * _Crest_SimDeltaTime);
+    _Crest_Target[id] = m_Float2Constructor(_Crest_Target[id].x, _Crest_Target[id].y + acceleration * _Crest_SimDeltaTime);
 }
 
 m_CrestNameSpaceEnd

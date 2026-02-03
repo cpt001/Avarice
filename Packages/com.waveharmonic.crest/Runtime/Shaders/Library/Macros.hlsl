@@ -13,6 +13,22 @@
 
 #define m_FloatMaximum 3.402823466e+38
 
+
+//
+// Fallback for WebGPU
+//
+
+#ifdef SHADER_API_WEBGPU
+#define m_Float2 float4
+#define m_Float2Constructor(x, y) float4(x, y, 0.0, 0.0)
+#define m_Float2FromFloat2(p0) float4(p0.x, p0.y, 0, 0)
+#else
+#define m_Float2 float2
+#define m_Float2Constructor(x, y) float2(x, y)
+#define m_Float2FromFloat2(p0) p0
+#endif
+
+
 #if (CREST_FULL_PRECISION_DISPLACEMENT != 0)
 #define m_DisplacementTexture(texture, components) texture<float##components>
 #else

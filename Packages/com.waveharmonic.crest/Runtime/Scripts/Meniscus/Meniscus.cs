@@ -33,6 +33,14 @@ namespace WaveHarmonic.Crest
         internal Material _Material;
 
 
+        [@Heading("Advanced")]
+
+        [Tooltip("Rules to exclude cameras from rendering the meniscus.\n\nThese are exclusion rules, so for all cameras, select Nothing. These rules are applied on top of the Layer rules.")]
+        [@DecoratedField]
+        [@GenerateAPI]
+        [SerializeField]
+        WaterCameraExclusion _CameraExclusions = WaterCameraExclusion.Hidden | WaterCameraExclusion.Reflection;
+
         WaterRenderer _Water;
 
         internal MeniscusRenderer Renderer { get; private set; }
@@ -76,6 +84,7 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
+#pragma warning disable format
 #if d_UnityHDRP
             if (RenderPipelineHelper.IsHighDefinition)
             {
@@ -96,6 +105,7 @@ namespace WaveHarmonic.Crest
             {
                 Renderer ??= new MeniscusRendererBIRP(water, this);
             }
+#pragma warning restore format
         }
     }
 
@@ -130,11 +140,6 @@ namespace WaveHarmonic.Crest
 
             private protected readonly WaterRenderer _Water;
             internal readonly Meniscus _Meniscus;
-
-            static partial class ShaderIDs
-            {
-                public static readonly int s_HorizonNormal = Shader.PropertyToID("_Crest_HorizonNormal");
-            }
 
             public abstract void OnBeginCameraRendering(Camera camera);
             public abstract void OnEndCameraRendering(Camera camera);
@@ -174,18 +179,18 @@ namespace WaveHarmonic.Crest
                     return false;
                 }
 
-                // Meniscus is a product of the water surface.
-                if (!_Water.Surface.Enabled)
-                {
-                    return false;
-                }
-
                 if (camera.cameraType is not CameraType.Game and not CameraType.SceneView)
                 {
                     return false;
                 }
 
-                if (!WaterRenderer.ShouldRender(camera, _Meniscus.Layer))
+                if (!WaterRenderer.ShouldRender(camera, _Meniscus.Layer, _Meniscus._CameraExclusions))
+                {
+                    return false;
+                }
+
+                // Meniscus depends on both the surface and volume.
+                if (!_Water.Surface.ShouldRender(camera) || !_Water.Underwater.ShouldRender(camera))
                 {
                     return false;
                 }
@@ -211,13 +216,6 @@ namespace WaveHarmonic.Crest
 
             internal void Execute<T>(Camera camera, T commands) where T : ICommandWrapper
             {
-                // Project water normal onto camera plane.
-                _Meniscus.Material.SetVector(ShaderIDs.s_HorizonNormal, new Vector2
-                (
-                    Vector3.Dot(Vector3.up, camera.transform.right),
-                    Vector3.Dot(Vector3.up, camera.transform.up)
-                ));
-
                 var isFullScreenRequired = true;
                 var isMasked = false;
                 var passOffset = 1;

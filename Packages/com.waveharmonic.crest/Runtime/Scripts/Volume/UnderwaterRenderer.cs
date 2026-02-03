@@ -13,11 +13,6 @@ namespace WaveHarmonic.Crest
     [System.Serializable]
     public sealed partial class UnderwaterRenderer
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         internal const float k_CullLimitMinimum = 0.000001f;
         internal const float k_CullLimitMaximum = 0.01f;
 
@@ -72,10 +67,11 @@ namespace WaveHarmonic.Crest
 
         [@Heading("Advanced")]
 
-        [Tooltip("Whether to execute for all cameras.\n\nIf disabled, then additionally ignore any camera that is not the view camera or our reflection camera. It will require managing culling masks of all cameras.")]
+        [Tooltip("Rules to exclude cameras from rendering underwater.\n\nThese are exclusion rules, so for all cameras, select Nothing. These rules are applied on top of the Layer rules.")]
+        [@DecoratedField]
         [@GenerateAPI]
-        [@DecoratedField, SerializeField]
-        bool _AllCameras;
+        [SerializeField]
+        internal WaterCameraExclusion _CameraExclusions = WaterCameraExclusion.Hidden | WaterCameraExclusion.Reflection;
 
         [Tooltip("Copying parameters each frame ensures underwater appearance stays consistent with the water surface.\n\nHas a small overhead so should be disabled if not needed.")]
         [@GenerateAPI]
@@ -132,7 +128,7 @@ namespace WaveHarmonic.Crest
         internal bool RenderBeforeTransparency => false;
 #else
         // Legacy mask works except for negative volumes. Not officially supported.
-        internal bool UseLegacyMask => _AllCameras;
+        internal bool UseLegacyMask => false;
         internal bool RenderBeforeTransparency => true;
 #endif
 
@@ -253,6 +249,11 @@ namespace WaveHarmonic.Crest
             _HorizonMaskMaterial = null;
         }
 
+        internal bool ShouldRender(Camera camera)
+        {
+            return ShouldRender(camera, Pass.Effect);
+        }
+
         internal bool ShouldRender(Camera camera, Pass pass)
         {
             if (!_Enabled || _Material == null)
@@ -271,7 +272,7 @@ namespace WaveHarmonic.Crest
             }
 
             // Skip entire mask pass if possible.
-            if (pass == Pass.Mask && !_Water.Surface.Enabled)
+            if (pass == Pass.Mask && !_Water.Surface.ShouldRender(camera))
             {
                 return false;
             }
@@ -290,29 +291,23 @@ namespace WaveHarmonic.Crest
             }
 #endif
 
-            var isReflectionCamera = camera.cameraType == CameraType.Reflection;
-
-            // Mask or culling is not needed for reflections.
-            if (isReflectionCamera && pass != Pass.Effect)
+            if (_Debug._OnlyReflectionCameras && camera.cameraType != CameraType.Reflection)
             {
                 return false;
             }
 
-            if (_Debug._OnlyReflectionCameras && !isReflectionCamera)
-            {
-                return false;
-            }
+            var isPlanarReflectionCamera = camera == _Water.Reflections.ReflectionCamera;
 
             // Option to exclude cameras that is not the view camera or our reflection camera.
             // Otherwise, filtering depends on the camera's culling mask which is not always
             // accessible like with the global "Reflection Probes Camera". But whether those
             // cameras triggering camera events is a bug is TBD as it is intermittent.
-            if (!_AllCameras && camera != _Water.GetViewer(includeSceneCamera: false) && camera.cameraType != CameraType.SceneView && camera != WaterReflections.CurrentCamera)
+            if (camera != _Water.Reflections.ReflectionCamera && !WaterRenderer.ShouldRender(camera, _CameraExclusions))
             {
                 return false;
             }
 
-            if (!_Debug._DisableHeightAboveWaterOptimization && !Portaled)
+            if (!_Debug._DisableHeightAboveWaterOptimization && !Portaled && _Water.Surface.ShouldRender(camera))
             {
                 _Water.UpdatePerCameraHeight(camera);
                 _ViewerWaterHeight = _Water._ViewerHeightAboveWaterPerCamera;
@@ -345,6 +340,11 @@ namespace WaveHarmonic.Crest
             OnBeginCameraRendering(camera);
 
 #if UNITY_EDITOR
+            if (_VolumeMaterial == null)
+            {
+                return;
+            }
+
             // Populated by this point.
             if (_VolumeMaterial.shader != WaterResources.Instance.Shaders._UnderwaterEffect)
             {
@@ -352,6 +352,7 @@ namespace WaveHarmonic.Crest
             }
 #endif
 
+#pragma warning disable format
 #if d_UnityURP
             if (RenderPipelineHelper.IsUniversal)
             {
@@ -371,6 +372,7 @@ namespace WaveHarmonic.Crest
             {
                 OnBeforeLegacyRender(camera);
             }
+#pragma warning restore format
         }
 
         internal void OnBeginCameraRendering(Camera camera)
@@ -378,12 +380,6 @@ namespace WaveHarmonic.Crest
             if (!ShouldRender(camera, Pass.Culling))
             {
                 return;
-            }
-
-            // Only one camera supported due to LOD center dependency.
-            if (!UseLegacyMask && ShouldRender(camera, Pass.Mask) && camera == _Water.Viewer)
-            {
-                _Water.Surface.UpdateDisplacedSurfaceData(camera);
             }
 
 #if d_UnityHDRP
@@ -466,6 +462,13 @@ namespace WaveHarmonic.Crest
                 UpdateEnvironmentalLighting(camera, extinction, _ViewerWaterHeight);
             }
 
+            // Only relevant to cameras rendering the surface from here.
+            if (!_Water.Surface.ShouldRender(camera))
+            {
+                return;
+            }
+
+            // Redo culling. Culling is per camera. But chunks are shared.
             if (Portaled || _ViewerWaterHeight > -5f)
             {
                 RevertCulling();
@@ -507,6 +510,28 @@ namespace WaveHarmonic.Crest
             }
         }
 
+        internal void ExecuteHeightField(Camera camera)
+        {
+            if (UseLegacyMask)
+            {
+                return;
+            }
+
+#if d_CrestPortals
+            if (Portaled && !_Water.Portals.RequiresFullScreenMask)
+            {
+                return;
+            }
+#endif
+
+            if (!ShouldRender(camera, Pass.Mask))
+            {
+                return;
+            }
+
+            _Water.Surface.UpdateDisplacedSurfaceData(camera);
+        }
+
         void SetEnabled(bool previous, bool current)
         {
             if (previous == current) return;
@@ -536,5 +561,22 @@ namespace WaveHarmonic.Crest
             }
         }
 #endif
+    }
+
+    // Obsolete / Migration
+    partial class UnderwaterRenderer
+    {
+        [SerializeField, HideInInspector]
+#pragma warning disable 414
+        int _Version = 0;
+#pragma warning restore 414
+
+        // No migration as default value for new control is far more effective than this toggle.
+        [System.Obsolete("Please use Camera Exclusion instead.")]
+        [Tooltip("Whether to execute for all cameras.\n\nIf disabled, then additionally ignore any camera that is not the view camera or our reflection camera. It will require managing culling masks of all cameras.")]
+        [@GenerateAPI]
+        [@DecoratedField, SerializeField]
+        [HideInInspector]
+        bool _AllCameras;
     }
 }

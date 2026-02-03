@@ -59,7 +59,9 @@ namespace WaveHarmonic.Crest
         {
             distance = -1f;
 
-            Validate(allowMultipleCallsPerFrame: false);
+            var id = GetHashCode();
+
+            Validate(allowMultipleCallsPerFrame: false, id);
 
             var water = WaterRenderer.Instance;
             var provider = water == null ? null : water.AnimatedWavesLod.Provider;
@@ -70,7 +72,7 @@ namespace WaveHarmonic.Crest
                 _QueryPosition[i] = origin + i * _RayStepSize * direction;
             }
 
-            var status = provider.Query(GetHashCode(), _MinimumLength, _QueryPosition, _QueryResult, null, null, layer);
+            var status = provider.Query(id, _MinimumLength, _QueryPosition, _QueryResult, null, null, layer);
 
             if (!provider.RetrieveSucceeded(status))
             {

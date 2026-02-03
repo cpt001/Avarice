@@ -5,6 +5,8 @@
 // from an ODC, then they are in object-space and are converted to world-space as
 // the LOD data stores world-space height.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestExecute
 
 #pragma multi_compile_local __ d_CrestSDF
@@ -22,14 +24,14 @@
 
 #if d_CrestSDF
 #undef m_CrestType
-#define m_CrestType float2
+#define m_CrestType m_Float2
 #endif
 
 Texture2D<m_CrestType> _Crest_Texture;
 RWTexture2DArray<m_CrestType> _Crest_Target;
 
 CBUFFER_START(CrestInputTexture)
-float2 _Crest_Multiplier;
+m_CrestType _Crest_Multiplier;
 float2 _Crest_TextureSize;
 float2 _Crest_TexturePosition;
 float2 _Crest_TextureRotation;

@@ -11,8 +11,6 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Depth.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
 
-float2 _Crest_HorizonNormal;
-
 TEXTURE2D_X(_Crest_WaterMaskTexture);
 
 m_CrestNameSpace
@@ -45,7 +43,7 @@ half4 Fragment(Varyings input)
 
     const uint2 positionSS = input.positionCS.xy;
     const float mask = LOAD_TEXTURE2D_X(_Crest_WaterMaskTexture, positionSS).x;
-    const float2 offset = -((float2)mask) * _Crest_HorizonNormal;
+    const float2 offset = -((float2)mask) * g_Crest_HorizonNormal;
     float weight = 1.0;
 
     // Sample three pixels along the normal. If the sample is different than the

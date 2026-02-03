@@ -2,6 +2,7 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -38,8 +39,6 @@ namespace WaveHarmonic.Crest
         private protected override bool FollowHorizontalMotion => true;
         internal override LodInputMode DefaultMode => LodInputMode.Geometry;
 
-        internal Rect _Rect;
-
         internal override void InferBlend()
         {
             base.InferBlend();
@@ -56,23 +55,21 @@ namespace WaveHarmonic.Crest
         {
             base.Initialize();
             _Reporter ??= new(this);
-            WaterChunkRenderer.HeightReporters.Add(_Reporter);
+            _HeightReporter = _Reporter;
         }
 
         private protected override void OnDisable()
         {
             base.OnDisable();
-            WaterChunkRenderer.HeightReporters.Remove(_Reporter);
+            _HeightReporter = null;
         }
 
-        bool ReportHeight(ref Rect bounds, ref float minimum, ref float maximum)
+        bool ReportHeight(WaterRenderer water, ref Rect bounds, ref float minimum, ref float maximum)
         {
             if (!Enabled)
             {
                 return false;
             }
-
-            _Rect = Data.Rect;
 
             // These modes do not provide a height yet.
             if (!Data.HasHeightRange && !_OverrideHeight)
@@ -80,11 +77,38 @@ namespace WaveHarmonic.Crest
                 return false;
             }
 
-            if (bounds.Overlaps(_Rect, false))
+            var rect = Data.Rect;
+
+            if (bounds.Overlaps(rect, false))
             {
                 var range = _OverrideHeight ? _HeightRange : Data.HeightRange;
-                minimum = range.x;
-                maximum = range.y;
+                range *= Weight;
+
+                // Make relative to sea level.
+                range.x -= water.SeaLevel;
+                range.y -= water.SeaLevel;
+
+                var r = new Vector2(minimum, maximum);
+
+                range = _Blend switch
+                {
+                    LodInputBlend.Additive => range + r,
+                    LodInputBlend.Minimum => Vector2.Min(range, r),
+                    LodInputBlend.Maximum => Vector2.Max(range, r),
+                    _ => range,
+                };
+
+                if (rect.Encapsulates(bounds))
+                {
+                    minimum = range.x;
+                    maximum = range.y;
+                }
+                else
+                {
+                    minimum = Mathf.Min(minimum, range.x);
+                    maximum = Mathf.Max(maximum, range.y);
+                }
+
                 return true;
             }
 
@@ -100,7 +124,8 @@ namespace WaveHarmonic.Crest
         {
             readonly LevelLodInput _Input;
             public Reporter(LevelLodInput input) => _Input = input;
-            public bool ReportHeight(ref Rect bounds, ref float minimum, ref float maximum) => _Input.ReportHeight(ref bounds, ref minimum, ref maximum);
+            public bool ReportHeight(WaterRenderer water, ref Rect bounds, ref float minimum, ref float maximum) =>
+                _Input.ReportHeight(water, ref bounds, ref minimum, ref maximum);
         }
     }
 

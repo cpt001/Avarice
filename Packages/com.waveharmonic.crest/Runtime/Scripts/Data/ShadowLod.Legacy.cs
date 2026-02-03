@@ -30,12 +30,6 @@ namespace WaveHarmonic.Crest
                 CopyShadowMapBuffer?.Clear();
                 return;
             }
-
-            if (!WaterRenderer.IsWithinEditorUpdate)
-            {
-                CopyShadowMapBuffer?.Clear();
-                return;
-            }
 #endif
 
             var water = _Water;
@@ -50,7 +44,12 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            if (camera == water.Viewer && CopyShadowMapBuffer != null)
+            if (_Water.Reflections.ReflectionCamera == camera)
+            {
+                return;
+            }
+
+            if (CopyShadowMapBuffer != null)
             {
                 if (_Light != null)
                 {
@@ -83,36 +82,15 @@ namespace WaveHarmonic.Crest
                 CopyShadowMapBuffer?.Clear();
                 return;
             }
-
-            if (!WaterRenderer.IsWithinEditorUpdate)
-            {
-                CopyShadowMapBuffer?.Clear();
-                return;
-            }
 #endif
 
-            var water = _Water;
-
-            if (water == null)
+            // CBs added to a light are executed for every camera, but the LOD data is only
+            // supports a single camera. Removing the CB after the camera renders restricts the
+            // CB to one camera. Careful of recursive rendering for planar reflections, as it
+            // executes a camera within this camera's frame.
+            if (_Light != null && CopyShadowMapBuffer != null)
             {
-                return;
-            }
-
-            if (!WaterRenderer.ShouldRender(camera, water.Surface.Layer))
-            {
-                return;
-            }
-
-            if (camera == water.Viewer)
-            {
-                // CBs added to a light are executed for every camera, but the LOD data is only
-                // supports a single camera. Removing the CB after the camera renders restricts the
-                // CB to one camera. Careful of recursive rendering for planar reflections, as it
-                // executes a camera within this camera's frame.
-                if (_Light != null && CopyShadowMapBuffer != null)
-                {
-                    _Light.RemoveCommandBuffer(LightEvent.BeforeScreenspaceMask, CopyShadowMapBuffer);
-                }
+                _Light.RemoveCommandBuffer(LightEvent.BeforeScreenspaceMask, CopyShadowMapBuffer);
             }
         }
     }

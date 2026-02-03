@@ -67,6 +67,8 @@ namespace WaveHarmonic.Crest
         internal SpectrumModel _Model;
 #pragma warning restore 414
 
+        internal float[] _PowerLinearScales = new float[k_NumberOfOctaves];
+
         internal enum SpectrumModel
         {
             None,
@@ -221,6 +223,7 @@ namespace WaveHarmonic.Crest
                 // we store power on logarithmic scale. this does not include 0, we represent 0 as min value
                 pow = Mathf.Max(pow, Mathf.Pow(10f, s_MinimumPowerLog));
 
+                _PowerLinearScales[octave] = pow;
                 _PowerLogarithmicScales[octave] = Mathf.Log10(pow);
             }
         }
@@ -279,6 +282,7 @@ namespace WaveHarmonic.Crest
             {
                 var power = _PowerDisabled[i] ? 0f : Mathf.Pow(10f, _PowerLogarithmicScales[i]);
                 power *= _Multiplier * _Multiplier;
+                _PowerLinearScales[i] = power;
                 _ScratchData[i] = power * Color.white;
             }
 

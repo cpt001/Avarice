@@ -22,6 +22,7 @@ namespace WaveHarmonic.Crest
         }
 
         CommandBuffer _DrawWaterSurfaceBuffer;
+        MaterialPropertyBlock _QuadMeshMPB;
 
         void OnBeginCameraRenderingLegacy(Camera camera)
         {
@@ -39,8 +40,6 @@ namespace WaveHarmonic.Crest
             {
                 return;
             }
-
-            camera.depthTextureMode |= DepthTextureMode.Depth;
 
             _DrawWaterSurfaceBuffer ??= new() { name = WaterRenderer.k_DrawWater };
             _DrawWaterSurfaceBuffer.Clear();
@@ -111,6 +110,15 @@ namespace WaveHarmonic.Crest
             // Always enabled.
             commands.SetShaderKeyword("LIGHTPROBE_SH", true);
 
+            if (IsQuadMesh)
+            {
+                _QuadMeshMPB ??= new();
+                new PropertyWrapperMPB(_QuadMeshMPB).SetSHCoefficients(Root.position);
+                Render(camera, commands, Material, pass: 0, mpb: _QuadMeshMPB);
+                commands.EndSample(k_DrawWaterSurface);
+                return;
+            }
+
             UpdateChunkVisibility(camera);
 
             foreach (var chunk in Chunks)
@@ -137,9 +145,7 @@ namespace WaveHarmonic.Crest
                     chunk.Bind();
                 }
 
-                var mpb = new PropertyWrapperMPB(chunk._MaterialPropertyBlock);
-                mpb.SetSHCoefficients(chunk.transform.position);
-                commands.DrawMesh(chunk._Mesh, chunk.transform.localToWorldMatrix, renderer.sharedMaterial, 0, 0, chunk._MaterialPropertyBlock);
+                commands.DrawRenderer(chunk.Rend, renderer.sharedMaterial, 0, 0);
             }
 
             commands.EndSample(k_DrawWaterSurface);

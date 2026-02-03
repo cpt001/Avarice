@@ -35,6 +35,11 @@
             "name": "com.unity.render-pipelines.universal",
             "expression": "",
             "define": "d_UnityURP"
+        },
+        {
+            "name": "com.unity.render-pipelines.universal",
+            "expression": "(,17.3.0)",
+            "define": "URP_COMPATIBILITY_MODE"
         }
     ],
     "noEngineReferences": false

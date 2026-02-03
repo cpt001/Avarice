@@ -6,9 +6,15 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// Samples horizontal motion of water volume
     /// </summary>
-    sealed class FlowQuery : QueryBase, IFlowProvider
+    sealed class FlowQuery : QueryBaseSimple, IFlowProvider
     {
-        public FlowQuery(WaterRenderer water) : base(water) { }
+        public FlowQuery() : base(WaterRenderer.Instance.FlowLod) { }
+        public FlowQuery(WaterRenderer water) : base(water.FlowLod) { }
         protected override int Kernel => 1;
+    }
+
+    sealed class FlowQueryPerCamera : QueryPerCameraSimple<FlowQuery>, IFlowProvider
+    {
+        public FlowQueryPerCamera(WaterRenderer water) : base(water) { }
     }
 }

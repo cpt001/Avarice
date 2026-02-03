@@ -1,6 +1,8 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestVisualizeNegativeValues_Scalar
 #pragma kernel CrestVisualizeNegativeValues_Array _ARRAY
 

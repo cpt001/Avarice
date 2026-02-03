@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using WaveHarmonic.Crest.Editor;
 using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Editor
@@ -54,9 +55,9 @@ namespace WaveHarmonic.Crest.Editor
             new(),
         };
 
-        public delegate void ShowMessage(string message, string fixDescription, MessageType type, Object @object = null, FixValidation action = null, string property = null);
+        public delegate void ShowMessage(string message, string fixDescription, MessageType type, Object @object = null, FixValidation action = null, string property = null, Object caller = null);
 
-        public static void DebugLog(string message, string fixDescription, MessageType type, Object @object = null, FixValidation action = null, string property = null)
+        public static void DebugLog(string message, string fixDescription, MessageType type, Object @object = null, FixValidation action = null, string property = null, Object caller = null)
         {
             // Never log info validation to console.
             if (type == MessageType.Info)
@@ -64,22 +65,27 @@ namespace WaveHarmonic.Crest.Editor
                 return;
             }
 
-            message = $"Crest Validation: {message} {fixDescription} Click this message to highlight the problem object.";
+            // Always link back to the caller so developers know the origin. They can always
+            // use the help box "Inspect" once there to get to the object to fix. Even better,
+            // they can use any available fix buttons too.
+            var context = caller != null ? caller : @object;
+
+            message = $"<b>Crest Validation:</b> {message} {fixDescription} Click this message to highlight the problem object.";
 
             switch (type)
             {
-                case MessageType.Error: Debug.LogError(message, @object); break;
-                case MessageType.Warning: Debug.LogWarning(message, @object); break;
-                default: Debug.Log(message, @object); break;
+                case MessageType.Error: Debug.LogError(message, context); break;
+                case MessageType.Warning: Debug.LogWarning(message, context); break;
+                default: Debug.Log(message, context); break;
             }
         }
 
-        public static void HelpBox(string message, string fixDescription, MessageType type, Object @object = null, FixValidation action = null, string property = null)
+        public static void HelpBox(string message, string fixDescription, MessageType type, Object @object = null, FixValidation action = null, string property = null, Object caller = null)
         {
             s_Messages[(int)type].Add(new() { _Message = message, _FixDescription = fixDescription, _Object = @object, _Action = action, _PropertyPath = property });
         }
 
-        public static void Suppressed(string _0, string _1, MessageType _2, Object _3 = null, FixValidation _4 = null, string _5 = null)
+        public static void Suppressed(string _0, string _1, MessageType _2, Object _3 = null, FixValidation _4 = null, string _5 = null, Object _6 = null)
         {
         }
 
@@ -291,12 +297,115 @@ namespace WaveHarmonic.Crest.Editor
                 }
             }
 
+            // NOTE: Nested components do not descend from Object, but they could and this
+            // would work for them.
+            if (target is Object @object)
+            {
+                foreach (var field in TypeCache.GetFieldsWithAttribute<Validated>())
+                {
+                    if (field.DeclaringType != type)
+                    {
+                        continue;
+                    }
+
+                    foreach (var attribute in field.GetCustomAttributes<Validated>())
+                    {
+                        isValid &= attribute.Validate(@object, field, messenger);
+                    }
+                }
+            }
+
             return isValid;
         }
 
         public static bool ExecuteValidators(Object target)
         {
             return ExecuteValidators(target, DebugLog);
+        }
+    }
+
+    abstract class Validated : System.Attribute
+    {
+        public abstract bool Validate(Object target, FieldInfo property, ValidatedHelper.ShowMessage messenger);
+    }
+}
+
+namespace WaveHarmonic.Crest
+{
+    /// <summary>
+    /// Validates that field is not null.
+    /// </summary>
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    sealed class Required : Validated
+    {
+        public override bool Validate(Object target, FieldInfo field, ValidatedHelper.ShowMessage messenger)
+        {
+            var isValid = true;
+
+            if ((Object)field.GetValue(target) == null)
+            {
+                var typeName = EditorHelpers.Pretty(target.GetType().Name);
+                var fieldName = EditorHelpers.Pretty(field.Name);
+
+                messenger
+                (
+                    $"<i>{fieldName}</i> is required for the <i>{typeName}</i> component to function.",
+                    $"Please set <i>{fieldName}</i>.",
+                    ValidatedHelper.MessageType.Error,
+                    target
+                );
+
+                isValid = false;
+            }
+
+            return isValid;
+        }
+    }
+
+    /// <summary>
+    /// Shows a info message if field is null.
+    /// </summary>
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = false)]
+    sealed class Optional : Validated
+    {
+        readonly string _Message;
+
+        public Optional(string message)
+        {
+            _Message = message;
+        }
+
+        public override bool Validate(Object target, FieldInfo field, ValidatedHelper.ShowMessage messenger)
+        {
+            var value = field.GetValue(target);
+
+            if (value is ICollection<Object> list)
+            {
+                if (list != null && list.Count > 0)
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                if (value is Object @object && @object != null)
+                {
+                    return true;
+                }
+            }
+
+            var typeName = EditorHelpers.Pretty(target.GetType().Name);
+            var fieldName = EditorHelpers.Pretty(field.Name);
+
+            messenger
+            (
+                $"<i>{fieldName}</i> is not set for the <i>{typeName}</i> component. " + _Message,
+                string.Empty,
+                ValidatedHelper.MessageType.Info,
+                target
+            );
+
+            return true;
         }
     }
 }

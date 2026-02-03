@@ -50,6 +50,7 @@ namespace WaveHarmonic.Crest
         private protected override Color ClearColor => _DefaultClippingState == DefaultClippingState.EverythingClipped ? Color.white : Color.black;
         private protected override bool NeedToReadWriteTextureData => true;
         private protected override bool RequiresClearBorder => true;
+        internal override bool SkipEndOfFrame => true;
 
         private protected override GraphicsFormat RequestedTextureFormat => _TextureFormatMode switch
         {

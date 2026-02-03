@@ -63,23 +63,35 @@ namespace WaveHarmonic.Crest
             _FollowHorizontalWaveMotion = true;
         }
 
+        private protected override void Initialize()
+        {
+            base.Initialize();
+            _Reporter ??= new(this);
+            _DisplacementReporter = _Reporter;
+        }
+
+        private protected override void OnDisable()
+        {
+            base.OnDisable();
+            _DisplacementReporter = null;
+        }
+
         internal override float Filter(WaterRenderer water, int slice)
         {
             return AnimatedWavesLod.FilterByWavelength(water, slice, _FilterByWavelength ? _OctaveWavelength : 0f);
         }
 
-        private protected override void OnUpdate(WaterRenderer water)
+        bool ReportDisplacement(WaterRenderer water, ref Rect bounds, ref float horizontal, ref float vertical)
         {
-            base.OnUpdate(water);
-
             if (!Enabled)
             {
-                return;
+                return false;
             }
 
             var maxDispVert = _MaximumDisplacementVertical;
 
             // let water system know how far from the sea level this shape may displace the surface
+            // TODO: we need separate min/max vertical displacement to be optimal.
             if (_ReportRendererBounds)
             {
                 var range = Data.HeightRange;
@@ -89,10 +101,34 @@ namespace WaveHarmonic.Crest
                 maxDispVert = Mathf.Max(maxDispVert, Mathf.Abs(seaLevel - minY), Mathf.Abs(seaLevel - maxY));
             }
 
-            if (_MaximumDisplacementHorizontal > 0f || maxDispVert > 0f)
+            var rect = Data.Rect;
+
+            if (bounds.Overlaps(rect, false))
             {
-                water.ReportMaximumDisplacement(_MaximumDisplacementHorizontal, maxDispVert, 0f);
+                horizontal += _MaximumDisplacementHorizontal;
+                vertical += maxDispVert;
+                return true;
             }
+
+            return false;
+        }
+
+        float ReportWaveDisplacement(WaterRenderer water, float displacement)
+        {
+            return displacement;
+        }
+    }
+
+    partial class AnimatedWavesLodInput
+    {
+        Reporter _Reporter;
+
+        sealed class Reporter : IReportsDisplacement, IReportWaveDisplacement
+        {
+            readonly AnimatedWavesLodInput _Input;
+            public Reporter(AnimatedWavesLodInput input) => _Input = input;
+            public bool ReportDisplacement(WaterRenderer water, ref Rect bounds, ref float horizontal, ref float vertical) => _Input.ReportDisplacement(water, ref bounds, ref horizontal, ref vertical);
+            public float ReportWaveDisplacement(WaterRenderer water, float displacement) => _Input.ReportWaveDisplacement(water, displacement);
         }
     }
 

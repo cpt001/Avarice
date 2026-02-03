@@ -36,6 +36,10 @@ namespace WaveHarmonic.Crest
 
         MonoBehaviour Component { get; }
 
+        IReportsHeight HeightReporter => null;
+        IReportsDisplacement DisplacementReporter => null;
+        IReportWaveDisplacement WaveDisplacementReporter => null;
+
         // Allow sorting within a queue. Callers can pass in things like sibling index to
         // get deterministic sorting.
         int Order => Queue * k_QueueMaximumSubIndex + Mathf.Min(Component.transform.GetSiblingIndex(), k_QueueMaximumSubIndex - 1);
@@ -376,6 +380,16 @@ namespace WaveHarmonic.Crest
         //
 
 #if UNITY_EDITOR
+        void SetMode(LodInputMode previous, LodInputMode current)
+        {
+            if (previous == current) return;
+            if (!isActiveAndEnabled) { ChangeMode(Mode); return; }
+            OnDisable();
+            ChangeMode(Mode);
+            UnityEditor.EditorTools.ToolManager.RefreshAvailableTools();
+            OnEnable();
+        }
+
         [@OnChange(skipIfInactive: false)]
         void OnChange(string propertyPath, object previousValue)
         {
@@ -385,11 +399,7 @@ namespace WaveHarmonic.Crest
                     SetQueue((int)previousValue, _Queue);
                     break;
                 case nameof(_Mode):
-                    if (!isActiveAndEnabled) { ChangeMode(Mode); break; }
-                    OnDisable();
-                    ChangeMode(Mode);
-                    UnityEditor.EditorTools.ToolManager.RefreshAvailableTools();
-                    OnEnable();
+                    SetMode((LodInputMode)previousValue, Mode);
                     break;
                 case nameof(_Blend):
                     // TODO: Make compatible with disabled.
@@ -467,6 +477,9 @@ namespace WaveHarmonic.Crest
     partial class LodInput
     {
         Input _Input;
+        private protected IReportsHeight _HeightReporter;
+        internal IReportsDisplacement _DisplacementReporter;
+        private protected IReportWaveDisplacement _WaveDisplacementReporter;
 
         sealed class Input : ILodInput
         {
@@ -478,6 +491,9 @@ namespace WaveHarmonic.Crest
             public int Pass => _Input.Pass;
             public Rect Rect => _Input.Rect;
             public MonoBehaviour Component => _Input;
+            public IReportsHeight HeightReporter => _Input._HeightReporter;
+            public IReportsDisplacement DisplacementReporter => _Input._DisplacementReporter;
+            public IReportWaveDisplacement WaveDisplacementReporter => _Input._WaveDisplacementReporter;
             public float Filter(WaterRenderer water, int slice) => _Input.Filter(water, slice);
             public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1) => _Input.Draw(lod, buffer, target, pass, weight, slice);
         }

@@ -87,7 +87,7 @@ namespace WaveHarmonic.Crest
 
 #if UNITY_EDITOR
             // Only repaint, otherwise changes might persist.
-            if (Event.current.type != EventType.Repaint)
+            if (Event.current?.type != EventType.Repaint)
             {
                 return;
             }

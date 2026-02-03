@@ -1,19 +1,20 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using WaveHarmonic.Crest.Internal;
 using WaveHarmonic.Crest.Utility;
 
-#if !UNITY_2023_2_OR_NEWER
+#if !UNITY_6000_0_OR_NEWER
 using GraphicsFormatUsage = UnityEngine.Experimental.Rendering.FormatUsage;
 #endif
 
 namespace WaveHarmonic.Crest
 {
-    using Inputs = SortedList<int, ILodInput>;
+    using Inputs = Utility.SortedList<int, ILodInput>;
 
     /// <summary>
     /// Texture format preset.
@@ -52,7 +53,7 @@ namespace WaveHarmonic.Crest
         [Tooltip("Whether to override the resolution.\n\nIf not enabled, then the simulation will use the resolution defined on the Water Renderer.")]
         [@Predicated(typeof(AnimatedWavesLod), inverted: true, hide: true)]
         [@GenerateAPI(Setter.Dirty)]
-        [@InlineToggle(fix: true), SerializeField]
+        [@InlineToggle, SerializeField]
         internal bool _OverrideResolution = true;
 
         [Tooltip("The resolution of the simulation data.\n\nSet higher for sharper results at the cost of higher memory usage.")]
@@ -77,12 +78,28 @@ namespace WaveHarmonic.Crest
         [@DecoratedField, SerializeField]
         internal GraphicsFormat _TextureFormat;
 
+        [@Space(10)]
+
+        [Tooltip("Blurs the output.\n\nEnable if blurring is desired or intolerable artifacts are present.\nThe blur is optimized to only run on inner LODs and at lower scales.")]
+        [@Predicated(typeof(AnimatedWavesLod), inverted: true, hide: true)]
+        [@Predicated(typeof(DynamicWavesLod), inverted: true, hide: true)]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [SerializeField]
+        private protected bool _Blur;
+
+        [Tooltip("Number of blur iterations.\n\nBlur iterations are optimized to only run maximum iterations on the inner LODs.")]
+        [@Predicated(typeof(AnimatedWavesLod), inverted: true, hide: true)]
+        [@Predicated(typeof(DynamicWavesLod), inverted: true, hide: true)]
+        [@Predicated(nameof(_Blur))]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [SerializeField]
+        private protected int _BlurIterations = 1;
+
         // NOTE: This MUST match the value in Constants.hlsl, as it
         // determines the size of the texture arrays in the shaders.
         internal const int k_MaximumSlices = 15;
-
-        // NOTE: these MUST match the values in Constants.hlsl
-        // 64 recommended as a good common minimum: https://www.reddit.com/r/GraphicsProgramming/comments/aeyfkh/for_compute_shaders_is_there_an_ideal_numthreads/
         internal const int k_ThreadGroupSize = 8;
         internal const int k_ThreadGroupSizeX = k_ThreadGroupSize;
         internal const int k_ThreadGroupSizeY = k_ThreadGroupSize;
@@ -91,6 +108,7 @@ namespace WaveHarmonic.Crest
         {
             public static readonly int s_LodIndex = Shader.PropertyToID("_Crest_LodIndex");
             public static readonly int s_LodChange = Shader.PropertyToID("_Crest_LodChange");
+            public static readonly int s_TemporaryBlurLodTexture = Shader.PropertyToID("_Crest_TemporaryBlurLodTexture");
         }
 
         // Used for creating shader property names etc.
@@ -143,6 +161,9 @@ namespace WaveHarmonic.Crest
             GraphicsFormatUsage.Sample |
             // Always use linear filtering.
             GraphicsFormatUsage.Linear;
+
+        private protected virtual bool Persistent => BufferCount > 1;
+        internal virtual bool SkipEndOfFrame => false;
 
         private protected BufferedData<RenderTexture> _Targets;
         internal RenderTexture DataTexture => _Targets.Current;
@@ -202,7 +223,7 @@ namespace WaveHarmonic.Crest
             return result;
         }
 
-        private protected void FlipBuffers()
+        private protected void FlipBuffers(CommandBuffer commands)
         {
             if (_ReAllocateTexture)
             {
@@ -218,7 +239,9 @@ namespace WaveHarmonic.Crest
                 _SamplingParameters.Flip();
             }
 
-            UpdateSamplingParameters();
+            UpdateSamplingParameters(commands);
+
+            commands.SetGlobalTexture(_TextureShaderID, DataTexture);
         }
 
         private protected void Clear(RenderTexture target)
@@ -226,27 +249,30 @@ namespace WaveHarmonic.Crest
             Helpers.ClearRenderTexture(target, ClearColor, depth: false);
         }
 
-        /// <summary>
-        /// Clears persistent LOD data. Some simulations have persistent data which can linger for a little while after
-        /// being disabled. This will manually clear that data.
-        /// </summary>
-        internal virtual void ClearLodData()
-        {
-            // Empty.
-        }
-
         private protected virtual bool AlwaysClear => false;
 
         // Only works with input-only data (ie no simulation steps).
         internal virtual void BuildCommandBuffer(WaterRenderer water, CommandBuffer buffer)
         {
-            FlipBuffers();
+            FlipBuffers(buffer);
 
             buffer.BeginSample(ID);
 
             if (_TargetsToClear > 0 || AlwaysClear)
             {
                 CoreUtils.SetRenderTarget(buffer, DataTexture, ClearFlag.Color, ClearColor);
+
+                // Custom clear because clear not working.
+                if (Helpers.IsWebGPU && WaterResources.Instance.Compute._Clear != null)
+                {
+                    var compute = WaterResources.Instance._ComputeLibrary._ClearCompute;
+                    var wrapper = new PropertyWrapperCompute(buffer, compute._Shader, compute._KernelClearTarget);
+                    compute.SetVariantForFormat(wrapper, CompatibleTextureFormat);
+                    wrapper.SetTexture(Crest.ShaderIDs.s_Target, DataTexture);
+                    wrapper.SetVector(Crest.ShaderIDs.s_ClearMask, Color.white);
+                    wrapper.SetVector(Crest.ShaderIDs.s_ClearColor, ClearColor);
+                    wrapper.Dispatch(Resolution / k_ThreadGroupSizeX, Resolution / k_ThreadGroupSizeY, Slices);
+                }
 
                 _TargetsToClear--;
             }
@@ -258,6 +284,8 @@ namespace WaveHarmonic.Crest
                 // Ensure all targets clear when there are no inputs.
                 _TargetsToClear = _Targets.Size;
             }
+
+            TryBlur(buffer);
 
             if (RequiresClearBorder)
             {
@@ -354,14 +382,18 @@ namespace WaveHarmonic.Crest
         {
             var size = Resolution / 8;
 
-            var wrapper = new PropertyWrapperCompute(buffer, WaterResources.Instance.Compute._Clear, 1);
+            var compute = WaterResources.Instance._ComputeLibrary._ClearCompute;
+
+            var wrapper = new PropertyWrapperCompute(buffer, compute._Shader, compute._KernelClearTargetBoundaryX);
+            // Only need to be done once.
+            compute.SetVariantForFormat(wrapper, DataTexture.graphicsFormat);
             wrapper.SetTexture(Crest.ShaderIDs.s_Target, DataTexture);
             wrapper.SetVector(Crest.ShaderIDs.s_ClearColor, ClearColor);
             wrapper.SetInteger(Crest.ShaderIDs.s_Resolution, Resolution);
             wrapper.SetInteger(Crest.ShaderIDs.s_TargetSlice, Slices - 1);
             wrapper.Dispatch(size, 1, 1);
 
-            wrapper = new PropertyWrapperCompute(buffer, WaterResources.Instance.Compute._Clear, 2);
+            wrapper = new(buffer, compute._Shader, compute._KernelClearTargetBoundaryY);
             wrapper.SetTexture(Crest.ShaderIDs.s_Target, DataTexture);
             wrapper.SetVector(Crest.ShaderIDs.s_ClearColor, ClearColor);
             wrapper.SetInteger(Crest.ShaderIDs.s_Resolution, Resolution);
@@ -369,7 +401,7 @@ namespace WaveHarmonic.Crest
             wrapper.Dispatch(1, size, 1);
         }
 
-        void UpdateSamplingParameters(bool initialize = false)
+        void UpdateSamplingParameters(CommandBuffer commands, bool initialize = false)
         {
             var position = _Water.Position;
             var resolution = _Enabled ? Resolution : TextureArrayHelpers.k_SmallTextureSize;
@@ -380,7 +412,7 @@ namespace WaveHarmonic.Crest
             for (var slice = 0; slice < levels; slice++)
             {
                 // Find snap period.
-                var texel = 2f * 2f * _Water._CascadeData.Current[slice].x / resolution;
+                var texel = 2f * 2f * _Water.CascadeData.Current[slice].x / resolution;
                 // Snap so that shape texels are stationary.
                 var snapped = position - new Vector3(Mathf.Repeat(position.x, texel), 0, Mathf.Repeat(position.z, texel));
 
@@ -392,11 +424,20 @@ namespace WaveHarmonic.Crest
                 _ViewMatrices[slice] = WaterRenderer.CalculateViewMatrixFromSnappedPositionRHS(snapped);
             }
 
-            if (initialize)
+            if (!initialize)
             {
-                Shader.SetGlobalVector(_SamplingParametersShaderID, new(levels, resolution, 1f / resolution, 0));
+                commands.SetGlobalVector(_SamplingParametersShaderID, new(levels, resolution, 1f / resolution, 0));
+                commands.SetGlobalVectorArray(_SamplingParametersCascadeShaderID, parameters);
+
+                if (BufferCount > 1)
+                {
+                    commands.SetGlobalVectorArray(_SamplingParametersCascadeSourceShaderID, _SamplingParameters.Previous(1));
+                }
+
+                return;
             }
 
+            Shader.SetGlobalVector(_SamplingParametersShaderID, new(levels, resolution, 1f / resolution, 0));
             Shader.SetGlobalVectorArray(_SamplingParametersCascadeShaderID, parameters);
 
             if (BufferCount > 1)
@@ -480,6 +521,50 @@ namespace WaveHarmonic.Crest
             return -1;
         }
 
+        // Blurs the output if enabled.
+        private protected void TryBlur(CommandBuffer commands)
+        {
+            if (!_Blur || _Water.Scale >= 32)
+            {
+                return;
+            }
+
+            var rt = DataTexture;
+
+            var compute = WaterResources.Instance._ComputeLibrary._BlurCompute;
+
+            var horizontal = new PropertyWrapperCompute(commands, compute._Shader, compute._KernelHorizontal);
+            var vertical = new PropertyWrapperCompute(commands, compute._Shader, compute._KernelVertical);
+
+            var temporary = ShaderIDs.s_TemporaryBlurLodTexture;
+
+            commands.GetTemporaryRT(temporary, rt.descriptor);
+            commands.CopyTexture(rt, temporary);
+
+            // Applies to both.
+            compute.SetVariantForFormat(horizontal, rt.graphicsFormat);
+            horizontal.SetInteger(Crest.ShaderIDs.s_Resolution, rt.width);
+
+            horizontal.SetTexture(Crest.ShaderIDs.s_Source, temporary);
+            horizontal.SetTexture(Crest.ShaderIDs.s_Target, rt);
+            vertical.SetTexture(Crest.ShaderIDs.s_Source, rt);
+            vertical.SetTexture(Crest.ShaderIDs.s_Target, temporary);
+
+            var x = rt.width / 8;
+            var y = rt.height / 8;
+            // Skip outer LODs.
+            var z = Mathf.Min(rt.volumeDepth, 4);
+            for (var i = 0; i < _BlurIterations; i++)
+            {
+                // Limit number of iterations for outer LODs.
+                horizontal.Dispatch(x, y, Mathf.Max(z - i, 1));
+                vertical.Dispatch(x, y, Mathf.Max(z - i, 1));
+            }
+
+            commands.CopyTexture(temporary, rt);
+            commands.ReleaseTemporaryRT(temporary);
+        }
+
         /// <summary>
         /// Bind data needed to load or compute from this simulation.
         /// </summary>
@@ -536,7 +621,7 @@ namespace WaveHarmonic.Crest
             // For safety. Disable to see if we are sampling outside of LOD chain.
             _SamplingParameters.RunLambda(x => System.Array.Fill(x, Vector4.zero));
 
-            UpdateSamplingParameters(initialize: true);
+            UpdateSamplingParameters(null, initialize: true);
         }
 
         internal virtual void Enable()
@@ -558,6 +643,17 @@ namespace WaveHarmonic.Crest
                 if (x != null) x.Release();
                 Helpers.Destroy(x);
             });
+
+            foreach (var data in _AdditionalCameraData.Values)
+            {
+                data._Targets?.RunLambda(x =>
+                {
+                    if (x != null) x.Release();
+                    Helpers.Destroy(x);
+                });
+            }
+
+            _AdditionalCameraData.Clear();
         }
 
         internal virtual void AfterExecute()
@@ -567,6 +663,13 @@ namespace WaveHarmonic.Crest
 
         private protected virtual void Allocate()
         {
+            // Use per-camera data.
+            if (_Water.SeparateViewpoint && Persistent)
+            {
+                _ReAllocateTexture = false;
+                return;
+            }
+
             _Targets = new(BufferCount, CreateLodDataTextures);
             _Targets.RunLambda(Clear);
 
@@ -614,9 +717,19 @@ namespace WaveHarmonic.Crest
                 texture.Create();
             });
 
+            foreach (var data in _AdditionalCameraData.Values)
+            {
+                data._Targets.RunLambda(texture =>
+                {
+                    texture.Release();
+                    texture.descriptor = descriptor;
+                    texture.Create();
+                });
+            }
+
             _ReAllocateTexture = false;
 
-            UpdateSamplingParameters(initialize: true);
+            UpdateSamplingParameters(null, initialize: true);
         }
 
 #if UNITY_EDITOR
@@ -639,6 +752,70 @@ namespace WaveHarmonic.Crest
 #endif
     }
 
+    partial class Lod
+    {
+        class AdditionalCameraData
+        {
+            public BufferedData<RenderTexture> _Targets;
+            public BufferedData<Vector4[]> _SamplingParameters;
+        }
+
+        readonly Dictionary<Camera, AdditionalCameraData> _AdditionalCameraData = new();
+
+        internal virtual void LoadCameraData(Camera camera)
+        {
+            Queryable?.Initialize(_Water);
+
+            // For non-persistent sims, we do not need to store per camera data.
+            if (!_Water.SeparateViewpoint || !Persistent)
+            {
+                return;
+            }
+
+            AdditionalCameraData data;
+
+            if (!_AdditionalCameraData.ContainsKey(camera))
+            {
+                data = new()
+                {
+                    _Targets = new(BufferCount, CreateLodDataTextures),
+                    _SamplingParameters = new(BufferCount, () => new Vector4[k_MaximumSlices]),
+                };
+
+                data._Targets.RunLambda(Clear);
+                _AdditionalCameraData.Add(camera, data);
+            }
+            else
+            {
+                data = _AdditionalCameraData[camera];
+            }
+
+            _Targets = data._Targets;
+            _SamplingParameters = data._SamplingParameters;
+        }
+
+        internal virtual void StoreCameraData(Camera camera)
+        {
+
+        }
+
+        internal void RemoveCameraData(Camera camera)
+        {
+            if (_AdditionalCameraData.ContainsKey(camera))
+            {
+                var acd = _AdditionalCameraData[camera];
+
+                acd._Targets.RunLambda(x =>
+                {
+                    if (x != null) x.Release();
+                    Helpers.Destroy(x);
+                });
+
+                _AdditionalCameraData.Remove(camera);
+            }
+        }
+    }
+
     // API
     partial class Lod
     {
@@ -657,17 +834,64 @@ namespace WaveHarmonic.Crest
         }
     }
 
+    interface IQueryableLod<out T> where T : IQueryProvider
+    {
+        string Name { get; }
+        bool Enabled { get; }
+        WaterRenderer Water { get; }
+        int MaximumQueryCount { get; }
+        LodQuerySource QuerySource { get; }
+    }
+
+    /// <summary>
+    /// The source of collisions (ie water shape).
+    /// </summary>
+    [@GenerateDoc]
+    public enum LodQuerySource
+    {
+        /// <inheritdoc cref="Generated.LodQuerySource.None"/>
+        [Tooltip("No query source.")]
+        None,
+
+        /// <inheritdoc cref="Generated.LodQuerySource.GPU"/>
+        [Tooltip("Uses AsyncGPUReadback to retrieve data from GPU to CPU.\n\nThis is the most optimal approach.")]
+        GPU,
+
+        /// <inheritdoc cref="Generated.LodQuerySource.CPU"/>
+        [Tooltip("Computes data entirely on the CPU.")]
+        CPU,
+    }
+
     /// <summary>
     /// Base type for simulations with a provider.
     /// </summary>
     /// <typeparam name="T">The query provider.</typeparam>
     [System.Serializable]
-    public abstract class Lod<T> : Lod where T : IQueryProvider
+    public abstract partial class Lod<T> : Lod, IQueryableLod<T> where T : IQueryProvider
     {
+        [@Space(10)]
+
+        [Tooltip("Where to obtain water data on CPU for physics / gameplay.")]
+        [@GenerateAPI(Setter.Internal)]
+        [@Filtered]
+        [SerializeField]
+        private protected LodQuerySource _QuerySource = LodQuerySource.GPU;
+
+        [Tooltip("Maximum number of queries that can be performed when using GPU queries.")]
+        [@Predicated(nameof(_QuerySource), true, nameof(LodQuerySource.GPU))]
+        [@GenerateAPI(Setter.None)]
+        [@DecoratedField]
+        [SerializeField]
+        private protected int _MaximumQueryCount = QueryBase.k_DefaultMaximumQueryCount;
+
         /// <summary>
         /// Provides data from the GPU to CPU.
         /// </summary>
         public T Provider { get; set; }
+
+        WaterRenderer IQueryableLod<T>.Water => Water;
+        string IQueryableLod<T>.Name => Name;
+
         private protected abstract T CreateProvider(bool enable);
 
         internal override void SetGlobals(bool enable)
@@ -689,4 +913,30 @@ namespace WaveHarmonic.Crest
             Queryable?.SendReadBack(_Water);
         }
     }
+
+#if UNITY_EDITOR
+    partial class Lod<T>
+    {
+        private protected void ResetQueryChange()
+        {
+            if (_Water == null || !_Water.isActiveAndEnabled || !Enabled) return;
+            Queryable?.CleanUp();
+            InitializeProvider(true);
+        }
+
+        [@OnChange]
+        private protected override void OnChange(string path, object previous)
+        {
+            base.OnChange(path, previous);
+
+            switch (path)
+            {
+                case nameof(_QuerySource):
+                case nameof(_MaximumQueryCount):
+                    ResetQueryChange();
+                    break;
+            }
+        }
+    }
+#endif
 }

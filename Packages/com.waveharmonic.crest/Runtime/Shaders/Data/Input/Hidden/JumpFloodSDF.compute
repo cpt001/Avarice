@@ -4,6 +4,8 @@
 // An implementation of the Jump Flood algorithm by Rong and Tan
 // Source: https://www.comp.nus.edu.sg/~tants/jfa.html
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestInitialize
 #pragma kernel CrestExecute
 #pragma kernel CrestApply
@@ -27,13 +29,13 @@ float _Crest_WaterLevel;
 CBUFFER_END
 
 // Holds scene depth for initialization.
-Texture2D<float2> _Crest_Source;
-RWTexture2D<float2> _Crest_Target;
+Texture2D<m_Float2> _Crest_Source;
+RWTexture2D<m_Float2> _Crest_Target;
 
 // Setting this to zero means that geometry at exactly the origin won't be handled
 // gracefully - but it would only affect a single-pixel in the worst-case and would
 // doubtfully be noticable anyway. Use infinity instead.
-#define m_CrestUninitializedPosition float2(m_Crest_PositiveInfinity, m_Crest_PositiveInfinity)
+#define m_CrestUninitializedPosition m_Float2Constructor(m_Crest_PositiveInfinity, m_Crest_PositiveInfinity)
 
 #if d_Crest_Inverted
 #define m_DepthCheck depth > 0.0
@@ -66,7 +68,7 @@ void Initialize(const uint3 id)
     depth += lerp(Cascade::MakeLevel(slice0).SampleLevel(position), Cascade::MakeLevel(slice1).SampleLevel(position), alpha);
 #endif
 
-    _Crest_Target[id.xy] = m_DepthCheck ? position : m_CrestUninitializedPosition;
+    _Crest_Target[id.xy] = m_DepthCheck ? m_Float2FromFloat2(position) : m_CrestUninitializedPosition;
 }
 
 void Execute(const uint3 id)
@@ -111,7 +113,7 @@ void Execute(const uint3 id)
         }
     }
 
-    _Crest_Target[id.xy] = nearest;
+    _Crest_Target[id.xy] = m_Float2FromFloat2(nearest);
 }
 
 void Apply(const uint3 id)
@@ -144,7 +146,7 @@ void Apply(const uint3 id)
 
     result.y = distance;
 
-    _Crest_Target[id.xy] = result;
+    _Crest_Target[id.xy] = m_Float2FromFloat2(result);
 }
 
 m_CrestNameSpaceEnd

@@ -57,6 +57,11 @@
             "define": "d_UnityURP"
         },
         {
+            "name": "com.unity.render-pipelines.universal",
+            "expression": "(,17.3.0)",
+            "define": "URP_COMPATIBILITY_MODE"
+        },
+        {
             "name": "com.waveharmonic.crest.paint",
             "expression": "",
             "define": "d_CrestPaint"

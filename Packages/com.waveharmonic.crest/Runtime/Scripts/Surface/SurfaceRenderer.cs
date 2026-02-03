@@ -5,10 +5,19 @@ using System.Buffers;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-using WaveHarmonic.Crest.Utility;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
+    enum WaterMeshType
+    {
+        [Tooltip("Chunks implemented as a clip-map.")]
+        Chunks,
+
+        [Tooltip("A single quad.\n\nOptimal for demanding platforms like mobile. Displacement will only contribute to normals.")]
+        Quad,
+    }
+
     /// <summary>
     /// Renders the water surface.
     /// </summary>
@@ -26,6 +35,12 @@ namespace WaveHarmonic.Crest
         [@GenerateAPI(Getter.Custom, Setter.Custom)]
         [@DecoratedField, SerializeField]
         internal bool _Enabled = true;
+
+        [@Label("Mesh")]
+        [Tooltip("The meshing solution for the water surface.")]
+        [@DecoratedField]
+        [@SerializeField]
+        WaterMeshType _MeshType;
 
         [Tooltip("The water chunk renderers will have this layer.")]
         [@Layer]
@@ -73,6 +88,12 @@ namespace WaveHarmonic.Crest
         internal int _TimeSliceBoundsUpdateFrameCount = 1;
 
         [@Heading("Advanced")]
+
+        [Tooltip("Rules to exclude cameras from surface rendering.\n\nThese are exclusion rules, so for all cameras, select Nothing. These rules are applied on top of the Layer rules.")]
+        [@DecoratedField]
+        [@GenerateAPI]
+        [SerializeField]
+        internal WaterCameraExclusion _CameraExclusions = WaterCameraExclusion.Hidden | WaterCameraExclusion.Reflection;
 
         [Tooltip("How to handle self-intersections of the water surface.\n\nThey can be caused by choppy waves which can cause a flipped underwater effect. When not using the portals/volumes, this fix is only applied when within 2 metres of the water surface. Automatic will disable the fix if portals/volumes are used which is the recommend setting.")]
         [@DecoratedField, SerializeField]
@@ -122,8 +143,8 @@ namespace WaveHarmonic.Crest
         // Level of Detail
         //
 
-        // Extra frame is for motion vectors.
-        internal BufferedData<MaterialPropertyBlock[]> _PerCascadeMPB = new(2, () => new MaterialPropertyBlock[Lod.k_MaximumSlices]);
+        readonly MaterialPropertyBlock[] _PerCascadeMPB = new MaterialPropertyBlock[Lod.k_MaximumSlices];
+        internal MaterialPropertyBlock[] PerCascadeMPB { get; private set; }
 
         // We are computing these values to be optimal based on the base mesh vertex density.
         float _LodAlphaBlackPointFade;
@@ -155,6 +176,7 @@ namespace WaveHarmonic.Crest
         internal Material _MotionVectorMaterial;
 
         internal Material AboveOrBelowSurfaceMaterial => _VolumeMaterial == null ? _Material : _VolumeMaterial;
+        internal bool IsQuadMesh => _MeshType == WaterMeshType.Quad;
 
 
         //
@@ -200,8 +222,23 @@ namespace WaveHarmonic.Crest
             public static readonly int s_ChunkGeometryGridWidth = Shader.PropertyToID("_Crest_ChunkGeometryGridWidth");
             public static readonly int s_ChunkFarNormalsWeight = Shader.PropertyToID("_Crest_ChunkFarNormalsWeight");
             public static readonly int s_ChunkNormalScrollSpeed = Shader.PropertyToID("_Crest_ChunkNormalScrollSpeed");
-            public static readonly int s_ChunkMeshScaleAlphaSource = Shader.PropertyToID("_Crest_ChunkMeshScaleAlphaSource");
-            public static readonly int s_ChunkGeometryGridWidthSource = Shader.PropertyToID("_Crest_ChunkGeometryGridWidthSource");
+            public static readonly int s_NormalMapParameters = Shader.PropertyToID("_Crest_NormalMapParameters");
+        }
+
+        bool _ForceRenderingOff;
+
+        internal bool ForceRenderingOff
+        {
+            get => _ForceRenderingOff;
+            set
+            {
+                _ForceRenderingOff = value;
+
+                if (_Enabled)
+                {
+                    Root.gameObject.SetActive(!_ForceRenderingOff && !IsQuadMesh);
+                }
+            }
         }
 
         internal void Initialize()
@@ -211,19 +248,10 @@ namespace WaveHarmonic.Crest
             Root.position = _Water.Position;
             Root.localScale = new(_Water.Scale, 1f, _Water.Scale);
 
-            // Populate MPBs with defaults.
-            for (var index = 0; index < _Water.LodLevels; index++)
-            {
-                for (var frame = 0; frame < 2; frame++)
-                {
-                    var mpb = new MaterialPropertyBlock();
-                    mpb.SetInteger(Lod.ShaderIDs.s_LodIndex, index);
-                    mpb.SetFloat(ShaderIDs.s_ChunkFarNormalsWeight, 1f);
-                    mpb.SetFloat(ShaderIDs.s_ChunkMeshScaleAlpha, 0f);
-                    mpb.SetFloat(ShaderIDs.s_ChunkMeshScaleAlphaSource, 0f);
-                    _PerCascadeMPB.Previous(frame)[index] = mpb;
-                }
-            }
+            // Populate MPBs with defaults. Protects against null exceptions etc.
+            PerCascadeMPB = _PerCascadeMPB;
+            NormalMapParameters = _NormalMapParameters;
+            InitializeProperties();
 
             // Resolution is 4 tiles across.
             var baseMeshDensity = _Water.LodResolution * 0.25f / _Water._GeometryDownSampleFactor;
@@ -297,6 +325,11 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
+            if (IsQuadMesh)
+            {
+                return;
+            }
+
             GeometryUtility.CalculateFrustumPlanes(camera, _CameraFrustumPlanes);
 
             foreach (var chunk in Chunks)
@@ -347,20 +380,43 @@ namespace WaveHarmonic.Crest
             _Rebuild = false;
         }
 
-        internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
+        internal void DisableChunks()
         {
-            if (!WaterRenderer.ShouldRender(camera, Layer))
+            foreach (var chunk in Chunks)
             {
-                return;
+                if (chunk.Rend != null) chunk.Rend.enabled = false;
+            }
+        }
+
+        internal bool ShouldRender(Camera camera)
+        {
+            if (!_Enabled)
+            {
+                return false;
+            }
+
+            if (!WaterRenderer.ShouldRender(camera, Layer, _CameraExclusions))
+            {
+                return false;
             }
 
             // Our planar reflection camera must never render the surface.
-            if (camera == WaterReflections.CurrentCamera)
+            if (camera == _Water.Reflections.ReflectionCamera)
             {
-                return;
+                return false;
             }
 
             if (Material == null)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
+        {
+            if (!ShouldRender(camera))
             {
                 return;
             }
@@ -368,7 +424,7 @@ namespace WaveHarmonic.Crest
             WritePerCameraMaterialParameters(camera);
 
             // Motion Vectors.
-            if (ShouldRenderMotionVectors(camera) && _QueueMotionVectors)
+            if (ShouldRenderMotionVectors(camera) && QueueMotionVectors)
             {
                 UpdateChunkVisibility(camera);
 
@@ -378,6 +434,7 @@ namespace WaveHarmonic.Crest
                 }
             }
 
+#pragma warning disable format
 #if d_UnityURP
             if (RenderPipelineHelper.IsUniversal)
             {
@@ -393,11 +450,18 @@ namespace WaveHarmonic.Crest
             {
                 OnBeginCameraRenderingLegacy(camera);
             }
+#pragma warning restore format
         }
 
         internal void OnEndCameraRendering(Camera camera)
         {
             _DoneChunkVisibility = false;
+
+            // Restore in case exclusion culling ran.
+            foreach (var chunk in Chunks)
+            {
+                if (chunk.Rend != null && !chunk._Culled) chunk.Rend.enabled = true;
+            }
 
             if (!WaterRenderer.ShouldRender(camera, Layer))
             {
@@ -405,7 +469,7 @@ namespace WaveHarmonic.Crest
             }
 
             // Our planar reflection camera must never render the surface.
-            if (camera == WaterReflections.CurrentCamera)
+            if (camera == _Water.Reflections.ReflectionCamera)
             {
                 return;
             }
@@ -413,6 +477,20 @@ namespace WaveHarmonic.Crest
             if (RenderPipelineHelper.IsLegacy)
             {
                 OnEndCameraRenderingLegacy(camera);
+            }
+        }
+
+        void InitializeProperties()
+        {
+            System.Array.Fill(NormalMapParameters, new Vector4(0, 0, 1, 0));
+
+            // Populate MPBs with defaults.
+            for (var index = 0; index < PerCascadeMPB.Length; index++)
+            {
+                var block = new MaterialPropertyBlock();
+                block.SetInteger(Lod.ShaderIDs.s_LodIndex, index);
+                block.SetFloat(ShaderIDs.s_ChunkFarNormalsWeight, 1f);
+                PerCascadeMPB[index] = block;
             }
         }
 
@@ -442,14 +520,16 @@ namespace WaveHarmonic.Crest
             var value = _SurfaceSelfIntersectionFixMode switch
             {
                 SurfaceSelfIntersectionFixMode.On =>
-                      height < -2f
+                      !_Water._PerCameraHeightReady
+                    ? ForceFacing.None
+                    : height < -2f
                     ? ForceFacing.BelowWater
                     : height > 2f
                     ? ForceFacing.AboveWater
                     : ForceFacing.None,
                 // Skip for portals as it is possible to see both sides of the surface at any position.
                 SurfaceSelfIntersectionFixMode.Automatic =>
-                      _Water.Portaled
+                      _Water.Portaled || !_Water._PerCameraHeightReady
                     ? ForceFacing.None
                     : height < -2f
                     ? ForceFacing.BelowWater
@@ -471,11 +551,26 @@ namespace WaveHarmonic.Crest
                 Rebuild();
             }
 
+            if (_ForceRenderingOff)
+            {
+                return;
+            }
+
+            LoadCameraData(_Water.CurrentCamera);
+
             Root.position = _Water.Position;
             Root.localScale = new(_Water.Scale, 1f, _Water.Scale);
 
-            _PerCascadeMPB.Flip();
+            Root.gameObject.SetActive(!IsQuadMesh);
+            Material.SetKeyword(new(Material.shader, "_CREST_CUSTOM_MESH"), IsQuadMesh);
+
             WritePerCascadeInstanceData();
+
+            if (IsQuadMesh)
+            {
+                LateUpdateQuadMesh();
+                return;
+            }
 
             foreach (var chunk in Chunks)
             {
@@ -506,60 +601,48 @@ namespace WaveHarmonic.Crest
         {
             var levels = _Water.LodLevels;
             var texel = _Water.LodResolution * 0.25f / _Water._GeometryDownSampleFactor;
-            var mpbsCurrent = _PerCascadeMPB.Current;
-            var mpbsPrevious = _PerCascadeMPB.Previous(1);
 
             // LOD 0
             {
-                var mpb = mpbsCurrent[0];
-
-                if (_Water.WriteMotionVectors)
-                {
-                    // NOTE: it may be more optimal to store in an array than fetching from MPB.
-                    mpb.SetFloat(ShaderIDs.s_ChunkMeshScaleAlphaSource, mpbsPrevious[0].GetFloat(ShaderIDs.s_ChunkMeshScaleAlpha));
-                }
-
                 // Blend LOD 0 shape in/out to avoid pop, if scale could increase.
-                mpb.SetFloat(ShaderIDs.s_ChunkMeshScaleAlpha, _Water.ScaleCouldIncrease ? _Water.ViewerAltitudeLevelAlpha : 0f);
+                PerCascadeMPB[0].SetFloat(ShaderIDs.s_ChunkMeshScaleAlpha, _Water.ScaleCouldIncrease ? _Water.ViewerAltitudeLevelAlpha : 0f);
             }
 
             // LOD N
             {
-                var mpb = mpbsCurrent[levels - 1];
-
                 // Blend furthest normals scale in/out to avoid pop, if scale could reduce.
-                mpb.SetFloat(ShaderIDs.s_ChunkFarNormalsWeight, _Water.ScaleCouldDecrease ? _Water.ViewerAltitudeLevelAlpha : 1f);
+                var weight = _Water.ScaleCouldDecrease ? _Water.ViewerAltitudeLevelAlpha : 1f;
+                PerCascadeMPB[levels - 1].SetFloat(ShaderIDs.s_ChunkFarNormalsWeight, weight);
+                NormalMapParameters[levels - 1] = new(0, 0, weight, 0);
             }
 
             for (var index = 0; index < levels; index++)
             {
-                var mpbCurrent = mpbsCurrent[index];
-                var mpbPrevious = mpbsPrevious[index];
+                var mpb = PerCascadeMPB[index];
 
                 // geometry data
                 // compute grid size of geometry. take the long way to get there - make sure we land exactly on a power of two
                 // and not inherit any of the lossy-ness from lossyScale.
-                var scale = _Water._CascadeData.Current[index].x;
+                var scale = _Water.CascadeData.Current[index].x;
                 var width = scale / texel;
 
-                if (_Water.WriteMotionVectors)
-                {
-                    // NOTE: it may be more optimal to store in an array than fetching from MPB.
-                    mpbPrevious.SetFloat(ShaderIDs.s_ChunkGeometryGridWidthSource, mpbCurrent.GetFloat(ShaderIDs.s_ChunkGeometryGridWidth));
-                }
-
-                mpbCurrent.SetFloat(ShaderIDs.s_ChunkGeometryGridWidth, width);
+                mpb.SetFloat(ShaderIDs.s_ChunkGeometryGridWidth, width);
 
                 var mul = 1.875f; // fudge 1
                 var pow = 1.4f; // fudge 2
                 var texelWidth = width / _Water._GeometryDownSampleFactor;
-                mpbCurrent.SetVector(ShaderIDs.s_ChunkNormalScrollSpeed, new
+                var speed = new Vector2
                 (
                     Mathf.Pow(Mathf.Log(1f + 2f * texelWidth) * mul, pow),
-                    Mathf.Pow(Mathf.Log(1f + 4f * texelWidth) * mul, pow),
-                    0,
-                    0
-                ));
+                    Mathf.Pow(Mathf.Log(1f + 4f * texelWidth) * mul, pow)
+                );
+
+                mpb.SetVector(ShaderIDs.s_ChunkNormalScrollSpeed, speed);
+
+                var normals = NormalMapParameters[index];
+                normals.x = speed.x;
+                normals.y = speed.y;
+                NormalMapParameters[index] = normals;
             }
         }
 
@@ -649,12 +732,18 @@ namespace WaveHarmonic.Crest
             _CanSkipCulling = WaterBody.WaterBodies.Count == 0;
         }
 
-        internal void Render(Camera camera, CommandBuffer buffer, Material material = null, int pass = 0, bool culled = false)
+        internal void Render(Camera camera, CommandBuffer buffer, Material material = null, int pass = 0, bool culled = false, MaterialPropertyBlock mpb = null)
         {
             var noMaterial = material == null;
 
             if (noMaterial && Material == null)
             {
+                return;
+            }
+
+            if (IsQuadMesh)
+            {
+                buffer.DrawMesh(Helpers.QuadMesh, Matrix4x4.TRS(Root.position, Quaternion.Euler(90f, 0, 0), new(10000, 10000, 1)), noMaterial ? Material : material, 0, shaderPass: pass, mpb);
                 return;
             }
 
@@ -752,6 +841,7 @@ namespace WaveHarmonic.Crest
     partial class SurfaceRenderer
     {
         bool _QueueMotionVectors;
+        bool QueueMotionVectors => _QueueMotionVectors && !IsQuadMesh;
 
         bool ShouldRenderMotionVectors(Camera camera)
         {
@@ -817,7 +907,7 @@ namespace WaveHarmonic.Crest
 
         void UpdateMotionVectorsMaterial(Material surface, ref Material motion)
         {
-            if (!_QueueMotionVectors)
+            if (!QueueMotionVectors)
             {
                 return;
             }
@@ -853,6 +943,82 @@ namespace WaveHarmonic.Crest
             motion.SetFloat(Crest.ShaderIDs.Unity.s_SrcBlend, 1);
             motion.SetFloat(Crest.ShaderIDs.Unity.s_DstBlend, 0);
             motion.SetFloat(ShaderIDs.s_BuiltShadowCasterZTest, 1); // ZTest Never
+        }
+    }
+
+    partial class SurfaceRenderer
+    {
+        internal Dictionary<Camera, MaterialPropertyBlock[]> _PerCameraPerCascadeMPB = new();
+        internal Dictionary<Camera, Vector4[]> _PerCameraNormalMapParameters = new();
+
+        void LoadCameraData(Camera camera)
+        {
+            if (!_Water.SeparateViewpoint)
+            {
+                return;
+            }
+
+            if (!_PerCameraPerCascadeMPB.ContainsKey(camera))
+            {
+                PerCascadeMPB = new MaterialPropertyBlock[Lod.k_MaximumSlices];
+                _PerCameraPerCascadeMPB.Add(camera, PerCascadeMPB);
+                NormalMapParameters = new Vector4[Lod.k_MaximumSlices];
+                _PerCameraNormalMapParameters.Add(camera, NormalMapParameters);
+                InitializeProperties();
+            }
+            else
+            {
+                PerCascadeMPB = _PerCameraPerCascadeMPB[camera];
+                NormalMapParameters = _PerCameraNormalMapParameters[camera];
+            }
+        }
+
+        internal void RemoveCameraData(Camera camera)
+        {
+            if (_PerCameraPerCascadeMPB.ContainsKey(camera))
+            {
+                _PerCameraPerCascadeMPB.Remove(camera);
+                _PerCameraNormalMapParameters.Remove(camera);
+            }
+
+#if UNITY_EDITOR
+            RemoveCameraDataLDT(camera);
+#endif
+        }
+    }
+
+    // Quad
+    partial class SurfaceRenderer
+    {
+        readonly Vector4[] _NormalMapParameters = new Vector4[Lod.k_MaximumSlices];
+        Vector4[] NormalMapParameters { get; set; }
+
+        void LateUpdateQuadMesh()
+        {
+            Shader.SetGlobalVectorArray(ShaderIDs.s_NormalMapParameters, NormalMapParameters);
+
+            var scale = new Vector3(10000 * _Water.Scale, 10000 * _Water.Scale, 1);
+            var bounds = Helpers.QuadMesh.bounds;
+            bounds.Expand(scale);
+            Graphics.RenderMesh
+            (
+                new()
+                {
+                    motionVectorMode = MotionVectorGenerationMode.Camera,
+                    material = Material,
+                    worldBounds = Root.TransformBounds(bounds),
+                    layer = Layer,
+                    shadowCastingMode = CastShadows ? ShadowCastingMode.On : ShadowCastingMode.Off,
+                    lightProbeUsage = LightProbeUsage.Off,
+                    reflectionProbeUsage = ReflectionProbeUsage.BlendProbesAndSkybox,
+                    renderingLayerMask = (uint)Layer,
+                },
+                Helpers.QuadMesh,
+                submeshIndex: 0,
+                Matrix4x4.TRS(Root.position, Quaternion.Euler(90f, 0, 0), scale)
+            );
+
+            UpdateMaterial(_Material, ref _MotionVectorMaterial);
         }
     }
 }

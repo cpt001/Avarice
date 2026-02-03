@@ -52,7 +52,7 @@ Shader "Crest/Underwater"
         [PerRendererData] _Crest_CausticsDistortionStrength("Caustics Distortion Strength", Range(0, 0.25)) = 0.16
         [PerRendererData] _Crest_CausticsDistortionScale("Caustics Distortion Scale", Range(0.01, 1000)) = 250
         [PerRendererData] _Crest_CausticsMotionBlur("Caustics Motion Blur", Range(0, 10)) = 1
-        [PerRendererData] [Toggle] CREST_FLOW("Flow Enabled", Float) = 0
+        [PerRendererData] [Toggle(_CREST_FLOW_LOD)] _CREST_FLOW_LOD("Flow Enabled", Float) = 0
     }
 
     HLSLINCLUDE
@@ -61,7 +61,7 @@ Shader "Crest/Underwater"
     // #pragma enable_d3d11_debug_symbols
 
     // Also on the water shader.
-    #pragma multi_compile_local_fragment __ CREST_FLOW_ON
+    #pragma multi_compile_local_fragment __ _CREST_FLOW_LOD
 
     #pragma shader_feature_local_fragment __ d_Dithering
 
@@ -231,8 +231,6 @@ Shader "Crest/Underwater"
             HLSLPROGRAM
             #include_with_pragmas "UnderwaterHDRP.hlsl"
 
-            #define d_Crest_CustomColorTexture 1
-
             #define d_Crest_Portal 1
             #define d_Crest_Geometry 1
             #define d_Crest_FogBefore 1
@@ -286,11 +284,38 @@ Shader "Crest/Underwater"
             HLSLPROGRAM
             #include_with_pragmas "UnderwaterHDRP.hlsl"
 
-            #define d_Crest_CustomColorTexture 1
-
             #define d_Crest_Portal 1
             #define d_Crest_PortalNegativeVolume 1
             #define d_Crest_PortalWithBackFace 1
+            #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/Underwater.hlsl"
+
+            #pragma fragment Fragment
+            ENDHLSL
+        }
+
+        Pass
+        {
+            PackageRequirements
+            {
+                "com.waveharmonic.crest.portals"
+            }
+
+            Name "Fog After (Negative)"
+
+            Cull Front
+            ZTest LEqual
+
+            HLSLPROGRAM
+            #include_with_pragmas "UnderwaterHDRP.hlsl"
+
+            #pragma multi_compile_local _ d_Crest_ComputeMask
+
+            // Needs custom otherwise it will overwrite the fog before.
+            #define d_Crest_CustomColorTexture 1
+            #define d_Crest_Portal 1
+            #define d_Crest_Geometry 1
+            #define d_Crest_FogBefore 1
+
             #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/Underwater.hlsl"
 
             #pragma fragment Fragment
@@ -467,8 +492,6 @@ Shader "Crest/Underwater"
             #include_with_pragmas "Packages/com.unity.render-pipelines.core/ShaderLibrary/FoveatedRenderingKeywords.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/FoveatedRendering.hlsl"
 
-            #define d_Crest_CustomColorTexture 1
-
             #define d_Crest_Portal 1
             #define d_Crest_Geometry 1
             #define d_Crest_FogBefore 1
@@ -526,11 +549,40 @@ Shader "Crest/Underwater"
             #include_with_pragmas "Packages/com.unity.render-pipelines.core/ShaderLibrary/FoveatedRenderingKeywords.hlsl"
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/FoveatedRendering.hlsl"
 
-            #define d_Crest_CustomColorTexture 1
-
             #define d_Crest_Portal 1
             #define d_Crest_PortalNegativeVolume 1
             #define d_Crest_PortalWithBackFace 1
+            #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/Underwater.hlsl"
+
+            #pragma fragment Fragment
+            ENDHLSL
+        }
+
+        Pass
+        {
+            PackageRequirements
+            {
+                "com.waveharmonic.crest.portals"
+            }
+
+            Name "Fog After (Negative)"
+
+            Cull Front
+            ZTest LEqual
+
+            HLSLPROGRAM
+            #include_with_pragmas "UnderwaterURP.hlsl"
+            #include_with_pragmas "Packages/com.unity.render-pipelines.core/ShaderLibrary/FoveatedRenderingKeywords.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/FoveatedRendering.hlsl"
+
+            #pragma multi_compile_local _ d_Crest_ComputeMask
+
+            // Needs custom otherwise it will overwrite the fog before.
+            #define d_Crest_CustomColorTexture 1
+            #define d_Crest_Portal 1
+            #define d_Crest_Geometry 1
+            #define d_Crest_FogBefore 1
+
             #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/Underwater.hlsl"
 
             #pragma fragment Fragment
@@ -689,9 +741,6 @@ Shader "Crest/Underwater"
 
             #pragma multi_compile_local _ d_Crest_ComputeMask
 
-            // For negative volumes.
-            #define d_Crest_CustomColorTexture 1
-
             #define d_Crest_Portal 1
             #define d_Crest_Geometry 1
             #define d_Crest_FogBefore 1
@@ -745,11 +794,38 @@ Shader "Crest/Underwater"
             HLSLPROGRAM
             #include_with_pragmas "UnderwaterBIRP.hlsl"
 
-            #define d_Crest_CustomColorTexture 1
-
             #define d_Crest_Portal 1
             #define d_Crest_PortalNegativeVolume 1
             #define d_Crest_PortalWithBackFace 1
+            #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/Underwater.hlsl"
+
+            #pragma fragment Fragment
+            ENDHLSL
+        }
+
+        Pass
+        {
+            PackageRequirements
+            {
+                "com.waveharmonic.crest.portals"
+            }
+
+            Name "Fog After (Negative)"
+
+            Cull Front
+            ZTest LEqual
+
+            HLSLPROGRAM
+            #include_with_pragmas "UnderwaterBIRP.hlsl"
+
+            #pragma multi_compile_local _ d_Crest_ComputeMask
+
+            // Needs custom otherwise it will overwrite the fog before.
+            #define d_Crest_CustomColorTexture 1
+
+            #define d_Crest_Portal 1
+            #define d_Crest_Geometry 1
+            #define d_Crest_FogBefore 1
             #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/Underwater.hlsl"
 
             #pragma fragment Fragment

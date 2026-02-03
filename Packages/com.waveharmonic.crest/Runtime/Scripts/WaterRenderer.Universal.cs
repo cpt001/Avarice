@@ -3,10 +3,6 @@
 
 #if d_UnityURP
 
-#if !UNITY_6000_3_OR_NEWER
-#define URP_COMPATIBILITY_MODE
-#endif
-
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -79,6 +75,7 @@ namespace WaveHarmonic.Crest
                 Instance = new(water);
             }
 
+            [System.Diagnostics.Conditional(Constants.Symbols.k_Refraction)]
             internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
             {
                 var water = _Water;
@@ -89,7 +86,7 @@ namespace WaveHarmonic.Crest
                 }
 
                 // Our reflections do not need them.
-                if (camera == WaterReflections.CurrentCamera)
+                if (camera == _Water.Reflections.ReflectionCamera)
                 {
                     return;
                 }
@@ -100,13 +97,15 @@ namespace WaveHarmonic.Crest
                     return;
                 }
 
-                if (water.Surface.Material == null)
+                var material = water.Surface.Material;
+
+                if (material == null)
                 {
                     return;
                 }
 
                 // TODO: Could also check RenderType. Which is better?
-                if (!SurfaceRenderer.IsTransparent(water.Surface.Material))
+                if (!SurfaceRenderer.IsTransparent(material))
                 {
                     return;
                 }
@@ -119,14 +118,18 @@ namespace WaveHarmonic.Crest
                 // Needed for OnCameraSetup.
                 renderer.EnqueuePass(this);
 
+#if URP_COMPATIBILITY_MODE
 #if UNITY_6000_0_OR_NEWER
+#if !UNITY_6000_4_OR_NEWER
                 // Copy depth pass does not support RG directly.
                 if (GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode)
+#endif
 #endif
                 {
                     if (water.WriteToColorTexture) renderer.EnqueuePass(_CopyColorPass);
                     if (water.WriteToDepthTexture) renderer.EnqueuePass(_CopyDepthPass);
                 }
+#endif
             }
 
 #if UNITY_6000_0_OR_NEWER
@@ -143,11 +146,16 @@ namespace WaveHarmonic.Crest
                 if (_Water.WriteToDepthTexture)
                 {
                     // Whether we a writing to color or depth format.
+#if !UNITY_6000_5_OR_NEWER
                     _CopyDepthPass.CopyToDepth = descriptor.colorFormat == UnityEngine.Experimental.Rendering.GraphicsFormat.None;
+#endif
                     _CopyDepthPass.Render(graph, frame, resources.cameraDepthTexture, resources.cameraDepth);
                 }
             }
+#endif
 
+#if URP_COMPATIBILITY_MODE
+#if UNITY_6000_0_OR_NEWER
             [System.Obsolete]
 #endif
             public override void OnCameraSetup(CommandBuffer buffer, ref RenderingData data)
@@ -166,7 +174,6 @@ namespace WaveHarmonic.Crest
                     queue.Remove(_CopyColorPass);
                 }
 
-#if URP_COMPATIBILITY_MODE
                 // Also check internal RT because it can be null on Vulkan for some reason.
                 if (renderer.cameraDepthTargetHandle?.rt != null && renderer.m_DepthTexture?.rt != null)
                 {
@@ -176,7 +183,6 @@ namespace WaveHarmonic.Crest
                     _CopyDepthPass.Setup(renderer.cameraDepthTargetHandle, renderer.m_DepthTexture);
                 }
                 else
-#endif
                 {
                     var queue = s_ActiveRenderPassQueue.GetValue(renderer) as List<ScriptableRenderPass>;
                     queue.Remove(_CopyDepthPass);
@@ -190,6 +196,7 @@ namespace WaveHarmonic.Crest
             {
                 // Blank
             }
+#endif // URP_COMPATIBILITY_MODE
         }
     }
 }

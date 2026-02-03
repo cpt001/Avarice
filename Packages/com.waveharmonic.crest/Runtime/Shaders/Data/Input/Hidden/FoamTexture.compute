@@ -3,6 +3,8 @@
 
 // Adds foam from a provided texture. Used by Painted and Texture input modes.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestExecute
 
 #include "HLSLSupport.cginc"

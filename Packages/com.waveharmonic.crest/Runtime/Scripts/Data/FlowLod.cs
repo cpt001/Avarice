@@ -10,6 +10,7 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// Simulates horizontal motion of water.
     /// </summary>
+    [FilterEnum(nameof(_QuerySource), Filtered.Mode.Exclude, (int)LodQuerySource.CPU)]
     [FilterEnum(nameof(_TextureFormatMode), Filtered.Mode.Exclude, (int)LodTextureFormatMode.Automatic)]
     public sealed partial class FlowLod : Lod<IFlowProvider>
     {
@@ -34,6 +35,7 @@ namespace WaveHarmonic.Crest
         {
             _Resolution = 128;
             _TextureFormat = GraphicsFormat.R16G16_SFloat;
+            _MaximumQueryCount = 1024;
         }
 
         internal override void Enable()
@@ -54,7 +56,9 @@ namespace WaveHarmonic.Crest
         {
             Queryable?.CleanUp();
             // Flow is GPU only, and can only be queried using the compute path.
-            return enable && Enabled ? new FlowQuery(_Water) : IFlowProvider.None;
+            return enable && Enabled && QuerySource == LodQuerySource.GPU
+                ? IFlowProvider.Create(_Water)
+                : IFlowProvider.None;
         }
 
         internal static readonly SortedList<int, ILodInput> s_Inputs = new(Helpers.DuplicateComparison);

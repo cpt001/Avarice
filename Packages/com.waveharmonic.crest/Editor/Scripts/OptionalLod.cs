@@ -2,6 +2,7 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using System.Collections.Generic;
+using WaveHarmonic.Crest.Editor.Settings;
 
 namespace WaveHarmonic.Crest.Editor
 {
@@ -29,6 +30,21 @@ namespace WaveHarmonic.Crest.Editor
             _ => throw new System.NotImplementedException(),
         };
 
+        internal bool GetProjectSettingToggle() => PropertyName switch
+        {
+            nameof(WaterRenderer._AbsorptionLod) => ProjectSettings.Instance.CurrentPlatformSettings.AbsorptionSimulation,
+            nameof(WaterRenderer._AlbedoLod) => ProjectSettings.Instance.CurrentPlatformSettings.AlbedoSimulation,
+            nameof(WaterRenderer._AnimatedWavesLod) => true,
+            nameof(WaterRenderer._ClipLod) => true,
+            nameof(WaterRenderer._DepthLod) => true,
+            nameof(WaterRenderer._DynamicWavesLod) => true,
+            nameof(WaterRenderer._FlowLod) => true,
+            nameof(WaterRenderer._FoamLod) => true,
+            nameof(WaterRenderer._LevelLod) => true,
+            nameof(WaterRenderer._ScatteringLod) => ProjectSettings.Instance.CurrentPlatformSettings.ScatteringSimulation,
+            nameof(WaterRenderer._ShadowLod) => ProjectSettings.Instance.CurrentPlatformSettings.ShadowSimulation,
+            _ => throw new System.NotImplementedException(),
+        };
 
         // Optional. Not all simulations will have a corresponding keyword.
         internal bool HasMaterialToggle => !string.IsNullOrEmpty(MaterialProperty);
@@ -36,7 +52,7 @@ namespace WaveHarmonic.Crest.Editor
         // Needed as clip surface material toggle is Alpha Clipping.
         internal virtual string MaterialProperty => _MaterialProperty;
         internal virtual string MaterialPropertyPath => $"{PropertyLabel} > Enabled";
-        internal virtual string MaterialKeyword => $"{MaterialProperty}_ON";
+        internal virtual string MaterialKeyword => MaterialProperty;
 
         internal static OptionalLod Get(System.Type type)
         {
@@ -94,7 +110,7 @@ namespace WaveHarmonic.Crest.Editor
                 {
                     PropertyLabel = "Flow",
                     PropertyName  = nameof(WaterRenderer._FlowLod),
-                    _MaterialProperty = "CREST_FLOW",
+                    _MaterialProperty = "_CREST_FLOW_LOD",
                 }
             },
             {
@@ -110,9 +126,7 @@ namespace WaveHarmonic.Crest.Editor
                 {
                     PropertyLabel = "Water Level",
                     PropertyName  = nameof(WaterRenderer._LevelLod),
-                    _MaterialProperty = "_Crest_LevelEnabled",
                     Dependency = typeof(AnimatedWavesLod),
-
                 }
             },
             {
@@ -153,7 +167,13 @@ namespace WaveHarmonic.Crest.Editor
         // BIRP SG has prefixes for Unity properties but other RPs do not. These prefixes
         // are for serialisation only and are not used in the shader.
         internal override string MaterialPropertyPath => "Alpha Clipping";
-        internal override string MaterialProperty => (RenderPipelineHelper.IsLegacy ? "_BUILTIN" : "") + "_AlphaClip";
+        internal override string MaterialProperty => RenderPipelineHelper.RenderPipeline switch
+        {
+            RenderPipeline.Legacy => "_BUILTIN_AlphaClip",
+            RenderPipeline.HighDefinition => "_AlphaCutoffEnable",
+            RenderPipeline.Universal => "_AlphaClip",
+            _ => throw new System.NotImplementedException(),
+        };
         internal override string MaterialKeyword => (RenderPipelineHelper.IsLegacy ? "_BUILTIN" : "") + "_ALPHATEST_ON";
     }
 

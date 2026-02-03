@@ -69,6 +69,7 @@ namespace WaveHarmonic.Crest
         private protected abstract void SetShorelineColor(Color previous, Color current);
         private protected Vector4 _ShorelineColorValue;
         ShorelineColorInput _ShorelineColorInput;
+        internal override bool SkipEndOfFrame => true;
 
         private protected override GraphicsFormat RequestedTextureFormat => _TextureFormatMode switch
         {

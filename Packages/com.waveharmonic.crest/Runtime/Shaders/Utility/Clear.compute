@@ -3,19 +3,33 @@
 
 // Clear specific components using a mask.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestClearTarget
 #pragma kernel CrestClearTargetBoundaryX d_BoundaryX
 #pragma kernel CrestClearTargetBoundaryY d_BoundaryY
+
+#pragma multi_compile_local d_Float1 d_Float2 d_Float3 d_Float4
+
+#if   d_Float1
+#define m_Type float
+#elif d_Float2
+#define m_Type float2
+#elif d_Float3
+#define m_Type float3
+#elif d_Float4
+#define m_Type float4
+#endif
 
 #include "HLSLSupport.cginc"
 
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Macros.hlsl"
 
-RWTexture2DArray<float4> _Crest_Target;
+RWTexture2DArray<m_Type> _Crest_Target;
 
 CBUFFER_START(CrestPerMaterial)
-float4 _Crest_ClearMask;
-float4 _Crest_ClearColor;
+m_Type _Crest_ClearMask;
+m_Type _Crest_ClearColor;
 uint _Crest_Resolution;
 uint _Crest_TargetSlice;
 CBUFFER_END

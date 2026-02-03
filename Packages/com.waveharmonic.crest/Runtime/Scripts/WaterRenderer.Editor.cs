@@ -17,19 +17,7 @@ namespace WaveHarmonic.Crest
         internal const string k_ProxyShader = "Hidden/Crest/Editor/WaterProxy";
         internal GameObject _ProxyPlane;
         private protected override bool CanRunInEditMode => !_ShowWaterProxyPlane;
-
-
-        internal static float EditorTime { get; set; }
-        internal static float EditorDeltaTime { get; set; }
-        static int s_EditorFrames = 0;
-
-        // Useful for rate limiting processes called outside of RunUpdate like camera events.
-        static int s_EditorFramesSinceUpdate = 0;
-        static int EditorFramesSinceUpdate => Application.isPlaying ? 0 : s_EditorFramesSinceUpdate;
-        internal static bool IsWithinEditorUpdate => EditorFramesSinceUpdate == 0;
-
         internal bool IsSceneViewActive { get; set; }
-
         int _LastFrameSceneCamera;
 
         private protected override void Reset()
@@ -57,37 +45,9 @@ namespace WaveHarmonic.Crest
             }
         }
 
-        static void EditorUpdate()
-        {
-            // Do not execute when editor is not active to conserve power and prevent possible leaks.
-            if (!UnityEditorInternal.InternalEditorUtility.isApplicationActive)
-            {
-                return;
-            }
-
-            s_EditorFramesSinceUpdate++;
-
-            if (Instance == null) return;
-
-            if (!Application.isPlaying)
-            {
-                if ((Time.time - EditorTime) >= (1f / Mathf.Clamp(Instance._EditModeFrameRate, 0.01f, 120f)))
-                {
-                    s_EditorFrames++;
-                    s_EditorFramesSinceUpdate = 0;
-
-                    EditorDeltaTime = Time.time - EditorTime;
-                    EditorTime = Time.time;
-
-                    Instance.RunUpdate();
-                }
-            }
-        }
-
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void OnDomainReload()
         {
-            s_EditorFramesSinceUpdate = 0;
             AfterRuntimeLoad();
         }
 
@@ -102,6 +62,10 @@ namespace WaveHarmonic.Crest
         {
             switch (path)
             {
+                case nameof(_MultipleViewpoints):
+                case nameof(_EditorMultipleViewpoints):
+                    Rebuild();
+                    break;
                 case nameof(_ExtentsSizeMultiplier):
                 case nameof(_GeometryDownSampleFactor):
                     Surface._Rebuild = true;

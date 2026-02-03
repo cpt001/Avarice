@@ -56,11 +56,13 @@ MonoBehaviour:
   _Spectrum: {fileID: 11400000, guid: 6b50b5218dbe2488fb5d00db49d15dae, type: 2}
   _EvaluateSpectrumAtRunTimeEveryFrame: 0
   _RespectShallowWaterAttenuation: 1
+  _SeaLevelOnly: 0
   _OverrideGlobalWindDirection: 1
   _WaveDirectionHeadingAngle: 0
   _OverrideGlobalWindSpeed: 1
   _WindSpeed: 150
   _Resolution: 128
+  _IncludeInDropDetailHeightBasedOnWaves: 0
   _DrawSlicesInEditor: 0
   _AlphaSource: 0
   _Swell: 0
@@ -68,7 +70,7 @@ MonoBehaviour:
   _ComponentsPerOctave: 8
   _RandomSeed: 0
   _ManualGeneration: 0
-  _Version: 2
+  _Version: 3
   references:
     version: 2
     RefIds:

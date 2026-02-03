@@ -11,9 +11,7 @@
 // These are per cascade, set per chunk instance.
 CBUFFER_START(CrestChunkGeometryData)
 float _Crest_ChunkMeshScaleAlpha;
-float _Crest_ChunkMeshScaleAlphaSource;
 float _Crest_ChunkGeometryGridWidth;
-float _Crest_ChunkGeometryGridWidthSource;
 CBUFFER_END
 
 m_CrestNameSpace

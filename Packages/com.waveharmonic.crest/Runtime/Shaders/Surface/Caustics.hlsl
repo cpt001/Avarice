@@ -77,6 +77,7 @@ half3 Caustics
         );
     }
 
+#if d_Crest_CausticsForceDistortion
     if (i_Underwater)
     {
         float2 surfacePosXZ = i_ScenePositionWS.xz;
@@ -93,6 +94,7 @@ half3 Caustics
         cuv1.xy += 1.30 * causticN;
         cuv2.xy += 1.77 * causticN;
     }
+#endif
 
     half causticsStrength = i_Strength;
 

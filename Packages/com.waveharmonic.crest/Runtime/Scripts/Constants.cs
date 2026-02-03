@@ -31,5 +31,16 @@ namespace WaveHarmonic.Crest
         // Unity only supports textures up to a size of 16384, even if maxTextureSize returns a larger size.
         // https://docs.unity3d.com/ScriptReference/SystemInfo-maxTextureSize.html
         public const int k_MaximumTextureResolution = 16384;
+
+        public static class Symbols
+        {
+            public const string k_Refraction =
+#if d_Crest_SimpleTransparency
+                "CREST_NOOP";
+#else
+                "UNITY_2022_3_OR_NEWER";
+#endif
+        }
+
     }
 }

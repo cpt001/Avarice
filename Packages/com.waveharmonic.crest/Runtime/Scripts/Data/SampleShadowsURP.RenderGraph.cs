@@ -45,6 +45,7 @@ namespace WaveHarmonic.Crest
             }
         }
 
+#if URP_COMPATIBILITY_MODE
         [System.Obsolete]
         public override void Execute(ScriptableRenderContext context, ref RenderingData data)
         {
@@ -54,6 +55,7 @@ namespace WaveHarmonic.Crest
             context.ExecuteCommandBuffer(buffer);
             CommandBufferPool.Release(buffer);
         }
+#endif
     }
 }
 

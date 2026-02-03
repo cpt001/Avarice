@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Events;
 using WaveHarmonic.Crest.Attributes;
@@ -23,11 +24,21 @@ namespace WaveHarmonic.Crest.Editor
         internal static bool s_HideInInspector = false;
         public static bool s_IsFoldout = false;
         public static bool s_IsFoldoutOpen = false;
+        public static bool s_IsList = false;
 
         public static bool s_TemporaryColor;
         public static Color s_PreviousColor;
 
+        // If instantiating ourselves. Avoids reflection.
+        public PropertyAttribute _Attribute;
+        public FieldInfo _Field;
+        PropertyAttribute Attribute => _Attribute ?? attribute;
+        FieldInfo Field => _Field ?? fieldInfo;
+
         public float Space { get; private set; }
+
+        UnityEditor.Editor _Editor;
+        Inspector _Inspector;
 
         List<object> _Decorators = null;
         List<object> Decorators
@@ -35,7 +46,7 @@ namespace WaveHarmonic.Crest.Editor
             get
             {
                 // Populate list with decorators.
-                _Decorators ??= fieldInfo
+                _Decorators ??= Field
                     .GetCustomAttributes(typeof(Decorator), false)
                     .ToList();
 
@@ -44,7 +55,7 @@ namespace WaveHarmonic.Crest.Editor
         }
 
         List<Attributes.Validator> _Validators = null;
-        List<Attributes.Validator> Validators => _Validators ??= fieldInfo
+        List<Attributes.Validator> Validators => _Validators ??= Field
             .GetCustomAttributes(typeof(Attributes.Validator), false)
             .Cast<Attributes.Validator>()
             .ToList();
@@ -63,14 +74,39 @@ namespace WaveHarmonic.Crest.Editor
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
+            var height = base.GetPropertyHeight(property, label);
+
+            if (property.isArray)
+            {
+                // Constructor caches value and this call retrieves it.
+                var list = ReorderableList.GetReorderableListFromSerializedProperty(property);
+                list ??= new ReorderableList(property.serializedObject, property);
+                // GetHeight does not include bottom buttons height.
+                height = property.isExpanded ? list.GetHeight() + list.footerHeight : height;
+            }
+
             // Make original control rectangle be invisible because we always create our own. Zero still adds a little
             // height which becomes noticeable once multiple properties are hidden. This could be some GUI style
             // property but could not find which one.
-            return -2f;
+            return s_IsList ? height : -2f;
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            // Get the owning editor.
+            if (_Editor == null)
+            {
+                foreach (var editor in ActiveEditorTracker.sharedTracker?.activeEditors)
+                {
+                    if (editor.serializedObject == property.serializedObject)
+                    {
+                        _Editor = editor;
+                        _Inspector = editor as Inspector;
+                        break;
+                    }
+                }
+            }
+
             // Store the original GUI state so it can be reset later.
             var originalColor = GUI.color;
             var originalEnabled = GUI.enabled;
@@ -106,8 +142,8 @@ namespace WaveHarmonic.Crest.Editor
                     attribute.Decorate(position, property, label, this);
                 }
 
-                var a = (DecoratedProperty)attribute;
-                position = a.NeedsControlRectangle(property)
+                var a = (DecoratedProperty)Attribute;
+                position = a.NeedsControlRectangle(property) && (!s_IsList || property.isArray)
                     ? EditorGUILayout.GetControlRect(true, EditorGUI.GetPropertyHeight(property, label, true))
                     : position;
 
@@ -120,11 +156,15 @@ namespace WaveHarmonic.Crest.Editor
                     label = attribute.BuildLabel(label);
                 }
 
-                var skipChange = fieldInfo.FieldType == typeof(UnityEvent);
+                var skipChange = Field.FieldType == typeof(UnityEvent) || property.isArray;
+
+                var isExpanded = property.isExpanded;
+                var isUndoRedo = false;
 
                 if (!skipChange)
                 {
                     EditorGUI.BeginChangeCheck();
+                    isUndoRedo = _Inspector != null && _Inspector._UndoRedo;
                 }
 
                 var oldValue = skipChange ? null : property.boxedValue;
@@ -135,13 +175,19 @@ namespace WaveHarmonic.Crest.Editor
                     Validators[index].Validate(position, property, label, this, oldValue);
                 }
 
-                // Guard against foldouts triggering change check due to changing isExpanded.
-                if (!skipChange && EditorGUI.EndChangeCheck() && oldValue != property.boxedValue)
+                if (!skipChange && (EditorGUI.EndChangeCheck() || isUndoRedo))
                 {
                     // Apply any changes.
-                    property.serializedObject.ApplyModifiedProperties();
+                    if (!isUndoRedo)
+                    {
+                        property.serializedObject.ApplyModifiedProperties();
+                    }
 
-                    OnChange(property, oldValue);
+                    // Guard against foldouts triggering change check due to changing isExpanded.
+                    if (property.isExpanded == isExpanded)
+                    {
+                        OnChange(property, oldValue);
+                    }
                 }
 
                 for (var index = 0; index < Decorators.Count; index++)
@@ -206,6 +252,7 @@ namespace WaveHarmonic.Crest.Editor
                 var relativePath = string.Join(".", chunks[(i + 1)..]);
 
                 var nestedTarget = nestedProperty.managedReferenceValue;
+                if (nestedTarget == null) continue;
                 var nestedTargetType = nestedTarget.GetType();
 
                 foreach (var (method, attribute) in OnChangeHandlers)

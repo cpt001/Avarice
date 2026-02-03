@@ -91,12 +91,14 @@ namespace WaveHarmonic.Crest
             }
             // Portals have their own fitted to the portal bounds.
             else
+#pragma warning disable format
 #if d_CrestPortals
             if (!Portaled || _Water.Portals.RequiresFullScreenMask)
 #endif
             {
                 RenderLineMask(commands, camera, mask.ColorRT.descriptor, mask._ColorRTI);
             }
+#pragma warning restore format
         }
 
         internal void RenderLineMask(CommandBuffer buffer, Camera camera, RenderTextureDescriptor descriptor, RenderTargetIdentifier target)
@@ -199,12 +201,12 @@ namespace WaveHarmonic.Crest
 
         MaskRenderer.MaskInput MaskRenderer.IMaskProvider.Allocate()
         {
-            return MaskRenderer.MaskInput.Both;
+            return UseLegacyMask || UseStencilBuffer ? MaskRenderer.MaskInput.Both : MaskRenderer.MaskInput.Color;
         }
 
         MaskRenderer.MaskInput MaskRenderer.IMaskReceiver.Allocate()
         {
-            return MaskRenderer.MaskInput.Both;
+            return UseLegacyMask || UseStencilBuffer ? MaskRenderer.MaskInput.Both : MaskRenderer.MaskInput.Color;
         }
 
         MaskRenderer.MaskInput MaskRenderer.IMaskProvider.Write(Camera camera)
@@ -215,7 +217,7 @@ namespace WaveHarmonic.Crest
                 _DoneMaskRead = true;
             }
 
-            return _MaskRead ? _Water.Surface.Enabled ? MaskRenderer.MaskInput.Both : MaskRenderer.MaskInput.Color : MaskRenderer.MaskInput.None;
+            return _MaskRead ? (UseLegacyMask || UseStencilBuffer ? MaskRenderer.MaskInput.Both : MaskRenderer.MaskInput.Color) : MaskRenderer.MaskInput.None;
         }
     }
 }

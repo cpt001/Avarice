@@ -45,7 +45,7 @@ namespace WaveHarmonic.Crest
             wrapper.SetVector(ShaderIDs.s_TextureSize, transform.lossyScale.XZ());
             wrapper.SetVector(ShaderIDs.s_TexturePosition, transform.position.XZ());
             wrapper.SetVector(ShaderIDs.s_TextureRotation, rotation);
-            wrapper.SetVector(ShaderIDs.s_Resolution, new(_Texture.width, _Texture.height));
+            wrapper.SetVector(ShaderIDs.s_TextureResolution, new(_Texture.width, _Texture.height));
             wrapper.SetVector(ShaderIDs.s_Multiplier, _Multiplier);
             wrapper.SetFloat(ShaderIDs.s_FeatherWidth, _Input.FeatherWidth);
             wrapper.SetTexture(ShaderIDs.s_Texture, _Texture);

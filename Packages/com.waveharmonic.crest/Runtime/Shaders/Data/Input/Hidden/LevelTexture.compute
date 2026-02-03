@@ -3,6 +3,8 @@
 
 // Adds height from a provided texture. Used by Painted and Texture input modes.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel CrestExecute
 
 #pragma multi_compile_local __ d_CatmullRom
@@ -27,7 +29,7 @@ float _Crest_Multiplier;
 float2 _Crest_TextureSize;
 float2 _Crest_TexturePosition;
 float2 _Crest_TextureRotation;
-float2 _Crest_Resolution;
+float2 _Crest_TextureResolution;
 CBUFFER_END
 
 m_CrestNameSpace
@@ -49,7 +51,7 @@ void Execute(uint3 id)
     }
 
 #if d_CatmullRom
-    const float source = Utility::SampleTextureCatmullRom(_Crest_Texture, LODData_linear_clamp_sampler, uv, _Crest_Resolution)
+    const float source = Utility::SampleTextureCatmullRom(_Crest_Texture, LODData_linear_clamp_sampler, uv, _Crest_TextureResolution)
 #else
     const float source = _Crest_Texture.SampleLevel(LODData_linear_clamp_sampler, uv, 0.0)
 #endif

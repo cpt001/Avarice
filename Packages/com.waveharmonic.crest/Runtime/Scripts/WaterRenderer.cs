@@ -11,6 +11,14 @@ using WaveHarmonic.Crest.Utility;
 
 namespace WaveHarmonic.Crest
 {
+    interface IReportWaveDisplacement
+    {
+        /// <summary>
+        /// Vertical displacement which affects scale via DropDetailHeightBasedOnWaves.
+        /// </summary>
+        float ReportWaveDisplacement(WaterRenderer water, float displacement);
+    }
+
     /// <summary>
     /// The main script for the water system.
     /// </summary>
@@ -35,6 +43,10 @@ namespace WaveHarmonic.Crest
             public static readonly int s_LodChange = Shader.PropertyToID("g_Crest_LodChange");
             public static readonly int s_MeshScaleLerp = Shader.PropertyToID("g_Crest_MeshScaleLerp");
             public static readonly int s_LodCount = Shader.PropertyToID("g_Crest_LodCount");
+
+            public static readonly int s_WaterDepthAtViewer = Shader.PropertyToID("g_Crest_WaterDepthAtViewer");
+            public static readonly int s_MaximumVerticalDisplacement = Shader.PropertyToID("g_Crest_MaximumVerticalDisplacement");
+            public static readonly int s_HorizonNormal = Shader.PropertyToID("g_Crest_HorizonNormal");
 
             // Shader Properties
             public static readonly int s_AbsorptionColor = Shader.PropertyToID("_Crest_AbsorptionColor");
@@ -63,12 +75,23 @@ namespace WaveHarmonic.Crest
 
         Transform GetViewpoint()
         {
+            if (MultipleViewpoints)
+            {
+                return CurrentCamera == null ? null : CurrentCamera.transform;
+            }
+
 #if UNITY_EDITOR
-            if (!Application.isPlaying && _FollowSceneCamera && SceneView.lastActiveSceneView != null && IsSceneViewActive)
+            if (EditorMultipleViewpoints && CurrentCamera != null && CurrentCamera.cameraType == CameraType.SceneView)
+            {
+                return CurrentCamera.transform;
+            }
+
+            if (!EditorMultipleViewpoints && !Application.isPlaying && _FollowSceneCamera && SceneView.lastActiveSceneView != null && IsSceneViewActive)
             {
                 return SceneView.lastActiveSceneView.camera.transform;
             }
 #endif
+
             if (_Viewpoint != null)
             {
                 return _Viewpoint;
@@ -85,10 +108,20 @@ namespace WaveHarmonic.Crest
             return null;
         }
 
-        internal Camera GetViewer(bool includeSceneCamera = true)
+        internal Camera GetViewer(bool includeSceneCamera = true, bool initial = false)
         {
+            if (!initial && MultipleViewpoints)
+            {
+                return CurrentCamera;
+            }
+
 #if UNITY_EDITOR
-            if (includeSceneCamera && !Application.isPlaying && _FollowSceneCamera && SceneView.lastActiveSceneView != null && IsSceneViewActive)
+            if (!initial && EditorMultipleViewpoints && includeSceneCamera && CurrentCamera != null && CurrentCamera.cameraType == CameraType.SceneView)
+            {
+                return CurrentCamera;
+            }
+
+            if ((initial || !EditorMultipleViewpoints) && includeSceneCamera && !Application.isPlaying && _FollowSceneCamera && SceneView.lastActiveSceneView != null && IsSceneViewActive)
             {
                 return SceneView.lastActiveSceneView.camera;
             }
@@ -103,8 +136,10 @@ namespace WaveHarmonic.Crest
             return Camera.main;
         }
 
-        // Cache the ViewCamera property for internal use.
-        Camera _ViewCameraCached;
+        /// <summary>
+        /// The current viewer (center of detail).
+        /// </summary>
+        internal Camera CurrentCamera { get; private set; }
 
         readonly SampleCollisionHelper _CenterOfDetailDisplacementCorrectionHelper = new();
 
@@ -281,6 +316,7 @@ namespace WaveHarmonic.Crest
 
         // Flags
         bool _DonePerCameraHeight;
+        internal bool _PerCameraHeightReady;
 
         bool GetWriteMotionVectors() =>
 #if !UNITY_6000_0_OR_NEWER
@@ -319,6 +355,65 @@ namespace WaveHarmonic.Crest
             }
 
             if (!Helpers.MaskIncludesLayer(camera.cullingMask, layer))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        internal static bool ShouldRender(Camera camera, WaterCameraExclusion exclusion)
+        {
+            if (camera.cameraType == CameraType.SceneView)
+            {
+                return true;
+            }
+
+            if (camera.TryGetComponent<WaterCamera>(out var wc) && wc.isActiveAndEnabled)
+            {
+                return true;
+            }
+
+            var exclude =
+                // Reflection cameras are all typically hidden. We have a separate flag for them.
+                (exclusion.HasFlag(WaterCameraExclusion.Hidden) && camera.hideFlags.HasFlag(HideFlags.HideInHierarchy) && camera.cameraType != CameraType.Reflection) ||
+                (exclusion.HasFlag(WaterCameraExclusion.Reflection) && camera.cameraType == CameraType.Reflection) ||
+                (exclusion.HasFlag(WaterCameraExclusion.NonMainCamera) && !camera.CompareTag("MainCamera"));
+
+            return !exclude;
+        }
+
+        internal static bool ShouldRender(Camera camera, int layer, WaterCameraExclusion exclusion)
+        {
+            if (!ShouldRender(camera, layer))
+            {
+                return false;
+            }
+
+            if (!ShouldRender(camera, exclusion))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        bool ShouldExecute(Camera camera, int layer, WaterCameraExclusion exclusion)
+        {
+            if (SingleViewpoint)
+            {
+                return false;
+            }
+
+#if UNITY_EDITOR
+            // Editor Multiple Viewpoints is for scene view and viewer only.
+            if (!MultipleViewpoints && camera.cameraType != CameraType.SceneView && camera != GetViewer(false))
+            {
+                return false;
+            }
+#endif
+
+            if (!ShouldRender(camera, layer, exclusion))
             {
                 return false;
             }
@@ -420,35 +515,25 @@ namespace WaveHarmonic.Crest
         /// <summary>
         /// The frame count for Crest.
         /// </summary>
-        public static int FrameCount
-        {
-            get
-            {
-#if UNITY_EDITOR
-                if (!Application.isPlaying)
-                {
-                    return s_EditorFrames;
-                }
-                else
-#endif
-                {
-                    return Time.frameCount;
-                }
-            }
-        }
+        public static int FrameCount => Time.frameCount;
 
 
         //
         // Level of Detail
         //
 
+        internal static System.Action<WaterRenderer, Camera> s_OnBeforeBuildCommandBuffer;
+
         internal const string k_DrawLodData = "Crest.LodData";
         internal CommandBuffer SimulationBuffer { get; private set; }
 
         // Scale, Weight, MaximumWaveLength, Unused
-        internal BufferedData<Vector4[]> _CascadeData;
+        BufferedData<Vector4[]> _CascadeData;
+        internal BufferedData<Vector4[]> CascadeData { get; private set; }
 
-        internal int BufferSize { get; private set; }
+        // NOTE: hardcoded for now. There is typically at least one persistent simulation, and
+        // they never go beyond two frames.
+        internal int BufferSize => 2;
 
         internal float MaximumWavelength(int slice)
         {
@@ -490,32 +575,6 @@ namespace WaveHarmonic.Crest
 
 
         //
-        // Displacement Reporting
-        //
-
-        /// <summary>
-        /// User shape inputs can report in how far they might displace the shape horizontally and vertically. The max value is
-        /// saved here. Later the bounding boxes for the water tiles will be expanded to account for this potential displacement.
-        /// </summary>
-        internal void ReportMaximumDisplacement(float horizontal, float vertical, float verticalFromWaves)
-        {
-            MaximumHorizontalDisplacement += horizontal;
-            MaximumVerticalDisplacement += vertical;
-            _MaximumVerticalDisplacementFromWaves += verticalFromWaves;
-        }
-
-        float _MaximumVerticalDisplacementFromWaves = 0f;
-        /// <summary>
-        /// The maximum horizontal distance that the shape scripts are displacing the shape.
-        /// </summary>
-        internal float MaximumHorizontalDisplacement { get; private set; }
-        /// <summary>
-        /// The maximum height that the shape scripts are displacing the shape.
-        /// </summary>
-        internal float MaximumVerticalDisplacement { get; private set; }
-
-
-        //
         // Query Providers
         //
 
@@ -547,7 +606,7 @@ namespace WaveHarmonic.Crest
             _SetUpFor = RenderPipelineHelper.RenderPipeline;
 
             _IsFirstFrameSinceEnabled = true;
-            _ViewCameraCached = Viewer;
+            CurrentCamera = GetViewer(initial: true);
 
             // Recompiled in play mode.
             if (_Mask == null)
@@ -643,18 +702,7 @@ namespace WaveHarmonic.Crest
                 simulation.Initialize();
             }
 
-            // TODO: Have a BufferCount which will be the run-time buffer size or prune data.
-            // NOTE: Hardcode minimum (2) to avoid breaking server builds and LodData* toggles.
-            // Gather the buffer size for shared data.
-            BufferSize = 2;
-            foreach (var simulation in Simulations)
-            {
-                if (!simulation.Enabled) continue;
-                BufferSize = Mathf.Max(BufferSize, simulation.BufferCount);
-            }
-
-            // The extra LOD accounts for reading off the cascade (eg CurrentIndex + LodChange + 1).
-            _CascadeData = new(BufferSize, () => new Vector4[Lod.k_MaximumSlices + 1]);
+            CascadeData = _CascadeData = new(BufferSize, () => new Vector4[Lod.k_MaximumSlices + 1]);
 
             _ProjectionMatrix = new Matrix4x4[LodLevels];
 
@@ -664,15 +712,6 @@ namespace WaveHarmonic.Crest
             }
 
             _GeneratedSettingsHash = CalculateSettingsHash();
-
-            // Prevent MVs from popping on first frame.
-            if (!_Debug._DisableFollowViewpoint && _ViewCameraCached != null)
-            {
-                LateUpdatePosition();
-                LateUpdateScale();
-            }
-
-            WritePerFrameMaterialParams();
 
             if (Surface.Enabled)
             {
@@ -724,13 +763,9 @@ namespace WaveHarmonic.Crest
 #endif
 #endif
 
-#if UNITY_EDITOR
-            // Don't run immediately if in edit mode - need to count editor frames so this is run through EditorUpdate()
-            if (Application.isPlaying)
-#endif
-            {
-                RunUpdate();
-            }
+            // Queries keeps LateUpdate running regardless of editor settings. If queries
+            // stops, then the water will pause.
+            RunUpdate();
         }
 
 
@@ -742,13 +777,11 @@ namespace WaveHarmonic.Crest
         {
             base.Enable();
 
-#if UNITY_EDITOR
-            EditorTime = Time.time;
-            EditorDeltaTime = 0;
-
-            EditorApplication.update -= EditorUpdate;
-            EditorApplication.update += EditorUpdate;
-#endif
+            // For running the system in the background and fallbacks.
+            if (!SingleViewpoint && !RunningWithoutGraphics)
+            {
+                _EndOfFrame = StartCoroutine(UpdateSkippedCameras());
+            }
 
             // Needs to be first or will get assertions etc. Unity bug likely.
             RenderPipelineManager.activeRenderPipelineTypeChanged -= OnActiveRenderPipelineTypeChanged;
@@ -859,12 +892,19 @@ namespace WaveHarmonic.Crest
 
         void OnBeginCameraRendering(Camera camera)
         {
+#if CREST_DEBUG
+            if (_Debug._SimulatePaused)
+            {
+                return;
+            }
+#endif
+
             if (_SetUpFor != RenderPipelineHelper.RenderPipeline)
             {
                 return;
             }
 
-            if (!_Initialized || _IsFirstFrameSinceEnabled)
+            if (!_Initialized)
             {
                 return;
             }
@@ -877,13 +917,20 @@ namespace WaveHarmonic.Crest
         // OnBeginCameraRendering or OnPreCull
         void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
         {
+#if CREST_DEBUG
+            if (_Debug._SimulatePaused)
+            {
+                return;
+            }
+#endif
+
             // Guard against being called before the RP change events are raised.
             if (_SetUpFor != RenderPipelineHelper.RenderPipeline)
             {
                 return;
             }
 
-            if (!_Initialized || _IsFirstFrameSinceEnabled)
+            if (!_Initialized)
             {
                 return;
             }
@@ -897,14 +944,54 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            var noSurface = !Surface.Enabled || !Helpers.MaskIncludesLayer(camera.cullingMask, Surface.Layer);
-            var noVolume = !Underwater.Enabled || !Helpers.MaskIncludesLayer(camera.cullingMask, Underwater.Layer);
+            var noSurface = !Surface.Enabled || !ShouldRender(camera, Surface.Layer, Surface._CameraExclusions);
+            var noVolume = !Underwater.Enabled || !ShouldRender(camera, Underwater.Layer, Underwater._CameraExclusions);
+
+            // MainCamera is a requirement. Guard against this.
+            if ((!noSurface || !noVolume) && GetViewer(initial: true) == null)
+            {
+                noSurface = noVolume = true;
+            }
+
+            if (noSurface)
+            {
+                // For exclusion rules. Redundant in some cases.
+                Surface.ForceRenderingOff = true;
+            }
+
+            // Ensure TIRs render.
+            // TODO: do this check properly, as easy as this is.
+            if (camera == Reflections.ReflectionCamera && Underwater.Enabled && Helpers.MaskIncludesLayer(camera.cullingMask, Underwater.Layer))
+            {
+                noVolume = false;
+            }
 
             // Nothing to render to this camera.
             if (noSurface && noVolume)
             {
                 return;
             }
+
+            _HasAnyViewerRendered = true;
+
+            if (ShouldExecute(camera, Surface.Layer, _CameraExclusions))
+            {
+                if (!_Cameras.Contains(camera))
+                {
+                    _Cameras.Add(camera);
+                }
+
+                _SeparateViewpoint = true;
+
+                RunUpdate(camera);
+            }
+
+            // Project water normal onto camera plane.
+            Shader.SetGlobalVector(ShaderIDs.s_HorizonNormal, new Vector2
+            (
+                Vector3.Dot(Vector3.up, camera.transform.right),
+                Vector3.Dot(Vector3.up, camera.transform.up)
+            ));
 
             // Must render first so that we do not overwrite work below for game camera.
             // Reflections only make sense with an active surface.
@@ -913,12 +1000,19 @@ namespace WaveHarmonic.Crest
                 _Reflections.OnBeginCameraRendering(context, camera);
             }
 
+            // Must render before the mask, but cannot execute in the mask pass.
+            if (Underwater.Enabled)
+            {
+                Underwater.ExecuteHeightField(camera);
+            }
+
             if (_Mask.Enabled)
             {
                 _Mask.OnBeginCameraRendering(camera);
             }
 
             // Water lighting etc.
+#pragma warning disable format
 #if d_UnityHDRP
             if (RenderPipelineHelper.IsHighDefinition)
             {
@@ -931,6 +1025,7 @@ namespace WaveHarmonic.Crest
             {
                 OnBeginCameraRenderingLegacy(camera);
             }
+#pragma warning restore format
 
             // Always execute before surface, as order is only important when rendering volume
             // before surface.
@@ -952,6 +1047,7 @@ namespace WaveHarmonic.Crest
                 Surface.OnBeginCameraRendering(context, camera);
             }
 
+#pragma warning disable format
 #if d_UnityURP
             // Always execute after surface.
             if (RenderPipelineHelper.IsUniversal)
@@ -965,6 +1061,7 @@ namespace WaveHarmonic.Crest
             {
                 OnLegacyCopyPass(camera);
             }
+#pragma warning restore format
 
             // Execute after copy pass in case refraction.
             if (Meniscus.Enabled)
@@ -980,16 +1077,36 @@ namespace WaveHarmonic.Crest
 
         void OnEndCameraRendering(Camera camera)
         {
+#if CREST_DEBUG
+            if (_Debug._SimulatePaused)
+            {
+                return;
+            }
+#endif
+
             OnEndCameraRendering(_Context, camera);
         }
 
         void OnEndCameraRendering(ScriptableRenderContext context, Camera camera)
         {
+#if CREST_DEBUG
+            if (_Debug._SimulatePaused)
+            {
+                return;
+            }
+#endif
+
             _DonePerCameraHeight = false;
+            _PerCameraHeightReady = false;
 
 #if d_UnityHDRP
             _DoneHighDefinitionLighting = false;
 #endif
+
+            if (Reflections.ReflectionCamera != camera)
+            {
+                Surface.ForceRenderingOff = false;
+            }
 
             if (RenderPipelineHelper.IsLegacy)
             {
@@ -1032,6 +1149,13 @@ namespace WaveHarmonic.Crest
                 _Portals.OnEndCameraRendering(camera);
             }
 #endif
+
+            if (camera == CurrentCamera)
+            {
+                _SeparateViewpoint = false;
+                _InCameraLoop = false;
+                CurrentCamera = null;
+            }
         }
 
         internal void UpdatePerCameraHeight(Camera camera)
@@ -1041,10 +1165,23 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            // This will be 1-frame behind.
+            // We have already sampled this height.
+            if ((MultipleViewpoints || camera == Viewer) && ShouldExecuteQueries(camera))
+            {
+                _ViewerHeightAboveWaterPerCamera = ViewerHeightAboveWater;
+                _PerCameraHeightReady = true;
+                _DonePerCameraHeight = true;
+                return;
+            }
+
+            // This will be 1-frame behind. We allow multiple calls because the camera may
+            // render multiple times per frame. One case is the scene camera when focus is
+            // gained or using the frame debugger.
             var viewpoint = camera.transform.position;
-            _SampleHeightHelperPerCamera.SampleHeight(System.HashCode.Combine(GetHashCode(), camera.GetHashCode()), viewpoint, out var height, allowMultipleCallsPerFrame: true);
+            _PerCameraHeightReady |= _SampleHeightHelperPerCamera.SampleHeight(System.HashCode.Combine(_SampleHeightHelperPerCamera, camera), viewpoint, out var height, allowMultipleCallsPerFrame: true);
             _ViewerHeightAboveWaterPerCamera = viewpoint.y - height;
+            // Planar camera mirrors current camera, but treat at same location.
+            if (camera == Reflections.ReflectionCamera) _ViewerHeightAboveWaterPerCamera = -_ViewerHeightAboveWaterPerCamera;
 
             _DonePerCameraHeight = true;
         }
@@ -1076,7 +1213,7 @@ namespace WaveHarmonic.Crest
         {
             if (!RunningWithoutGraphics)
             {
-                if (Application.platform == RuntimePlatform.WebGLPlayer)
+                if (Application.platform == RuntimePlatform.WebGLPlayer && !Helpers.IsWebGPU)
                 {
                     Debug.LogError("Crest: Crest does not support WebGL backends.", this);
                     return false;
@@ -1124,8 +1261,6 @@ namespace WaveHarmonic.Crest
 
         void RunUpdate()
         {
-            s_RunUpdateMarker.Begin(this);
-
             // Rebuild if needed. Needs to run in builds (for MVs at the very least).
             if (CalculateSettingsHash() != _GeneratedSettingsHash)
             {
@@ -1137,89 +1272,125 @@ namespace WaveHarmonic.Crest
                 // All we need for servers.
                 BroadcastUpdate();
                 Position = new(0f, transform.position.y, 0f);
-                base.LateUpdate();
             }
             else
             {
-                _ViewCameraCached = Viewer;
-
-                // Reset displacement reporting values.
-                // This is written to in Update, and read in LateUpdate (chunk) and LateUpdateScale.
-                MaximumHorizontalDisplacement = MaximumVerticalDisplacement = _MaximumVerticalDisplacementFromWaves = 0f;
-
                 BroadcastUpdate();
 
-                if (!_Debug._DisableFollowViewpoint && _ViewCameraCached != null)
+                if (SingleViewpoint)
                 {
-                    LateUpdatePosition();
-                    LateUpdateViewerHeight();
-                    LateUpdateScale();
+                    RunUpdate(Viewer);
                 }
                 else
                 {
-                    Position = new(0f, transform.position.y, 0f);
-                }
-
-                // Set global shader params
-                Shader.SetGlobalFloat(ShaderIDs.s_Time, CurrentTime);
-                Shader.SetGlobalFloat(ShaderIDs.s_LodCount, LodLevels);
-
-                // Needs updated transform values like scale.
-                WritePerFrameMaterialParams();
-
-                // Construct the command buffer and attach it to the camera so that it will be executed in the render.
-                {
-                    SimulationBuffer.Clear();
-
-                    foreach (var simulation in Simulations)
+                    if (FallBackRequired)
                     {
-                        if (!simulation.Enabled) continue;
-                        simulation.BuildCommandBuffer(this, SimulationBuffer);
+                        _SeparateViewpoint = true;
+                        RunUpdate(GetViewer(initial: true));
+                        _SeparateViewpoint = false;
                     }
 
-                    // This will execute at the beginning of the frame before the graphics queue.
-                    Graphics.ExecuteCommandBuffer(SimulationBuffer);
+                    PruneCameraData();
 
-                    foreach (var simulation in Simulations)
-                    {
-                        if (!simulation.Enabled) continue;
-                        simulation.AfterExecute();
-                    }
-                }
-
-                base.LateUpdate();
-
-                // Call after LateUpdate so chunk bounds are updated.
-                if (Surface.Enabled)
-                {
-                    Surface.LateUpdate();
-                }
-
-                if (_Reflections._Enabled && !_Reflections.SupportsRecursiveRendering)
-                {
-                    _Reflections.LateUpdate(_Context);
+                    _HasAnyViewpointExecuted = false;
+                    _HasAnyViewerRendered = false;
                 }
             }
+
+            // This use to execute after the system command buffer, after all properties had
+            // been updated. But none of the calls used any of that data.
+            base.LateUpdate();
 
             // Run queries at end of update. For CollProviderBakedFFT calling this kicks off
             // collision processing job, and the next call to Query() will force a complete, and
             // we don't want that to happen until they've had a chance to run, so schedule them
             // late.
-            if (AnimatedWavesLod.CollisionSource == CollisionSource.CPU)
+            if (AnimatedWavesLod.QuerySource == LodQuerySource.CPU)
             {
                 AnimatedWavesLod.Provider?.UpdateQueries(this);
             }
+        }
+
+        void RunUpdate(Camera camera)
+        {
+            if (camera == _Reflections.ReflectionCamera)
+            {
+                return;
+            }
+
+            // Only set to a camera which is a center of detail.
+            CurrentCamera = camera;
+
+            s_RunUpdateMarker.Begin(this);
+
+            LoadCameraData(camera);
+
+            if (!_Debug._DisableFollowViewpoint && CurrentCamera != null)
+            {
+                LateUpdatePosition();
+                LateUpdateViewerHeight();
+                LateUpdateScale();
+            }
+            else
+            {
+                Position = new(0f, transform.position.y, 0f);
+            }
+
+            // Set global shader params
+            Shader.SetGlobalFloat(ShaderIDs.s_Time, CurrentTime);
+            Shader.SetGlobalFloat(ShaderIDs.s_LodCount, LodLevels);
+
+            // Construct the command buffer and attach it to the camera so that it will be executed in the render.
+            {
+                SimulationBuffer.Clear();
+
+                // Needs updated transform values like scale.
+                WritePerFrameMaterialParams(SimulationBuffer);
+
+                s_OnBeforeBuildCommandBuffer?.Invoke(this, camera);
+
+                foreach (var simulation in Simulations)
+                {
+                    if (!simulation.Enabled) continue;
+                    if (_IsEndOfFrame && simulation.SkipEndOfFrame) continue;
+                    simulation.BuildCommandBuffer(this, SimulationBuffer);
+                }
+
+                // This will execute at the beginning of the frame before the graphics queue.
+                Graphics.ExecuteCommandBuffer(SimulationBuffer);
+
+                foreach (var simulation in Simulations)
+                {
+                    if (!simulation.Enabled) continue;
+                    if (_IsEndOfFrame && simulation.SkipEndOfFrame) continue;
+                    simulation.AfterExecute();
+                }
+            }
+
+            // Call after LateUpdate so chunk bounds are updated.
+            if (Surface.Enabled)
+            {
+                Surface.LateUpdate();
+            }
+
+            if (_Reflections._Enabled)
+            {
+                _Reflections.LateUpdate();
+            }
 
             _IsFirstFrameSinceEnabled = false;
+            _HasAnyViewpointExecuted = true;
+
+            StoreCameraData(camera);
 
             s_RunUpdateMarker.End();
         }
 
-        void WritePerFrameMaterialParams()
+        void WritePerFrameMaterialParams(CommandBuffer commands)
         {
-            _CascadeData.Flip();
+            CascadeData.Flip();
 
-            var current = _CascadeData.Current;
+            var current = CascadeData.Current;
 
             // Update rendering parameters.
             {
@@ -1231,23 +1402,25 @@ namespace WaveHarmonic.Crest
                     current[slice] = new Vector4(scale, 1f, MaximumWavelength(scale), 0f);
 
                     _ProjectionMatrix[slice] = Matrix4x4.Ortho(-2f * scale, 2f * scale, -2f * scale, 2f * scale, 1f, k_RenderAboveSeaLevel + k_RenderBelowSeaLevel);
-                    if (slice == 0) Shader.SetGlobalFloat(ShaderIDs.s_Scale, scale);
+                    if (slice == 0) commands.SetGlobalFloat(ShaderIDs.s_Scale, scale);
                 }
 
                 // Duplicate last element so that things can safely read off the end of the cascades
                 current[levels] = current[levels - 1].XNZW(0f);
             }
 
-            Shader.SetGlobalVectorArray(ShaderIDs.s_CascadeData, current);
-            Shader.SetGlobalVectorArray(ShaderIDs.s_CascadeDataSource, _CascadeData.Previous(1));
+            commands.SetGlobalVectorArray(ShaderIDs.s_CascadeData, current);
+            commands.SetGlobalVectorArray(ShaderIDs.s_CascadeDataSource, CascadeData.Previous(1));
         }
 
         void LateUpdatePosition()
         {
             var position = Viewpoint.position;
 
+            var hash = System.HashCode.Combine(_CenterOfDetailDisplacementCorrectionHelper, Viewpoint);
+
             // This will cause artifacts in motion vectors debug view, but are likely negligible.
-            if (_CenterOfDetailDisplacementCorrection && _CenterOfDetailDisplacementCorrectionHelper.SampleDisplacement(position, out var displacement))
+            if (_CenterOfDetailDisplacementCorrection && _CenterOfDetailDisplacementCorrectionHelper.SampleDisplacement(hash, position, out var displacement, allowMultipleCallsPerFrame: true))
             {
                 position = new(position.x - displacement.x, position.y, position.z - displacement.z);
             }
@@ -1278,20 +1451,46 @@ namespace WaveHarmonic.Crest
         {
             var viewerHeight = _ViewpointHeightAboveWaterSmooth;
 
-            // Reach maximum detail at slightly below sea level. this should combat cases where visual range can be lost
-            // when water height is low and camera is suspended in air. i tried a scheme where it was based on difference
-            // to water height but this does help with the problem of horizontal range getting limited at bad times.
-            viewerHeight += _MaximumVerticalDisplacementFromWaves * _DropDetailHeightBasedOnWaves;
+            // Drop Detail Height Based On Waves.
+            {
+                var displacement = 0f;
+
+                foreach (var (_, input) in AnimatedWavesLod.s_Inputs)
+                {
+                    if (input.WaveDisplacementReporter == null)
+                    {
+                        continue;
+                    }
+
+                    displacement = input.WaveDisplacementReporter.ReportWaveDisplacement(this, displacement);
+                }
+
+                // Reach maximum detail at slightly below sea level. this should combat cases where visual range can be lost
+                // when water height is low and camera is suspended in air. i tried a scheme where it was based on difference
+                // to water height but this does help with the problem of horizontal range getting limited at bad times.
+                viewerHeight += displacement * _DropDetailHeightBasedOnWaves;
+
+                Shader.SetGlobalFloat(ShaderIDs.s_MaximumVerticalDisplacement, displacement);
+            }
 
             var camDistance = Mathf.Abs(viewerHeight);
 
             // offset level of detail to keep max detail in a band near the surface
             camDistance = Mathf.Max(camDistance - 4f, 0f);
 
+            var range = _ScaleRange;
+
+#if CREST_DEBUG
+            if (_Debug._OverrideScale)
+            {
+                range = Vector2.one * _Debug._ScaleOverride;
+            }
+#endif
+
             // scale water mesh based on camera distance to sea level, to keep uniform detail.
             var level = camDistance;
-            level = Mathf.Max(level, _ScaleRange.x);
-            if (_ScaleRange.y < Mathf.Infinity) level = Mathf.Min(level, 1.99f * _ScaleRange.y);
+            level = Mathf.Max(level, range.x);
+            if (range.y < Mathf.Infinity) level = Mathf.Min(level, 1.99f * range.y);
 
             var l2 = Mathf.Log(level) / Mathf.Log(2f);
             var l2f = Mathf.Floor(l2);
@@ -1332,16 +1531,18 @@ namespace WaveHarmonic.Crest
         {
             var viewpoint = Viewpoint;
 
-            _SampleHeightHelper.SampleHeight(viewpoint.position, out var waterHeight);
+            var viewpointHashCode = System.HashCode.Combine(_SampleHeightHelper, viewpoint);
+
+            _SampleHeightHelper.SampleHeight(viewpointHashCode, viewpoint.position, out var waterHeight, allowMultipleCallsPerFrame: true);
             ViewerHeightAboveWater = ViewpointHeightAboveWater = viewpoint.position.y - waterHeight;
 
             var viewerHeightAboveWaterOrTerrain = ViewpointHeightAboveWater;
 
-            if (viewpoint != _ViewCameraCached.transform)
+            if (viewpoint != CurrentCamera.transform)
             {
-                var viewer = _ViewCameraCached.transform;
+                var viewer = CurrentCamera.transform;
                 // Reuse sampler. Combine hash codes to avoid pontential conflict.
-                _SampleHeightHelper.SampleHeight(System.HashCode.Combine(GetHashCode(), viewer.GetHashCode()), viewpoint.position, out waterHeight, allowMultipleCallsPerFrame: true);
+                _SampleHeightHelper.SampleHeight(System.HashCode.Combine(_SampleHeightHelper, viewer), viewpoint.position, out waterHeight, allowMultipleCallsPerFrame: true);
                 ViewerHeightAboveWater = viewer.position.y - waterHeight;
             }
 
@@ -1408,7 +1609,7 @@ namespace WaveHarmonic.Crest
             (
                 _ViewpointHeightAboveWaterSmooth,
                 viewerHeightAboveWaterOrTerrain,
-                _TeleportTimerForHeightQueries > 0f || !(_ForceScaleChangeSmoothing || (LevelLod.Enabled && !_SampleTerrainHeightForScale)) ? 1f : 0.05f
+                _TeleportTimerForHeightQueries > 0f || !(_ForceScaleChangeSmoothing || (LevelLod.Enabled && !_SampleTerrainHeightForScale)) ? 1f : 0.01f
             );
 
 #if CREST_DEBUG
@@ -1418,8 +1619,9 @@ namespace WaveHarmonic.Crest
             }
 #endif
 
-            _SampleDepthHelper.SampleDistanceToWaterEdge(_ViewCameraCached.transform.position, out var distance);
-            ViewerDistanceToShoreline = distance;
+            _SampleDepthHelper.Sample(System.HashCode.Combine(_SampleDepthHelper, CurrentCamera), CurrentCamera.transform.position, out var result, allowMultipleCallsPerFrame: true);
+            ViewerDistanceToShoreline = result.y;
+            Shader.SetGlobalFloat(ShaderIDs.s_WaterDepthAtViewer, result.x);
         }
 
         void Destroy()
@@ -1449,11 +1651,19 @@ namespace WaveHarmonic.Crest
                 Container = null;
             }
 
+            _Cameras.Clear();
+            _PerCameraData.Clear();
+
             _Initialized = false;
         }
 
         private protected override void Disable()
         {
+            if (_EndOfFrame != null)
+            {
+                StopCoroutine(_EndOfFrame);
+            }
+
             foreach (var simulation in Simulations)
             {
                 simulation.SetGlobals(enable: false);
@@ -1466,10 +1676,6 @@ namespace WaveHarmonic.Crest
                 // Need to call to prevent crash.
                 OnEndCameraRenderingLegacy(Viewer);
             }
-
-#if UNITY_EDITOR
-            EditorApplication.update -= EditorUpdate;
-#endif
 
             Camera.onPreCull -= OnBeginCameraRendering;
             Camera.onPostRender -= OnEndCameraRendering;
@@ -1524,18 +1730,351 @@ namespace WaveHarmonic.Crest
             }
         }
 #endif
+    }
 
-        /// <summary>
-        /// Clears persistent LOD data. Some simulations have persistent data which can linger for a little while after
-        /// being disabled. This will manually clear that data.
-        /// </summary>
-        void ClearLodData()
+    // Per Camera Data.
+    partial class WaterRenderer
+    {
+        class PerCameraData
         {
+            // Historic
+            public bool _RenderedThisFrame;
+            public bool _ExecutedThisFrame;
+            public float _Scale = 1f;
+            public Vector3 _Position;
+            public Vector3 _OldViewpointPosition;
+            public float _ViewpointHeightAboveWaterSmooth;
+            public bool _IsFirstFrameSinceEnabled = true;
+            public BufferedData<Vector4[]> _CascadeData;
+
+            // Non-Historic (for external access)
+            public float _ViewerHeightAboveWater;
+            public float _ViewerDistanceToShoreline;
+        }
+
+        internal static System.Action<Camera> s_OnLoadCameraData;
+        internal static System.Action<Camera> s_OnStoreCameraData;
+        internal static System.Action<Camera> s_OnRemoveCameraData;
+
+        readonly List<Camera> _Cameras = new();
+        PerCameraData _CurrentPerCameraData;
+        readonly Dictionary<Camera, PerCameraData> _PerCameraData = new();
+        Coroutine _EndOfFrame;
+        bool _IsEndOfFrame;
+        internal bool _InCameraLoop;
+
+        // Fallback Flags
+        // If a camera is rendering the surface and/or volume, then it needs a viewpoint to
+        // have executed or there will be NaNs and possibly null exceptions.
+        bool _HasAnyViewpointExecuted;
+        bool _HasAnyViewerRendered;
+        bool FallBackRequired => _HasAnyViewerRendered && !_HasAnyViewpointExecuted;
+
+        // Set when we execute for the current camera.
+        // We need this flag due to camera exclusions.
+        bool _SeparateViewpoint;
+
+        internal bool SeparateViewpoint => _SeparateViewpoint && !SingleViewpoint;
+        internal bool SingleViewpoint => !MultipleViewpoints && !EditorMultipleViewpoints;
+
+        internal bool SupportsRecursiveRendering =>
+#if !UNITY_6000_0_OR_NEWER
+            // HDRP cannot recursive render for 2022.
+            !RenderPipelineHelper.IsHighDefinition &&
+#endif
+            true;
+
+        bool EditorMultipleViewpoints =>
+#if UNITY_EDITOR
+            (_EditorMultipleViewpoints && SupportsRecursiveRendering) ||
+#endif
+            false;
+
+        internal bool MultipleViewpoints => _MultipleViewpoints && SupportsRecursiveRendering;
+
+        bool ShouldExecuteSkippedFrame(Camera camera)
+        {
+            if (!MultipleViewpoints)
+            {
+                return false;
+            }
+
+            if (_DataBackgroundMode == WaterDataBackgroundMode.Never)
+            {
+                return false;
+            }
+
+            // Always execute for the scene camera.
+            if (camera.cameraType == CameraType.SceneView)
+            {
+                return true;
+            }
+
+            if (_DataBackgroundMode == WaterDataBackgroundMode.Always)
+            {
+                return true;
+            }
+
+            if (_DataBackgroundMode == WaterDataBackgroundMode.Inactive && camera.isActiveAndEnabled)
+            {
+                return true;
+            }
+
+            if (_DataBackgroundMode == WaterDataBackgroundMode.Disabled && !camera.enabled)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        internal bool ShouldExecuteQueries(Camera camera)
+        {
+            return camera != null && _PerCameraData.ContainsKey(camera) && _PerCameraData[camera]._ExecutedThisFrame;
+        }
+
+        System.Collections.IEnumerator UpdateSkippedCameras()
+        {
+            while (true)
+            {
+                yield return Helpers.WaitForEndOfFrame;
+
+                if (SingleViewpoint)
+                {
+                    // This should not happen, as enumerator not registered.
+                    continue;
+                }
+
+                _IsEndOfFrame = true;
+
+                _HasAnyViewpointExecuted = false;
+
+                foreach (var camera in _Cameras)
+                {
+                    if (camera == null) continue;
+                    if (!_PerCameraData.ContainsKey(camera)) continue;
+
+                    var data = _PerCameraData[camera];
+
+                    data._ExecutedThisFrame = data._RenderedThisFrame;
+
+                    _HasAnyViewpointExecuted |= data._RenderedThisFrame;
+
+                    if (!data._RenderedThisFrame && ShouldExecuteSkippedFrame(camera))
+                    {
+                        RunUpdate(camera);
+                    }
+
+                    data._RenderedThisFrame = false;
+                }
+
+                _IsEndOfFrame = false;
+            }
+        }
+
+        void LoadCameraData(Camera camera)
+        {
+            if (SingleViewpoint)
+            {
+                return;
+            }
+
+            if (camera == null)
+            {
+                return;
+            }
+
+            if (!_PerCameraData.ContainsKey(camera))
+            {
+                _PerCameraData.Add(camera, new()
+                {
+                    // The extra LOD accounts for reading off the cascade (eg CurrentIndex + LodChange + 1).
+                    _CascadeData = new(BufferSize, () => new Vector4[Lod.k_MaximumSlices + 1]),
+                });
+            }
+
+            _CurrentPerCameraData = _PerCameraData[camera];
+
+            CascadeData = _CurrentPerCameraData._CascadeData;
+            Scale = _CurrentPerCameraData._Scale;
+            Position = _CurrentPerCameraData._Position;
+            _OldViewpointPosition = _CurrentPerCameraData._OldViewpointPosition;
+            _ViewpointHeightAboveWaterSmooth = _CurrentPerCameraData._ViewpointHeightAboveWaterSmooth;
+            _IsFirstFrameSinceEnabled = _CurrentPerCameraData._IsFirstFrameSinceEnabled;
+
             foreach (var simulation in Simulations)
             {
                 if (!simulation.Enabled) continue;
-                simulation.ClearLodData();
+                simulation.LoadCameraData(camera);
             }
+
+            _CurrentPerCameraData._RenderedThisFrame = true;
+            _CurrentPerCameraData._ExecutedThisFrame = true;
+
+            // We are in the camera loop AND there is additional camera data.
+            _InCameraLoop = true;
+
+            s_OnLoadCameraData?.Invoke(camera);
+        }
+
+        void StoreCameraData(Camera camera)
+        {
+            if (SingleViewpoint)
+            {
+                return;
+            }
+
+            _CurrentPerCameraData._Scale = Scale;
+            _CurrentPerCameraData._Position = Position;
+            _CurrentPerCameraData._OldViewpointPosition = _OldViewpointPosition;
+            _CurrentPerCameraData._ViewpointHeightAboveWaterSmooth = _ViewpointHeightAboveWaterSmooth;
+            _CurrentPerCameraData._IsFirstFrameSinceEnabled = _IsFirstFrameSinceEnabled;
+            _CurrentPerCameraData._ViewerHeightAboveWater = ViewerHeightAboveWater;
+            _CurrentPerCameraData._ViewerDistanceToShoreline = ViewerDistanceToShoreline;
+
+            foreach (var simulation in Simulations)
+            {
+                if (!simulation.Enabled) continue;
+                simulation.StoreCameraData(camera);
+            }
+
+            s_OnStoreCameraData?.Invoke(camera);
+        }
+
+        /// <summary>
+        /// Cleans up data for a particular camera if no longer rendering water.
+        /// </summary>
+        /// <param name="camera">The camera to clean up data for.</param>
+        void RemoveCameraData(Camera camera)
+        {
+            // NOTE: Handles all camera data. Add more as needed!
+
+            Surface.RemoveCameraData(camera);
+
+            foreach (var lods in Simulations)
+            {
+                lods.RemoveCameraData(camera);
+            }
+
+            if (_PerCameraData.ContainsKey(camera))
+            {
+                _PerCameraData.Remove(camera);
+            }
+
+            s_OnRemoveCameraData?.Invoke(camera);
+        }
+
+        void PruneCameraData()
+        {
+            var length = _Cameras.Count;
+            for (var i = length - 1; i >= 0; i--)
+            {
+                var camera = _Cameras[i];
+
+                // Check against surface rendering and whether we executed, as if we did not, then
+                // the data is no longer synced anyway.
+                if (camera == null || !ShouldRender(camera, Surface._Layer, _CameraExclusions) || !_PerCameraData[camera]._ExecutedThisFrame)
+                {
+                    // Do not prune the fallback camera!
+                    if (FallBackRequired && GetViewer(initial: true) == camera)
+                    {
+                        continue;
+                    }
+
+                    RemoveCameraData(camera);
+                    _Cameras.RemoveAt(i);
+                }
+            }
+
+            // Load single camera data to prevent null exceptions.
+            if (_Cameras.Count <= 0)
+            {
+                CascadeData = _CascadeData;
+            }
+        }
+
+        internal bool GetViewerHeightAboveWater(Camera camera, out float height)
+        {
+            height = SeaLevel;
+
+            if (!MultipleViewpoints)
+            {
+                height = ViewerHeightAboveWater;
+                return true;
+            }
+
+            if (!_PerCameraData.ContainsKey(camera))
+            {
+                return false;
+            }
+
+            height = _PerCameraData[camera]._ViewerHeightAboveWater;
+            return true;
+        }
+
+        internal bool GetViewerDistanceToShoreline(Camera camera, out float distance)
+        {
+            distance = SeaLevel;
+
+            if (!MultipleViewpoints)
+            {
+                distance = ViewerDistanceToShoreline;
+                return true;
+            }
+
+            if (!_PerCameraData.ContainsKey(camera))
+            {
+                return false;
+            }
+
+            distance = _PerCameraData[camera]._ViewerDistanceToShoreline;
+            return true;
+        }
+
+        internal Transform GetClosestViewpoint(Vector3 position)
+        {
+            if (!MultipleViewpoints)
+            {
+                return Viewpoint;
+            }
+
+            var furthest = Mathf.Infinity;
+            Camera result = null;
+
+            foreach (var camera in _Cameras)
+            {
+                if (camera == null)
+                {
+                    continue;
+                }
+
+                var distance = Mathf.Abs((camera.transform.position - position).sqrMagnitude);
+
+                if (distance < furthest)
+                {
+                    result = camera;
+                    furthest = distance;
+                }
+            }
+
+            if (result == null)
+            {
+                return null;
+            }
+
+            return result.transform;
+        }
+
+        internal bool IsClosestViewpoint(Vector3 position)
+        {
+            if (!MultipleViewpoints)
+            {
+                return true;
+            }
+
+            var viewpoint = Viewpoint;
+
+            return viewpoint == GetClosestViewpoint(position);
         }
     }
 

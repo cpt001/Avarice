@@ -13,7 +13,7 @@ namespace WaveHarmonic.Crest
 
     [ExecuteAlways, Utility.FilePath("Packages/com.waveharmonic.crest/Runtime/Settings/Resources.asset")]
     [@HelpURL("Manual/Scripting.html#resources")]
-    sealed class WaterResources : Utility.ScriptableSingleton<WaterResources>
+    sealed partial class WaterResources : Utility.ScriptableSingleton<WaterResources>
     {
         [Serializable]
         public sealed class ShaderResources
@@ -88,6 +88,8 @@ namespace WaveHarmonic.Crest
             public ComputeShader _Whirlpool;
 
             public ComputeShader _Clear;
+            public ComputeShader _Blit;
+            public ComputeShader _Blur;
         }
 
 #pragma warning disable IDE0032 // Use auto property
@@ -175,8 +177,14 @@ namespace WaveHarmonic.Crest
 #if !CREST_DEBUG
             hideFlags = HideFlags.NotEditable;
 #endif
-            Keywords.Initialize(this);
 
+            Initialize();
+        }
+
+        void Initialize()
+        {
+            Keywords.Initialize(this);
+            _ComputeLibrary = new(this);
             AfterEnabled?.Invoke();
         }
 
@@ -199,7 +207,7 @@ namespace WaveHarmonic.Crest
                     if (path.StartsWith("Packages/com.waveharmonic.crest") && path.EndsWith(".compute"))
                     {
                         // Unity loses these if the compute shader is recompiled.
-                        Instance.Keywords.Initialize(Instance);
+                        Instance.Initialize();
                     }
                 }
             }

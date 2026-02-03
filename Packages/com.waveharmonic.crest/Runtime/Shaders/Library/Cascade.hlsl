@@ -39,6 +39,7 @@
         result._Texture = g_Crest_Cascade##name##source; \
         result._SamplingParameters = g_Crest_SamplingParametersCascade##name##source; \
         result._Index = i_Index; \
+        result._IndexI = i_Index; \
         result._PositionSnapped = perSlice.xy; \
         result._Texel = perSlice.z; \
         result._Resolution = perType.y; \
@@ -56,6 +57,7 @@
         result._Texture = i_Cascade._Texture; \
         result._SamplingParameters = i_Cascade._SamplingParameters; \
         result._Index = i_Index; \
+        result._IndexI = i_Index; \
         result._PositionSnapped = perSlice.xy; \
         result._Texel = perSlice.z; \
         result._Resolution = perType.y; \
@@ -70,6 +72,7 @@
         const float4 perAll = g_Crest_CascadeData##source[i_Index]; \
         Cascade result; \
         result._Index = i_Index; \
+        result._IndexI = i_Index; \
         result._Scale = perAll.x; \
         result._Weight = perAll.y; \
         result._MaximumWavelength = perAll.z; \
@@ -140,6 +143,51 @@
             } \
         } \
         return result; \
+    } \
+    half4 Sample##name##Overflow(const Texture2DArray i_Texture, const float2 i_Position, const float i_Border) m_ConstantReturn \
+    { \
+        half4 result = 0.0; \
+        const float3 uv = WorldToUV(i_Position); \
+        const half2 r = abs(uv.xy - 0.5); \
+        const half rMax = 0.5 - _OneOverResolution * i_Border; \
+        if (max(r.x, r.y) <= rMax) \
+        { \
+            result = Sample(i_Texture, uv); \
+        } \
+        else if ((_Index + 1) < _Count) \
+        { \
+            const Cascade cascade = Cascade::Make##name(_Index + 1, this); \
+            const float3 uv = cascade.WorldToUV(i_Position); \
+            const half2 r = abs(uv.xy - 0.5); \
+            const half rMax = 0.5 - cascade._OneOverResolution * i_Border; \
+            if (max(r.x, r.y) <= rMax) \
+            { \
+                result = Sample(i_Texture, uv); \
+            } \
+        } \
+        return result; \
+    } \
+    half4 Sample##name##Overflow(const Texture2DArray i_Texture, const float3 i_UV, const float i_Border) m_ConstantReturn \
+    { \
+        half4 result = 0.0; \
+        const half2 r = abs(i_UV.xy - 0.5); \
+        const half rMax = 0.5 - _OneOverResolution * i_Border; \
+        if (max(r.x, r.y) <= rMax) \
+        { \
+            result = Sample(i_Texture, i_UV); \
+        } \
+        else if ((_Index + 1) < _Count) \
+        { \
+            const Cascade cascade = Cascade::Make##name(_Index + 1, this); \
+            const float3 uv = cascade.WorldToUV(UVToWorld(i_UV)); \
+            const half2 r = abs(uv.xy - 0.5); \
+            const half rMax = 0.5 - cascade._OneOverResolution * i_Border; \
+            if (max(r.x, r.y) <= rMax) \
+            { \
+                result = Sample(i_Texture, uv); \
+            } \
+        } \
+        return result; \
     }
 
 #define m_SampleWeighted(name, type) \
@@ -175,6 +223,8 @@ struct Cascade
     // For copy constructor.
     float4 _SamplingParameters[MAX_LOD_COUNT];
 
+    uint _IndexI;
+
     m_MakeCascadeShared
     m_MakeCascadeSharedPrevious
 
@@ -183,6 +233,7 @@ struct Cascade
         const float4 perAll = i_Previous ? g_Crest_CascadeDataSource[i_Index] : g_Crest_CascadeData[i_Index];
         Cascade result;
         result._Index = i_Index;
+        result._IndexI = i_Index;
         result._Scale = perAll.x;
         result._Weight = perAll.y;
         result._MaximumWavelength = perAll.z;
@@ -230,6 +281,12 @@ struct Cascade
     float3 WorldToUV(const float2 i_Position) m_ConstantReturn
     {
         return float3((i_Position - _PositionSnapped) / (_Texel * _Resolution) + 0.5, _Index);
+    }
+
+    uint3 WorldToID(const float2 i_Position) m_ConstantReturn
+    {
+        const float3 uv = WorldToUV(i_Position);
+        return uint3(uv.xy * _Resolution, _IndexI);
     }
 
     float2 IDToWorld(const uint2 i_ID) m_ConstantReturn
@@ -354,6 +411,7 @@ struct Cascade
         float4 position = SampleAnimatedWaves(uv);
         io_LevelOffset += position.w * i_Weight;
         io_Position += position.xyz * i_Weight;
+        io_Position.y += position.w * i_Weight;
 
         // Derivatives
         {
@@ -454,6 +512,13 @@ struct Cascade
         half2 value = SampleDepth(i_Position);
         value.x = g_Crest_WaterCenter.y - value.x;
         return value;
+    }
+
+    void SampleSignedDepthFromSeaLevelAndDistance(const float2 i_Position, const float i_Weight, inout half io_Depth, inout half io_Distance) m_ConstantReturn
+    {
+        const half2 value = SampleSignedDepthFromSeaLevelAndDistance(i_Position) * i_Weight;
+        io_Depth += value.x;
+        io_Distance += value.y;
     }
 
     void SampleSignedDepthFromSeaLevel(const float2 i_Position, const float i_Weight, inout half io_Depth) m_ConstantReturn

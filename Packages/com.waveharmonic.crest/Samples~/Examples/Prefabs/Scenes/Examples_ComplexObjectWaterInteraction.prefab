@@ -628,6 +628,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _Version: 0
+  _WorldSpace: 0
   _Axis: {x: 0, y: 1, z: 0}
   _Amplitude: 0
   _Frequency: 1

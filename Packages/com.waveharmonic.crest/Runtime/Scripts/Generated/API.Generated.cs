@@ -23,12 +23,8 @@ namespace WaveHarmonic.Crest
         /// <summary>
         /// Where to obtain water shape on CPU for physics / gameplay.
         /// </summary>
+        [System.Obsolete("Please use QuerySource instead.")]
         public CollisionSource CollisionSource { get => _CollisionSource; internal set => _CollisionSource = value; }
-
-        /// <summary>
-        /// Maximum number of wave queries that can be performed when using GPU queries.
-        /// </summary>
-        public int MaximumQueryCount => _MaximumQueryCount;
 
         /// <summary>
         /// Any water deeper than this will receive full wave strength.
@@ -44,7 +40,12 @@ namespace WaveHarmonic.Crest
         /// <remarks>
         /// Set this to 2 to improve wave quality. In some cases like flowing rivers, this can make a substantial difference to visual stability. We recommend doubling the Resolution on the WaterRenderer component to preserve detail after making this change.
         /// </remarks>
-        public float WaveResolutionMultiplier { get => _WaveResolutionMultiplier; set => _WaveResolutionMultiplier = value; }
+        public float WaveResolutionMultiplier { get => GetWaveResolutionMultiplier(); set => _WaveResolutionMultiplier = value; }
+
+        /// <summary>
+        /// The wave sampling method to determine quality and performance.
+        /// </summary>
+        public WaveSampling WaveSampling { get => _WaveSampling; set => _WaveSampling = value; }
     }
 }
 
@@ -662,6 +663,23 @@ namespace WaveHarmonic.Crest
     partial class Lod
     {
         /// <summary>
+        /// Blurs the output.
+        /// </summary>
+        /// <remarks>
+        /// Enable if blurring is desired or intolerable artifacts are present.
+        /// The blur is optimized to only run on inner LODs and at lower scales.
+        /// </remarks>
+        public bool Blur { get => _Blur; set => _Blur = value; }
+
+        /// <summary>
+        /// Number of blur iterations.
+        /// </summary>
+        /// <remarks>
+        /// Blur iterations are optimized to only run maximum iterations on the inner LODs.
+        /// </remarks>
+        public int BlurIterations { get => _BlurIterations; set => _BlurIterations = value; }
+
+        /// <summary>
         /// Whether the simulation is enabled.
         /// </summary>
         public bool Enabled { get => GetEnabled(); set => SetEnabled(_Enabled, _Enabled = value); }
@@ -694,6 +712,22 @@ namespace WaveHarmonic.Crest
         /// Chooses a texture format based on a preset value.
         /// </summary>
         public LodTextureFormatMode TextureFormatMode { get => _TextureFormatMode; set => SetDirty(_TextureFormatMode, _TextureFormatMode = value); }
+    }
+}
+
+namespace WaveHarmonic.Crest
+{
+    partial class Lod<T>
+    {
+        /// <summary>
+        /// Maximum number of queries that can be performed when using GPU queries.
+        /// </summary>
+        public int MaximumQueryCount => _MaximumQueryCount;
+
+        /// <summary>
+        /// Where to obtain water data on CPU for physics / gameplay.
+        /// </summary>
+        public LodQuerySource QuerySource { get => _QuerySource; internal set => _QuerySource = value; }
     }
 }
 
@@ -752,6 +786,14 @@ namespace WaveHarmonic.Crest
 {
     partial class Meniscus
     {
+        /// <summary>
+        /// Rules to exclude cameras from rendering the meniscus.
+        /// </summary>
+        /// <remarks>
+        /// These are exclusion rules, so for all cameras, select Nothing. These rules are applied on top of the Layer rules.
+        /// </remarks>
+        public WaterCameraExclusion CameraExclusions { get => _CameraExclusions; set => _CameraExclusions = value; }
+
         /// <summary>
         /// Whether the meniscus is enabled.
         /// </summary>
@@ -942,6 +984,14 @@ namespace WaveHarmonic.Crest
         /// "Viewer" will reuse queries already performed by the Water Renderer
         /// </remarks>
         public QuerySource Source { get => _Source; set => _Source = value; }
+
+        /// <summary>
+        /// The viewer as the source of the queries.
+        /// </summary>
+        /// <remarks>
+        /// Only needs to be set if using multiple viewpoints on the Water Renderer.
+        /// </remarks>
+        public UnityEngine.Camera Viewer { get => _Viewer; set => _Viewer = value; }
     }
 }
 
@@ -1043,6 +1093,11 @@ namespace WaveHarmonic.Crest
         public float MaximumVerticalDisplacement { get => _MaximumVerticalDisplacement; set => _MaximumVerticalDisplacement = value; }
 
         /// <summary>
+        /// Whether to override automatic culling based on heuristics.
+        /// </summary>
+        public bool OverrideCulling { get => _OverrideCulling; set => _OverrideCulling = value; }
+
+        /// <summary>
         /// Whether to use the wind turbulence on this component rather than the global wind turbulence.
         /// </summary>
         /// <remarks>
@@ -1117,6 +1172,14 @@ namespace WaveHarmonic.Crest
         public bool EvaluateSpectrumAtRunTimeEveryFrame { get => _EvaluateSpectrumAtRunTimeEveryFrame; set => _EvaluateSpectrumAtRunTimeEveryFrame = value; }
 
         /// <summary>
+        /// Whether the maximum possible vertical displacement is used for the Drop Detail Height Based On Waves calculation.
+        /// </summary>
+        /// <remarks>
+        /// This setting is ignored for global waves, as they always contribute. For local waves, only enable for large areas that are treated like global waves (eg a storm).
+        /// </remarks>
+        public bool IncludeInDropDetailHeightBasedOnWaves { get => _IncludeInDropDetailHeightBasedOnWaves; set => _IncludeInDropDetailHeightBasedOnWaves = value; }
+
+        /// <summary>
         /// Whether to use the wind direction on this component rather than the global wind direction.
         /// </summary>
         /// <remarks>
@@ -1138,7 +1201,7 @@ namespace WaveHarmonic.Crest
         /// <remarks>
         /// Low resolutions are more efficient but can result in noticeable patterns in the shape.
         /// </remarks>
-        public int Resolution { get => _Resolution; set => _Resolution = value; }
+        public int Resolution { get => GetResolution(); set => _Resolution = value; }
 
         /// <summary>
         /// How much these waves respect the shallow water attenuation.
@@ -1147,6 +1210,14 @@ namespace WaveHarmonic.Crest
         /// Attenuation is defined on the Animated Waves. Set to zero to ignore attenuation.
         /// </remarks>
         public float RespectShallowWaterAttenuation { get => _RespectShallowWaterAttenuation; set => _RespectShallowWaterAttenuation = value; }
+
+        /// <summary>
+        /// Whether global waves is applied above or below sea level.
+        /// </summary>
+        /// <remarks>
+        /// Waves are faded out to avoid hard transitionds. They are fully faded by 1m from sea level.
+        /// </remarks>
+        public bool SeaLevelOnly { get => _SeaLevelOnly; set => _SeaLevelOnly = value; }
 
         /// <summary>
         /// The spectrum that defines the water surface shape.
@@ -1274,6 +1345,14 @@ namespace WaveHarmonic.Crest
         public bool AllowRenderQueueSorting { get => _AllowRenderQueueSorting; set => _AllowRenderQueueSorting = value; }
 
         /// <summary>
+        /// Rules to exclude cameras from surface rendering.
+        /// </summary>
+        /// <remarks>
+        /// These are exclusion rules, so for all cameras, select Nothing. These rules are applied on top of the Layer rules.
+        /// </remarks>
+        public WaterCameraExclusion CameraExclusions { get => _CameraExclusions; set => _CameraExclusions = value; }
+
+        /// <summary>
         /// Have the water surface cast shadows for albedo (both foam and custom).
         /// </summary>
         public bool CastShadows { get => GetCastShadows(); set => _CastShadows = value; }
@@ -1351,7 +1430,16 @@ namespace WaveHarmonic.Crest
         /// <remarks>
         /// If disabled, then additionally ignore any camera that is not the view camera or our reflection camera. It will require managing culling masks of all cameras.
         /// </remarks>
+        [System.Obsolete("Please use Camera Exclusion instead.")]
         public bool AllCameras { get => _AllCameras; set => _AllCameras = value; }
+
+        /// <summary>
+        /// Rules to exclude cameras from rendering underwater.
+        /// </summary>
+        /// <remarks>
+        /// These are exclusion rules, so for all cameras, select Nothing. These rules are applied on top of the Layer rules.
+        /// </remarks>
+        public WaterCameraExclusion CameraExclusions { get => _CameraExclusions; set => _CameraExclusions = value; }
 
         /// <summary>
         /// Copying parameters each frame ensures underwater appearance stays consistent with the water surface.
@@ -1506,6 +1594,7 @@ namespace WaveHarmonic.Crest
         /// <summary>
         /// Whether to allow MSAA.
         /// </summary>
+        [System.Obsolete("MSAA for the planar reflection camera is no longer supported. This setting will be ignored.")]
         public bool AllowMSAA { get => _AllowMSAA; set => _AllowMSAA = value; }
 
         /// <summary>
@@ -1571,6 +1660,14 @@ namespace WaveHarmonic.Crest
         /// If within this distance from the surface, disable the oblique matrix.
         /// </summary>
         public float NonObliqueNearSurfaceThreshold { get => _NonObliqueNearSurfaceThreshold; set => _NonObliqueNearSurfaceThreshold = value; }
+
+        /// <summary>
+        /// Overscan amount to capture off-screen content.
+        /// </summary>
+        /// <remarks>
+        /// Renders the reflections at a larger viewport size to capture off-screen content when the surface reflects off-screen. This avoids a category of artifacts - especially when looking down. This can be expensive, as the value is a multiplier to the capture size.
+        /// </remarks>
+        public float Overscan { get => _Overscan; set => _Overscan = value; }
 
         /// <summary>
         /// Overrides global quality settings.
@@ -1650,6 +1747,14 @@ namespace WaveHarmonic.Crest
         public UnityEngine.Camera Viewer { get => GetViewer(); set => _Camera = value; }
 
         /// <summary>
+        /// Rules to exclude cameras from being a center-of-detail.
+        /// </summary>
+        /// <remarks>
+        /// These are exclusion rules, so for all cameras, select Nothing.
+        /// </remarks>
+        public WaterCameraExclusion CameraExclusions { get => _CameraExclusions; set => _CameraExclusions = value; }
+
+        /// <summary>
         /// Have the water surface cast shadows for albedo (both foam and custom).
         /// </summary>
         [System.Obsolete("This property can now be found on WaterRenderer.Surface")]
@@ -1667,6 +1772,14 @@ namespace WaveHarmonic.Crest
         /// Clip surface information for clipping the water surface.
         /// </summary>
         public ClipLod ClipLod => _ClipLod;
+
+        /// <summary>
+        /// The background rendering mode when a camera does not render.
+        /// </summary>
+        /// <remarks>
+        /// When switching between multiple cameras, simulations will not progress for cameras which do not render for that frame. This setting tells the system when it should continue to progress the simulations.
+        /// </remarks>
+        public WaterDataBackgroundMode DataBackgroundMode { get => _DataBackgroundMode; set => _DataBackgroundMode = value; }
 
         /// <summary>
         /// Water depth information used for shallow water, shoreline foam, wave attenuation, among others.

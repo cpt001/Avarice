@@ -62,6 +62,7 @@ Material:
     - _BUILTIN_QueueControl: 0
     - _BUILTIN_SrcBlend: 5
     - _BUILTIN_ZWrite: 1
+    - _Crest_NormalMapTurbulenceStrength: 0.5
     - _Crest_SSSDirectionalFalloff: 2
     - _Crest_SSSEnabled: 1
     - _Crest_SSSIntensity: 10

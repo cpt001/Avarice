@@ -41,6 +41,7 @@ namespace WaveHarmonic.Crest
             _OverrideResolution = false;
             _TextureFormatMode = LodTextureFormatMode.Automatic;
             _TextureFormat = GraphicsFormat.R16_SFloat;
+            _BlurIterations = 4;
         }
 
         internal static readonly SortedList<int, ILodInput> s_Inputs = new(Helpers.DuplicateComparison);

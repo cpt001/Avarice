@@ -10,7 +10,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
 {
     static class ScriptingSymbols
     {
-        static NamedBuildTarget CurrentNamedBuildTarget
+        internal static NamedBuildTarget CurrentNamedBuildTarget
         {
             get
             {

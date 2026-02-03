@@ -3,6 +3,8 @@
 
 // Inspired by https://github.com/speps/GX-EncinoWaves
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel SpectrumInitalize
 #pragma kernel SpectrumUpdate
 
@@ -17,6 +19,8 @@
 // These must match corresponding constants in WaveSpectrum.cs
 #define SPECTRUM_OCTAVE_COUNT		14.0
 #define SPECTRUM_SMALLEST_WL_POW_2	-4.0
+
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 
 uint _Crest_Size;
 float _Crest_WindSpeed;
@@ -220,9 +224,9 @@ float _Crest_Time;
 float _Crest_Chop;
 
 Texture2DArray<float4> _Crest_Init0;
-RWTexture2DArray<float2> _Crest_ResultHeight;
-RWTexture2DArray<float2> _Crest_ResultDisplaceX;
-RWTexture2DArray<float2> _Crest_ResultDisplaceZ;
+RWTexture2DArray<m_Float2> _Crest_ResultHeight;
+RWTexture2DArray<m_Float2> _Crest_ResultDisplaceX;
+RWTexture2DArray<m_Float2> _Crest_ResultDisplaceZ;
 
 float2 cmul(float2 lhs, float2 rhs)
 {
@@ -257,7 +261,7 @@ void SpectrumUpdate(uint3 id : SV_DispatchThreadID)
     const float4 h0 = _Crest_Init0[id];
     const float2 h = cmul(h0.xy, fwd) + cmul(h0.zw, bkwd);
 
-    _Crest_ResultHeight[id] = h;
-    _Crest_ResultDisplaceX[id] = _Crest_Chop * float2(-h.y * k.x, h.x * k.x) / (kMag + 0.00001f);
-    _Crest_ResultDisplaceZ[id] = _Crest_Chop * float2(-h.y * k.y, h.x * k.y) / (kMag + 0.00001f);
+    _Crest_ResultHeight[id]    = m_Float2FromFloat2(h);
+    _Crest_ResultDisplaceX[id] = m_Float2FromFloat2((_Crest_Chop * float2(-h.y * k.x, h.x * k.x) / (kMag + 0.00001f)));
+    _Crest_ResultDisplaceZ[id] = m_Float2FromFloat2((_Crest_Chop * float2(-h.y * k.y, h.x * k.y) / (kMag + 0.00001f)));
 }

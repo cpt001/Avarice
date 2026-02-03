@@ -294,7 +294,13 @@ namespace WaveHarmonic.Crest.Editor
                 width = Mathf.Max(width, minimumWidth);
                 // TODO: Add option to disable this (consistent width).
                 if (!hasDropDown && minimumWidth > 0) width += k_ButtonDropDownWidth;
-                if (centerLabel && hasDropDown) style.padding.left += k_ButtonDropDownWidth;
+
+                // TODO: eyeballed based on Fix button but likely specific to it.
+                if (centerLabel && hasDropDown)
+                {
+                    style.padding.left += k_ButtonDropDownWidth / 2;
+                    width += k_ButtonDropDownWidth / 3;
+                }
 
                 if (GUILayout.Button(label, style, expandWidth ? GUILayout.ExpandWidth(true) : GUILayout.Width(width)))
                 {

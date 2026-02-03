@@ -4,6 +4,8 @@
 // Checks both orthogonal and diagonal pixels to fill artefacts in the mask. If checked pixels are all the same then it
 // assumes that the current pixel should also be the same and fixes it.
 
+#pragma exclude_renderers glcore gles3
+
 #pragma kernel FillMaskArtefacts _BRP
 
 // Built-in will not handle this for us unlike other RPs.
