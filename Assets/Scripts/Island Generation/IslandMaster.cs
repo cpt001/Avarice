@@ -40,6 +40,8 @@ public class IslandMaster : MonoBehaviour
 
     private MapMagic.Terrains.TerrainTile attachedTileStatus;
 
+    public List<InitialTownGen> townsOnIsland = new List<InitialTownGen>();
+
     private void Start()
     {
         //attachedTileStatus = transform.parent.parent.GetComponent<MapMagic.Terrains.TerrainTile>();

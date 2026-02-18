@@ -1,5 +1,17 @@
 using UnityEngine;
 
+/// <summary>
+/// This script holds information on individual structures
+/// - Type
+/// - Construction Resources Required
+/// - Number Housed and Workers
+/// - Building owner name
+/// - Tax upkeep
+/// - Resource supply/demand
+/// - Player Shopkeep data
+/// - Damage
+/// </summary>
+
 public class Town_Building : MonoBehaviour
 {
     private enum T0Colony
