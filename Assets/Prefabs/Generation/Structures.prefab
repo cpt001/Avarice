@@ -1,0 +1,4447 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2999001199317870
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3858660305599745052}
+  - component: {fileID: 5570766603643723153}
+  - component: {fileID: 2895623201664644160}
+  m_Layer: 0
+  m_Name: Carpenter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3858660305599745052
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2999001199317870}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5570766603643723153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2999001199317870}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 313b91c0d57346246a4bd8105b61abcb, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &2895623201664644160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2999001199317870}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 4
+  Fertile_Island_Chance: 2
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 2
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 0
+--- !u!1 &75754218821977065
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6707134343512484182}
+  m_Layer: 0
+  m_Name: --T3--
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6707134343512484182
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 75754218821977065}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &206673085266666229
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2044610927762584687}
+  m_Layer: 0
+  m_Name: --Capital--
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2044610927762584687
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 206673085266666229}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &407454329517299364
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3471201756054135158}
+  - component: {fileID: 2613056077805069682}
+  - component: {fileID: 3332256807223874377}
+  m_Layer: 0
+  m_Name: Watchtower
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3471201756054135158
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 407454329517299364}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2613056077805069682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 407454329517299364}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 859490edf4c5a794e9ad37a9efc8b94a, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &3332256807223874377
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 407454329517299364}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 6
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 4
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 4
+  Stronghold_Chance: 6
+  Sailors_Respite_Chance: 2
+  Swamp_Town_Chance: 4
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 1
+--- !u!1 &557619943239887966
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3166863350359534759}
+  - component: {fileID: 6139274399427353901}
+  - component: {fileID: 4639110829521597703}
+  m_Layer: 0
+  m_Name: Fort
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3166863350359534759
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 557619943239887966}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6139274399427353901
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 557619943239887966}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: d42cd1767d4b7054b8bdbe2e4646fbfa, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &4639110829521597703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 557619943239887966}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 10
+  Fertile_Island_Chance: 10
+  Free_Port_Chance: 10
+  Fishing_Village_Chance: 10
+  Lighthouse_Keep_Chance: 10
+  Industrial_Town_Chance: 10
+  Mining_Colony_Chance: 10
+  Mercantile_Trade_Port_Chance: 10
+  Ship_Builders_Collective_Chance: 10
+  Stronghold_Chance: 10
+  Sailors_Respite_Chance: 10
+  Swamp_Town_Chance: 10
+  Penal_Colony_Chance: 10
+  Ranchland_Chance: 10
+  Wood_Shrouded_Chance: 10
+  Native_Island_Chance: 10
+--- !u!1 &627285339106628147
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3242534089070822293}
+  - component: {fileID: 3149259523960858326}
+  - component: {fileID: 3297208807355761206}
+  m_Layer: 0
+  m_Name: Graveyard
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3242534089070822293
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 627285339106628147}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3149259523960858326
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 627285339106628147}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 849843975e29817478fd8ed787b7bc2d, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &3297208807355761206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 627285339106628147}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 10
+  Fertile_Island_Chance: 10
+  Free_Port_Chance: 10
+  Fishing_Village_Chance: 10
+  Lighthouse_Keep_Chance: 10
+  Industrial_Town_Chance: 10
+  Mining_Colony_Chance: 10
+  Mercantile_Trade_Port_Chance: 10
+  Ship_Builders_Collective_Chance: 10
+  Stronghold_Chance: 10
+  Sailors_Respite_Chance: 10
+  Swamp_Town_Chance: 10
+  Penal_Colony_Chance: 10
+  Ranchland_Chance: 10
+  Wood_Shrouded_Chance: 10
+  Native_Island_Chance: 10
+--- !u!1 &652984272395302390
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6961030569304441957}
+  - component: {fileID: 365642197662099125}
+  - component: {fileID: 1065044529354511370}
+  m_Layer: 0
+  m_Name: Logging Camp
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6961030569304441957
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 652984272395302390}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &365642197662099125
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 652984272395302390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 7625841cef7be8c4cbc4eecb454d2de6, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &1065044529354511370
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 652984272395302390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 2
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 4
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 0
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 2
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 4
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 1
+--- !u!1 &793287296962525055
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3551837290807191770}
+  m_Layer: 0
+  m_Name: --T1--
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3551837290807191770
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 793287296962525055}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &793485614056269030
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2617672116818452483}
+  - component: {fileID: 5102359500392494853}
+  - component: {fileID: 1974134952049859216}
+  m_Layer: 0
+  m_Name: Apiary
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2617672116818452483
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 793485614056269030}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5102359500392494853
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 793485614056269030}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 52a4a45cae4a8f04c864bee7b82a86e5, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &1974134952049859216
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 793485614056269030}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 4
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 2
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 2
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 4
+  Stronghold_Chance: 2
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 6
+  Penal_Colony_Chance: 4
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 1
+--- !u!1 &831279785743500901
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1585145550583220395}
+  - component: {fileID: 1360381108626546750}
+  - component: {fileID: 5425519646549626893}
+  m_Layer: 0
+  m_Name: Clay Pit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1585145550583220395
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 831279785743500901}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1360381108626546750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 831279785743500901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 18f0f583ba76a4b4581ee9513beb99ca, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &5425519646549626893
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 831279785743500901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 0
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 2
+  Swamp_Town_Chance: 6
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 0
+--- !u!1 &1136529223737194014
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8283611319324487157}
+  - component: {fileID: 6936609125452449647}
+  - component: {fileID: 3178007423720115865}
+  m_Layer: 0
+  m_Name: Town Square
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8283611319324487157
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1136529223737194014}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6936609125452449647
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1136529223737194014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: a162ab328cbca844395ca5df420d320a, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &3178007423720115865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1136529223737194014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 4
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 2
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 0
+--- !u!1 &1170311844727317811
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5324978011729907663}
+  - component: {fileID: 1724179602928903429}
+  - component: {fileID: 4677121435460224463}
+  m_Layer: 0
+  m_Name: Leathersmith
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5324978011729907663
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1170311844727317811}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1724179602928903429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1170311844727317811}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 44ef2b82b9652f84cbd259c09b88c990, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &4677121435460224463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1170311844727317811}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 4
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 4
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 2
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 6
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 6
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 1
+--- !u!1 &1286011812243693524
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6273180020163673187}
+  - component: {fileID: 1064578011406666108}
+  - component: {fileID: 4343242541893001755}
+  m_Layer: 0
+  m_Name: Water Well
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6273180020163673187
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1286011812243693524}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1064578011406666108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1286011812243693524}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 83d45b4934f18de41a95302922934732, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &4343242541893001755
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1286011812243693524}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 10
+  Fertile_Island_Chance: 10
+  Free_Port_Chance: 10
+  Fishing_Village_Chance: 10
+  Lighthouse_Keep_Chance: 10
+  Industrial_Town_Chance: 10
+  Mining_Colony_Chance: 10
+  Mercantile_Trade_Port_Chance: 10
+  Ship_Builders_Collective_Chance: 10
+  Stronghold_Chance: 10
+  Sailors_Respite_Chance: 10
+  Swamp_Town_Chance: 10
+  Penal_Colony_Chance: 10
+  Ranchland_Chance: 10
+  Wood_Shrouded_Chance: 10
+  Native_Island_Chance: 4
+--- !u!1 &1286042877356289446
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5167425203787020206}
+  m_Layer: 0
+  m_Name: --Advancement--
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5167425203787020206
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1286042877356289446}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1392009074304206936
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8215522690797202596}
+  - component: {fileID: 1562348333160844909}
+  - component: {fileID: 7791641976032394740}
+  m_Layer: 0
+  m_Name: Dock
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8215522690797202596
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1392009074304206936}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1562348333160844909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1392009074304206936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 495480f82bd30bc4cb39e8af7fcc7510, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &7791641976032394740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1392009074304206936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 10
+  Fertile_Island_Chance: 10
+  Free_Port_Chance: 10
+  Fishing_Village_Chance: 10
+  Lighthouse_Keep_Chance: 10
+  Industrial_Town_Chance: 10
+  Mining_Colony_Chance: 10
+  Mercantile_Trade_Port_Chance: 10
+  Ship_Builders_Collective_Chance: 10
+  Stronghold_Chance: 10
+  Sailors_Respite_Chance: 10
+  Swamp_Town_Chance: 10
+  Penal_Colony_Chance: 10
+  Ranchland_Chance: 10
+  Wood_Shrouded_Chance: 10
+  Native_Island_Chance: 0
+--- !u!1 &1407129594023824873
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2287923952944881024}
+  - component: {fileID: 3659709117617840184}
+  - component: {fileID: 7869544964839551560}
+  m_Layer: 0
+  m_Name: Garrison
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2287923952944881024
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1407129594023824873}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3659709117617840184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1407129594023824873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 036391b1fc7091846a2da7767a620368, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &7869544964839551560
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1407129594023824873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 4
+  Fishing_Village_Chance: 2
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 2
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 6
+  Sailors_Respite_Chance: 2
+  Swamp_Town_Chance: 4
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 0
+--- !u!1 &1437846210482811512
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4833401549177206273}
+  - component: {fileID: 778569279108616305}
+  - component: {fileID: 4325987096985165926}
+  m_Layer: 0
+  m_Name: Butcher
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4833401549177206273
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1437846210482811512}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &778569279108616305
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1437846210482811512}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: e220388e0ecfeb74994f4d835c9a3748, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &4325987096985165926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1437846210482811512}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 4
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 6
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 0
+--- !u!1 &2417205950836004749
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4570711249922178060}
+  - component: {fileID: 4226966272948911497}
+  - component: {fileID: 4927503190498990295}
+  m_Layer: 0
+  m_Name: Broker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4570711249922178060
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2417205950836004749}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4226966272948911497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2417205950836004749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: a7498a908544bb84b8a8bdf29d430ad8, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &4927503190498990295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2417205950836004749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 10
+  Fertile_Island_Chance: 10
+  Free_Port_Chance: 10
+  Fishing_Village_Chance: 10
+  Lighthouse_Keep_Chance: 10
+  Industrial_Town_Chance: 10
+  Mining_Colony_Chance: 10
+  Mercantile_Trade_Port_Chance: 10
+  Ship_Builders_Collective_Chance: 10
+  Stronghold_Chance: 10
+  Sailors_Respite_Chance: 10
+  Swamp_Town_Chance: 10
+  Penal_Colony_Chance: 10
+  Ranchland_Chance: 10
+  Wood_Shrouded_Chance: 10
+  Native_Island_Chance: 0
+--- !u!1 &2667740670653941214
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1178352023563279940}
+  - component: {fileID: 1195539599204307223}
+  - component: {fileID: 2820370936279333618}
+  m_Layer: 0
+  m_Name: Distillery
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1178352023563279940
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2667740670653941214}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1195539599204307223
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2667740670653941214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 959945553b8c48e4db5c9141505fee19, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &2820370936279333618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2667740670653941214}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 4
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 2
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 0
+--- !u!1 &2747119607770576481
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3743409804318010710}
+  - component: {fileID: 7532072346430449515}
+  - component: {fileID: 6829166407821699193}
+  m_Layer: 0
+  m_Name: Governor's Mansion
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3743409804318010710
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2747119607770576481}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7532072346430449515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2747119607770576481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 838db675da49e3947b86b0ae17bc372c, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &6829166407821699193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2747119607770576481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 2
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 2
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 6
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 0
+--- !u!1 &2965908067997496341
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9038083021745897980}
+  - component: {fileID: 4053849899497616384}
+  - component: {fileID: 8139994462638839445}
+  m_Layer: 0
+  m_Name: Apothecary
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9038083021745897980
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2965908067997496341}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4053849899497616384
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2965908067997496341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 532805e4fe682bd42b80a426d0b84cea, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &8139994462638839445
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2965908067997496341}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 4
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 2
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 2
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 2
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 6
+  Penal_Colony_Chance: 2
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 0
+--- !u!1 &3137137619723202421
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4151929776032152427}
+  - component: {fileID: 5294866993353809191}
+  - component: {fileID: 5974516878670990951}
+  m_Layer: 0
+  m_Name: Blacksmith
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4151929776032152427
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3137137619723202421}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5294866993353809191
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3137137619723202421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: dc2b038dd216b384da56b19f91740d13, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &5974516878670990951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3137137619723202421}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 2
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 4
+  Stronghold_Chance: 6
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 0
+--- !u!1 &3140568206417852962
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3742874231858036739}
+  - component: {fileID: 261206676748283565}
+  - component: {fileID: 1522415034794046039}
+  m_Layer: 0
+  m_Name: Hunter Shack
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3742874231858036739
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3140568206417852962}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &261206676748283565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3140568206417852962}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: cda8ea6ebdfcd6247ae3be1c174cb176, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &1522415034794046039
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3140568206417852962}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 6
+  Fertile_Island_Chance: 2
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 2
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 4
+  Mercantile_Trade_Port_Chance: 2
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 2
+  Sailors_Respite_Chance: 2
+  Swamp_Town_Chance: 4
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 6
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 1
+--- !u!1 &3285137056361638063
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3151666945439468699}
+  - component: {fileID: 7598979203107151811}
+  - component: {fileID: 3781861887016479513}
+  m_Layer: 0
+  m_Name: Barber
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3151666945439468699
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3285137056361638063}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7598979203107151811
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3285137056361638063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: f0afca31fcf8bae43bf622792a31d15b, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &3781861887016479513
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3285137056361638063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 6
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 4
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 4
+  Mercantile_Trade_Port_Chance: 2
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 2
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 4
+  Penal_Colony_Chance: 2
+  Ranchland_Chance: 6
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 0
+--- !u!1 &3372299640725874097
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5136612928663365846}
+  m_Layer: 0
+  m_Name: --T2--
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5136612928663365846
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3372299640725874097}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3794858030388429066
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9029654265511496277}
+  - component: {fileID: 8679433459956763562}
+  - component: {fileID: 839295026247106722}
+  m_Layer: 0
+  m_Name: Bakery
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9029654265511496277
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3794858030388429066}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8679433459956763562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3794858030388429066}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 1b1db104746cf0949ac7799e8190d8de, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &839295026247106722
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3794858030388429066}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 4
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 4
+  Fishing_Village_Chance: 2
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 4
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 4
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 4
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 0
+--- !u!1 &4093549626680576675
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7717075979491604902}
+  - component: {fileID: 3452065705199623092}
+  - component: {fileID: 4391303494276367282}
+  m_Layer: 0
+  m_Name: Pawn Shop
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7717075979491604902
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4093549626680576675}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3452065705199623092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4093549626680576675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 5e707dac8634ff54aab4336ff32ca787, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &4391303494276367282
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4093549626680576675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 6
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 2
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 4
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 1
+--- !u!1 &4219641750156091509
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7334091843715258175}
+  - component: {fileID: 6169519813828247259}
+  - component: {fileID: 1371153415969863860}
+  m_Layer: 0
+  m_Name: Armory
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7334091843715258175
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4219641750156091509}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6169519813828247259
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4219641750156091509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 8f6064f5224a8eb44b2c943c6e5f2090, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &1371153415969863860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4219641750156091509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 4
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 4
+  Mercantile_Trade_Port_Chance: 0
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 6
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 0
+--- !u!1 &4236626024760994990
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3461189801054394451}
+  - component: {fileID: 6235047155774826680}
+  - component: {fileID: 708916842881845941}
+  m_Layer: 0
+  m_Name: Plantation
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3461189801054394451
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4236626024760994990}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6235047155774826680
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4236626024760994990}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: fa66e941403d830409995be2a6fd9767, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &708916842881845941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4236626024760994990}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 0
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 2
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 0
+--- !u!1 &4546985264874249522
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6523679161155972196}
+  - component: {fileID: 8880473824507637756}
+  - component: {fileID: 2227023214726284452}
+  m_Layer: 0
+  m_Name: Quarry
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6523679161155972196
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4546985264874249522}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8880473824507637756
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4546985264874249522}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 80ca22669497032408b824d881624c00, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &2227023214726284452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4546985264874249522}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 2
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 0
+--- !u!1 &4632221095838919275
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3570623725496081243}
+  - component: {fileID: 5128987978854430232}
+  - component: {fileID: 3652643429706924694}
+  m_Layer: 0
+  m_Name: Candlemaker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3570623725496081243
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4632221095838919275}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5128987978854430232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4632221095838919275}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: a06fd8bab6277a6439a08d785edf9222, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &3652643429706924694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4632221095838919275}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 2
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 2
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 4
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 0
+--- !u!1 &4744061000059282726
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2650671863778791819}
+  - component: {fileID: 6584080466956090452}
+  - component: {fileID: 1262202880048890214}
+  m_Layer: 0
+  m_Name: Library
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2650671863778791819
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4744061000059282726}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6584080466956090452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4744061000059282726}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 2173042db5d326048b81a7c975cbdabf, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &1262202880048890214
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4744061000059282726}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 2
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 2
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 2
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 2
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 4
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 0
+--- !u!1 &4756231588817287251
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1827001271116997566}
+  - component: {fileID: 2875956300325906186}
+  - component: {fileID: 5301534162049994724}
+  m_Layer: 0
+  m_Name: Barn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1827001271116997566
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4756231588817287251}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2875956300325906186
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4756231588817287251}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 5018cafad637f4a43b0be20e016919aa, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &5301534162049994724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4756231588817287251}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 6
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 4
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 0
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 2
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 2
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 4
+  Ranchland_Chance: 6
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 1
+--- !u!1 &4894169555021310032
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6464695793505805690}
+  - component: {fileID: 4557323466442220307}
+  - component: {fileID: 7472745968796873892}
+  m_Layer: 0
+  m_Name: Prison
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6464695793505805690
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4894169555021310032}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4557323466442220307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4894169555021310032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 3d3d48d0b8b925740af24c3dc8e84e51, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &7472745968796873892
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4894169555021310032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 2
+  Fertile_Island_Chance: 2
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 4
+  Stronghold_Chance: 6
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 1
+--- !u!1 &4915749348115688069
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8868513558354672610}
+  - component: {fileID: 1023762625658367726}
+  - component: {fileID: 8436057846395205761}
+  m_Layer: 0
+  m_Name: Forge
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8868513558354672610
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4915749348115688069}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1023762625658367726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4915749348115688069}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 643f0c9a2746bd24bb721c949bcbb2e8, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &8436057846395205761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4915749348115688069}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 6
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 0
+--- !u!1 &5152491646881901233
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4327195596980952007}
+  - component: {fileID: 4791133376262830391}
+  - component: {fileID: 376381193089679088}
+  m_Layer: 0
+  m_Name: Fishing Hut
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4327195596980952007
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5152491646881901233}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4791133376262830391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5152491646881901233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: c5795ec0a705eea468948a81894239dd, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &376381193089679088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5152491646881901233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 2
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 6
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 1
+--- !u!1 &5227688340238383585
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8200801210695731293}
+  - component: {fileID: 8569553584965523352}
+  - component: {fileID: 722699854083712141}
+  m_Layer: 0
+  m_Name: Tavern
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8200801210695731293
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5227688340238383585}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8569553584965523352
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5227688340238383585}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 467505fe140eb1745bb2e6ba0a20caee, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &722699854083712141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5227688340238383585}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 2
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 2
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 4
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 0
+--- !u!1 &5275173984673664330
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3204183645484143929}
+  - component: {fileID: 8075511082099411102}
+  - component: {fileID: 343384037661763402}
+  m_Layer: 0
+  m_Name: Bank
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3204183645484143929
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5275173984673664330}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8075511082099411102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5275173984673664330}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: e78425b8487c41b48adc9a8e6e3e8852, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &343384037661763402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5275173984673664330}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 4
+  Fishing_Village_Chance: 2
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 0
+--- !u!1 &5280160149029701096
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5626105765191679685}
+  - component: {fileID: 7859646245638550353}
+  - component: {fileID: 1318924269985064696}
+  m_Layer: 0
+  m_Name: Lighthouse
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5626105765191679685
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5280160149029701096}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7859646245638550353
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5280160149029701096}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 9bcfc6ad256568742bf1493c0b952876, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &1318924269985064696
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5280160149029701096}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 4
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 2
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 4
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 0
+--- !u!1 &5328974183472550598
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 155530911029837181}
+  - component: {fileID: 8401427023765159147}
+  - component: {fileID: 5438429716589452868}
+  m_Layer: 0
+  m_Name: Bawdy House
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &155530911029837181
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5328974183472550598}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8401427023765159147
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5328974183472550598}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: e9d62cf2e4bcb8b4a8c17010ce71012c, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &5438429716589452868
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5328974183472550598}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 2
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 4
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 0
+--- !u!1 &5699631741146051965
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6527688333572070689}
+  - component: {fileID: 4710715490781176140}
+  - component: {fileID: 3137602833987255842}
+  m_Layer: 0
+  m_Name: Tattoo Parlor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6527688333572070689
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5699631741146051965}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4710715490781176140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5699631741146051965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 6baae0f56e9e9ad4bbd47fa52a789526, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &3137602833987255842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5699631741146051965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 6
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 4
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 4
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 1
+--- !u!1 &6306454342456569284
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 739236583034489031}
+  - component: {fileID: 1149063737245609622}
+  - component: {fileID: 1354141259676432995}
+  m_Layer: 0
+  m_Name: Market Stall
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &739236583034489031
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6306454342456569284}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1149063737245609622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6306454342456569284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 79995ddd929a00646a7cffc69e698856, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &1354141259676432995
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6306454342456569284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 2
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 4
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 0
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 0
+--- !u!1 &6550108979386850749
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2067684915366533048}
+  - component: {fileID: 6348190688000294272}
+  - component: {fileID: 9201590999552041178}
+  m_Layer: 0
+  m_Name: Wig Maker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2067684915366533048
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6550108979386850749}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6348190688000294272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6550108979386850749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 2a8b3f6301c567549927ba89210871f1, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &9201590999552041178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6550108979386850749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 2
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 0
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 2
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 0
+--- !u!1 &6634615961058669614
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2478356047896865334}
+  - component: {fileID: 2210184365031758215}
+  - component: {fileID: 5236282183820334366}
+  m_Layer: 0
+  m_Name: Admiralty House
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2478356047896865334
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6634615961058669614}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2210184365031758215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6634615961058669614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 5a5087b73ef0a6f49b3ff5d0b4250cda, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &5236282183820334366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6634615961058669614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 2
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 4
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 6
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 6
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 0
+--- !u!1 &6656285076703398655
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 879111139792915812}
+  - component: {fileID: 2778353977893613604}
+  - component: {fileID: 7914462295656884341}
+  m_Layer: 0
+  m_Name: Gypsy Wagon
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &879111139792915812
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656285076703398655}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2778353977893613604
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656285076703398655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 47764abdc5e422f46ad180be5b64a6fa, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &7914462295656884341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6656285076703398655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 6
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 4
+  Fishing_Village_Chance: 4
+  Lighthouse_Keep_Chance: 0
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 2
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 6
+  Penal_Colony_Chance: 2
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 0
+--- !u!1 &6921762791474700068
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1657898404263143361}
+  m_Layer: 0
+  m_Name: --Specialist--
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1657898404263143361
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6921762791474700068}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7018744354208231660
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5921564770718108416}
+  m_Layer: 0
+  m_Name: --T4--
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5921564770718108416
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7018744354208231660}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7195558758392808357
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2192125725460358423}
+  - component: {fileID: 2089095101251642812}
+  - component: {fileID: 6143859466316988352}
+  m_Layer: 0
+  m_Name: Tailor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2192125725460358423
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7195558758392808357}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2089095101251642812
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7195558758392808357}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: fbaf6e83f8bc86b4182330f384b459b2, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &6143859466316988352
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7195558758392808357}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 6
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 4
+  Fishing_Village_Chance: 2
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 2
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 1
+--- !u!1 &7337676991137780966
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1702735869779494976}
+  - component: {fileID: 5243093086571785400}
+  - component: {fileID: 647585961263083159}
+  m_Layer: 0
+  m_Name: Church
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1702735869779494976
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7337676991137780966}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5243093086571785400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7337676991137780966}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 0c2b584ff7aadc442826e2fb36a6a4fa, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &647585961263083159
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7337676991137780966}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 4
+  Fertile_Island_Chance: 2
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 2
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 1
+--- !u!1 &7516681889750831312
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3820677214363982411}
+  - component: {fileID: 8022870456283633734}
+  - component: {fileID: 5976422307352643131}
+  m_Layer: 0
+  m_Name: House
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3820677214363982411
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7516681889750831312}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8022870456283633734
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7516681889750831312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 36c65b3b0d2ba374a943253ca3c494ea, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &5976422307352643131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7516681889750831312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 10
+  Fertile_Island_Chance: 10
+  Free_Port_Chance: 10
+  Fishing_Village_Chance: 10
+  Lighthouse_Keep_Chance: 10
+  Industrial_Town_Chance: 10
+  Mining_Colony_Chance: 10
+  Mercantile_Trade_Port_Chance: 10
+  Ship_Builders_Collective_Chance: 10
+  Stronghold_Chance: 10
+  Sailors_Respite_Chance: 10
+  Swamp_Town_Chance: 10
+  Penal_Colony_Chance: 10
+  Ranchland_Chance: 10
+  Wood_Shrouded_Chance: 10
+  Native_Island_Chance: 10
+--- !u!1 &7561988881302407100
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2625906562567373930}
+  m_Layer: 0
+  m_Name: --T0--
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2625906562567373930
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7561988881302407100}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7686193822938266397
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6449116466765334924}
+  - component: {fileID: 5258332130683388583}
+  - component: {fileID: 3448159990585837728}
+  m_Layer: 0
+  m_Name: Warehouse
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6449116466765334924
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7686193822938266397}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5258332130683388583
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7686193822938266397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: f3edf4c215a2bbd4e94726291a60689c, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &3448159990585837728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7686193822938266397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 6
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 0
+--- !u!1 &7844892220054891997
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7838685132968055092}
+  - component: {fileID: 8199447629974124492}
+  - component: {fileID: 7148048710347472589}
+  m_Layer: 0
+  m_Name: Mineshaft
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7838685132968055092
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7844892220054891997}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8199447629974124492
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7844892220054891997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 9c65f2af54c35714cabed27cb7d3b296, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &7148048710347472589
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7844892220054891997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 0
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 0
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 2
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 0
+--- !u!1 &7901530799841948522
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1058123122614009443}
+  - component: {fileID: 7385485916009468809}
+  - component: {fileID: 8257292430821283936}
+  m_Layer: 0
+  m_Name: Clocktower
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1058123122614009443
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7901530799841948522}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7385485916009468809
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7901530799841948522}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 25cc893a332216c4cb4d445d9f2ac992, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &8257292430821283936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7901530799841948522}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 4
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 0
+--- !u!1 &7974544509464107800
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1870337221988265108}
+  - component: {fileID: 791853028344680190}
+  - component: {fileID: 8910373175608884060}
+  m_Layer: 0
+  m_Name: Shipwright
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1870337221988265108
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7974544509464107800}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &791853028344680190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7974544509464107800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: c8275f9ea4e0e3243853bef48428ea92, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &8910373175608884060
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7974544509464107800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 6
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 1
+--- !u!1 &8018623790708529436
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6662919356423963888}
+  - component: {fileID: 1139755894589895789}
+  - component: {fileID: 7831334657586293249}
+  m_Layer: 0
+  m_Name: Jeweler Parlor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6662919356423963888
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8018623790708529436}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1139755894589895789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8018623790708529436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 70e9198d2c46d2940a7ef3161fc8c374, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &7831334657586293249
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8018623790708529436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 2
+  Fertile_Island_Chance: 4
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 2
+  Swamp_Town_Chance: 2
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 0
+--- !u!1 &8179143648452374178
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3163872623497861071}
+  - component: {fileID: 4535203427520589439}
+  - component: {fileID: 5212253006786662548}
+  m_Layer: 0
+  m_Name: Saw Mill
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3163872623497861071
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8179143648452374178}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4535203427520589439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8179143648452374178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 33b26ad6e52e22442a141f61e4e2094e, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &5212253006786662548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8179143648452374178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 2
+  Free_Port_Chance: 4
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 6
+  Ranchland_Chance: 2
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 0
+--- !u!1 &8699338811943097000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7924423160389319101}
+  - component: {fileID: 3343541870398194859}
+  - component: {fileID: 6971782100873272469}
+  m_Layer: 0
+  m_Name: Mill
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7924423160389319101
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8699338811943097000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3343541870398194859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8699338811943097000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: febf6b36f3da3ca4e8d808c3e5a9c30e, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &6971782100873272469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8699338811943097000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 0
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 0
+  Industrial_Town_Chance: 2
+  Mining_Colony_Chance: 0
+  Mercantile_Trade_Port_Chance: 0
+  Ship_Builders_Collective_Chance: 0
+  Stronghold_Chance: 2
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 2
+  Ranchland_Chance: 6
+  Wood_Shrouded_Chance: 0
+  Native_Island_Chance: 0
+--- !u!1 &8878790357962267973
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5344894667419112499}
+  m_Layer: 0
+  m_Name: Structures
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5344894667419112499
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8878790357962267973}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 982.33105, y: 14.99988, z: 137.84277}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2625906562567373930}
+  - {fileID: 4327195596980952007}
+  - {fileID: 879111139792915812}
+  - {fileID: 3742874231858036739}
+  - {fileID: 6961030569304441957}
+  - {fileID: 739236583034489031}
+  - {fileID: 3551837290807191770}
+  - {fileID: 2617672116818452483}
+  - {fileID: 9029654265511496277}
+  - {fileID: 155530911029837181}
+  - {fileID: 4151929776032152427}
+  - {fileID: 3163872623497861071}
+  - {fileID: 8200801210695731293}
+  - {fileID: 5136612928663365846}
+  - {fileID: 9038083021745897980}
+  - {fileID: 7334091843715258175}
+  - {fileID: 1827001271116997566}
+  - {fileID: 4570711249922178060}
+  - {fileID: 3858660305599745052}
+  - {fileID: 1702735869779494976}
+  - {fileID: 5834414891696583920}
+  - {fileID: 2287923952944881024}
+  - {fileID: 5324978011729907663}
+  - {fileID: 7717075979491604902}
+  - {fileID: 2192125725460358423}
+  - {fileID: 4621998796381770769}
+  - {fileID: 6449116466765334924}
+  - {fileID: 3471201756054135158}
+  - {fileID: 6707134343512484182}
+  - {fileID: 3151666945439468699}
+  - {fileID: 4833401549177206273}
+  - {fileID: 3570623725496081243}
+  - {fileID: 6662919356423963888}
+  - {fileID: 7924423160389319101}
+  - {fileID: 1870337221988265108}
+  - {fileID: 6527688333572070689}
+  - {fileID: 5921564770718108416}
+  - {fileID: 2478356047896865334}
+  - {fileID: 3204183645484143929}
+  - {fileID: 5910943171135846978}
+  - {fileID: 2650671863778791819}
+  - {fileID: 2067684915366533048}
+  - {fileID: 2044610927762584687}
+  - {fileID: 1178352023563279940}
+  - {fileID: 8868513558354672610}
+  - {fileID: 1657898404263143361}
+  - {fileID: 1585145550583220395}
+  - {fileID: 7838685132968055092}
+  - {fileID: 3461189801054394451}
+  - {fileID: 6523679161155972196}
+  - {fileID: 5167425203787020206}
+  - {fileID: 1058123122614009443}
+  - {fileID: 8215522690797202596}
+  - {fileID: 3166863350359534759}
+  - {fileID: 3743409804318010710}
+  - {fileID: 3242534089070822293}
+  - {fileID: 3820677214363982411}
+  - {fileID: 5626105765191679685}
+  - {fileID: 6464695793505805690}
+  - {fileID: 8283611319324487157}
+  - {fileID: 7968378666502051296}
+  - {fileID: 6273180020163673187}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8977776626634146669
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4621998796381770769}
+  - component: {fileID: 9010680636455204011}
+  - component: {fileID: 4412950659474331220}
+  m_Layer: 0
+  m_Name: Tar Kiln
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4621998796381770769
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8977776626634146669}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9010680636455204011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8977776626634146669}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 482d87b50f061624aa5bdc7e8629aec4, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &4412950659474331220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8977776626634146669}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 2
+  Fertile_Island_Chance: 2
+  Free_Port_Chance: 2
+  Fishing_Village_Chance: 6
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 6
+  Mercantile_Trade_Port_Chance: 0
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 2
+  Sailors_Respite_Chance: 6
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 2
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 0
+--- !u!1 &9071393316801673202
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5910943171135846978}
+  - component: {fileID: 9127260807855053848}
+  - component: {fileID: 6771880490800315450}
+  m_Layer: 0
+  m_Name: Drydock
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5910943171135846978
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9071393316801673202}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9127260807855053848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9071393316801673202}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: 4e4e3ea8fb0aeae4da7db3420ce7b873, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &6771880490800315450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9071393316801673202}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 0
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 2
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 0
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 4
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 2
+  Ranchland_Chance: 0
+  Wood_Shrouded_Chance: 6
+  Native_Island_Chance: 0
+--- !u!1 &9083889759512751561
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7968378666502051296}
+  - component: {fileID: 3595804628576993298}
+  - component: {fileID: 7217535210216425400}
+  m_Layer: 0
+  m_Name: Town Hall
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7968378666502051296
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9083889759512751561}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3595804628576993298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9083889759512751561}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: d43d515f2d8521341bed8103ebe73d67, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &7217535210216425400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9083889759512751561}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 2
+  Fertile_Island_Chance: 6
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 4
+  Lighthouse_Keep_Chance: 4
+  Industrial_Town_Chance: 4
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 6
+  Stronghold_Chance: 4
+  Sailors_Respite_Chance: 0
+  Swamp_Town_Chance: 4
+  Penal_Colony_Chance: 0
+  Ranchland_Chance: 4
+  Wood_Shrouded_Chance: 4
+  Native_Island_Chance: 1
+--- !u!1 &9197729240595417699
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5834414891696583920}
+  - component: {fileID: 5412918247976074661}
+  - component: {fileID: 2933084294480227378}
+  m_Layer: 0
+  m_Name: Cobbler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5834414891696583920
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9197729240595417699}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5344894667419112499}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5412918247976074661
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9197729240595417699}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46527397322f94849ac6f40d51cdb015, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Town_Building
+  buildingData: {fileID: 11400000, guid: d32fbfbe5753e27409dccbf206808491, type: 2}
+  buildingModel: {fileID: 0}
+  damage: 0
+--- !u!114 &2933084294480227378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9197729240595417699}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7944cc393a7a944b0256a1d92978de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingSpawnChanceData
+  Caravan_Site_Chance: 4
+  Fertile_Island_Chance: 0
+  Free_Port_Chance: 6
+  Fishing_Village_Chance: 0
+  Lighthouse_Keep_Chance: 6
+  Industrial_Town_Chance: 2
+  Mining_Colony_Chance: 2
+  Mercantile_Trade_Port_Chance: 6
+  Ship_Builders_Collective_Chance: 2
+  Stronghold_Chance: 0
+  Sailors_Respite_Chance: 4
+  Swamp_Town_Chance: 0
+  Penal_Colony_Chance: 2
+  Ranchland_Chance: 6
+  Wood_Shrouded_Chance: 2
+  Native_Island_Chance: 0

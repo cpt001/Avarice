@@ -45,6 +45,6 @@ public class IslandMaster : MonoBehaviour
     private void Start()
     {
         //attachedTileStatus = transform.parent.parent.GetComponent<MapMagic.Terrains.TerrainTile>();
-        //Not sure what to access to view changes right now -- Its in terrainTile script, but not sure what variable
+        //Not sure what to access to view changes right now -- Its in terrainTile script, but not sure what variable <-- this is related to the render status
     }
 }

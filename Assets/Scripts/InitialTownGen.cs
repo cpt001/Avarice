@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 [RequireComponent(typeof(FutureTownPlanner))]
 public class InitialTownGen : MonoBehaviour
@@ -16,7 +17,7 @@ public class InitialTownGen : MonoBehaviour
     /// Determine structure composition and future construction order
     /// - On roads: two future methods exist.
     /// -- Generate road grid beforehand, with building points attached to the roadside. Generates as a full grid, and sets up for slots. May not leave the room for all building sizes
-    /// -- Generate single building, with points attached to the front of it. Find angle, generate next building from road point in front
+    /// --> Generate single building, with points attached to the front of it. Find angle, generate next building from road point in front
     /// Update island allegiance
     /// Run economic model
     /// - Generate full personal supplies
@@ -39,7 +40,13 @@ public class InitialTownGen : MonoBehaviour
 
     private FutureTownPlanner associatedTownPlanner => GetComponent<FutureTownPlanner>();
 
-    private void GenerateTown()
+    private void Start()
+    {
+        islandMaster.townsOnIsland.Add(this);
+        StartCoroutine(GenerateTown());
+    }
+
+    private IEnumerator GenerateTown()
     {
         #region Set Initial Detail
         if (islandMaster.townsOnIsland.Count != 0)
@@ -85,37 +92,124 @@ public class InitialTownGen : MonoBehaviour
                 case IslandMaster.IslandBiome.Jungle:
                     {
                         setTownTier = Mathf.RoundToInt(Random.Range(0, 5));
+                        var junglePhenotype = (JunglePhenotypes)Random.Range(0, System.Enum.GetValues(typeof(JunglePhenotypes)).Length);
                         //CS, FI, FP, FV, LK, IT, MTP, SBC, St, SR, RL, WS, NI
+                        switch (junglePhenotype)
+                        {
+                            case JunglePhenotypes.Caravan_Site:     { townType = Any_Town_Phenotype.Caravan_Site; break; }
+                            case JunglePhenotypes.Fertile_Island:   { townType = Any_Town_Phenotype.Fertile_Island; break; }
+                            case JunglePhenotypes.Free_Port:        { townType = Any_Town_Phenotype.Free_Port; break; }
+                            case JunglePhenotypes.Fishing_Village:  { townType = Any_Town_Phenotype.Fishing_Village; break; }
+                            case JunglePhenotypes.Lighthouse_Keep:  { townType = Any_Town_Phenotype.Lighthouse_Keep; break; }
+                            case JunglePhenotypes.Industrial_Town:  { townType = Any_Town_Phenotype.Industrial_Town; break; }
+                            case JunglePhenotypes.Mercantile_Trade_Port:    { townType = Any_Town_Phenotype.Mercantile_Trade_Port; break; }
+                            case JunglePhenotypes.Ship_Builders_Collective: { townType = Any_Town_Phenotype.Ship_Builders_Collective; break; }
+                            case JunglePhenotypes.Stronghold:       { townType = Any_Town_Phenotype.Stronghold; break; }
+                            case JunglePhenotypes.Sailors_Respite:  { townType = Any_Town_Phenotype.Sailors_Respite; break; }
+                            case JunglePhenotypes.Ranchland:        { townType = Any_Town_Phenotype.Ranchland; break; }
+                            case JunglePhenotypes.Wood_Shrouded:    { townType = Any_Town_Phenotype.Wood_Shrouded; break; }
+                            case JunglePhenotypes.Native_Island:    { townType = Any_Town_Phenotype.Native_Island; break; }
+                        }
                         break;
                     }
                 case IslandMaster.IslandBiome.DormantVolcano:
                     {
                         setTownTier = Mathf.RoundToInt(Random.Range(0, 5));
+                        var dormantVolcanoPhenotypes = (DormantVolcanoPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(DormantVolcanoPhenotypes)).Length);
                         //CS, FI, FP, IT, MC, MTP, SBC, St, SR, RL, WS, NI
+                        switch (dormantVolcanoPhenotypes)
+                        {
+                            case DormantVolcanoPhenotypes.Caravan_Site:     { townType = Any_Town_Phenotype.Caravan_Site; break; }
+                            case DormantVolcanoPhenotypes.Fertile_Island:   { townType = Any_Town_Phenotype.Fertile_Island; break; }
+                            case DormantVolcanoPhenotypes.Free_Port:        { townType = Any_Town_Phenotype.Free_Port; break; }
+                            case DormantVolcanoPhenotypes.Industrial_Town:  { townType = Any_Town_Phenotype.Industrial_Town; break; }
+                            case DormantVolcanoPhenotypes.Mining_Colony:    { townType = Any_Town_Phenotype.Mining_Colony; break; }
+                            case DormantVolcanoPhenotypes.Mercantile_Trade_Port:    { townType = Any_Town_Phenotype.Mercantile_Trade_Port; break; }
+                            case DormantVolcanoPhenotypes.Ship_Builders_Collective: { townType = Any_Town_Phenotype.Ship_Builders_Collective; break; }
+                            case DormantVolcanoPhenotypes.Stronghold:       { townType = Any_Town_Phenotype.Stronghold; break; }
+                            case DormantVolcanoPhenotypes.Sailors_Respite:  { townType = Any_Town_Phenotype.Sailors_Respite; break; }
+                            case DormantVolcanoPhenotypes.Ranchland:        { townType = Any_Town_Phenotype.Ranchland; break; }
+                            case DormantVolcanoPhenotypes.Wood_Shrouded:    { townType = Any_Town_Phenotype.Wood_Shrouded; break; }
+                            case DormantVolcanoPhenotypes.Native_Island:    { townType = Any_Town_Phenotype.Native_Island; break; }
+                        }
                         break;
                     }
                 case IslandMaster.IslandBiome.ActiveVolcano:
                     {
                         setTownTier = Mathf.RoundToInt(Random.Range(0, 4));
+                        var activeVolcanoPhenotypes = (ActiveVolcanoPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(ActiveVolcanoPhenotypes)).Length);
                         //CS, FP, FV, LK, IT, MC, St, PC, NI
+                        switch (activeVolcanoPhenotypes)
+                        {
+                            case ActiveVolcanoPhenotypes.Caravan_Site:      { townType = Any_Town_Phenotype.Caravan_Site; break; }
+                            case ActiveVolcanoPhenotypes.Free_Port:         { townType = Any_Town_Phenotype.Free_Port; break; }
+                            case ActiveVolcanoPhenotypes.Fishing_Village:   { townType = Any_Town_Phenotype.Fishing_Village; break; }
+                            case ActiveVolcanoPhenotypes.Lighthouse_Keep:   { townType = Any_Town_Phenotype.Lighthouse_Keep; break; }
+                            case ActiveVolcanoPhenotypes.Industrial_Town:   { townType = Any_Town_Phenotype.Industrial_Town; break; }
+                            case ActiveVolcanoPhenotypes.Mining_Colony:     { townType = Any_Town_Phenotype.Mining_Colony; break; }
+                            case ActiveVolcanoPhenotypes.Stronghold:        { townType = Any_Town_Phenotype.Stronghold; break; }
+                            case ActiveVolcanoPhenotypes.Penal_Colony:      { townType = Any_Town_Phenotype.Sailors_Respite; break; }
+                            case ActiveVolcanoPhenotypes.Native_Island:     { townType = Any_Town_Phenotype.Native_Island; break; }
+                        }
                         break;
                     }
                 case IslandMaster.IslandBiome.Tundra:
                     {
                         setTownTier = Mathf.RoundToInt(Random.Range(0, 3));
+                        var tundraPhenotypes = (TundraPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(TundraPhenotypes)).Length);
                         //FP, FV, LK, MTP, St, SR, PC, NI
+                        switch (tundraPhenotypes)
+                        {
+                            case TundraPhenotypes.Free_Port:        { townType = Any_Town_Phenotype.Free_Port; break; }
+                            case TundraPhenotypes.Fishing_Village:  { townType = Any_Town_Phenotype.Fishing_Village; break; }
+                            case TundraPhenotypes.Lighthouse_Keep:  { townType = Any_Town_Phenotype.Lighthouse_Keep; break; }
+                            case TundraPhenotypes.Mercantile_Trade_Port: { townType = Any_Town_Phenotype.Mercantile_Trade_Port; break; }
+                            case TundraPhenotypes.Stronghold:       { townType = Any_Town_Phenotype.Stronghold; break; }
+                            case TundraPhenotypes.Sailors_Respite:  { townType = Any_Town_Phenotype.Sailors_Respite; break; }
+                            case TundraPhenotypes.Penal_Colony:     { townType = Any_Town_Phenotype.Sailors_Respite; break; }
+                            case TundraPhenotypes.Native_Island:    { townType = Any_Town_Phenotype.Native_Island; break; }
+                        }
                         break;
                     }
                 case IslandMaster.IslandBiome.Ethereal:
                     {
                         setTownTier = Mathf.RoundToInt(Random.Range(0, 5));
+                        var etherealPhenotypes = (EtherealPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(EtherealPhenotypes)).Length);
                         //CS, FP, FV, MC, LK, MTP, St, PC, WS, NI
+                        switch (etherealPhenotypes)
+                        {
+                            case EtherealPhenotypes.Caravan_Site:       { townType = Any_Town_Phenotype.Caravan_Site; break; }
+                            case EtherealPhenotypes.Free_Port:          { townType = Any_Town_Phenotype.Free_Port; break; }
+                            case EtherealPhenotypes.Fishing_Village:    { townType = Any_Town_Phenotype.Fishing_Village; break; }
+                            case EtherealPhenotypes.Mining_Colony:      { townType = Any_Town_Phenotype.Mining_Colony; break; }
+                            case EtherealPhenotypes.Lighthouse_Keep:    { townType = Any_Town_Phenotype.Lighthouse_Keep; break; }
+                            case EtherealPhenotypes.Mercantile_Trade_Port:  { townType = Any_Town_Phenotype.Mercantile_Trade_Port; break; }
+                            case EtherealPhenotypes.Stronghold:         { townType = Any_Town_Phenotype.Stronghold; break; }
+                            case EtherealPhenotypes.Penal_Colony:       { townType = Any_Town_Phenotype.Sailors_Respite; break; }
+                            case EtherealPhenotypes.Wood_Shrouded:      { townType = Any_Town_Phenotype.Wood_Shrouded; break; }
+                            case EtherealPhenotypes.Native_Island:      { townType = Any_Town_Phenotype.Native_Island; break; }
+                        }
                         break;
                     }
                 case IslandMaster.IslandBiome.Deadlands:    //Town will generate dead
                     {
                         setTownTier = Mathf.RoundToInt(Random.Range(0, 5));
+                        var deadlandsPhenotypes = (DeadlandsPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(DeadlandsPhenotypes)).Length);
                         //FP, FV, LK, MC, MTP, SBC, St, PC, RL, WS, NI
+                        switch (deadlandsPhenotypes)
+                        {
+                            case DeadlandsPhenotypes.Free_Port:         { townType = Any_Town_Phenotype.Free_Port; break; }
+                            case DeadlandsPhenotypes.Fishing_Village:   { townType = Any_Town_Phenotype.Fishing_Village; break; }
+                            case DeadlandsPhenotypes.Lighthouse_Keep:   { townType = Any_Town_Phenotype.Lighthouse_Keep; break; }
+                            case DeadlandsPhenotypes.Mining_Colony:     { townType = Any_Town_Phenotype.Mining_Colony; break; }
+                            case DeadlandsPhenotypes.Mercantile_Trade_Port:     { townType = Any_Town_Phenotype.Mercantile_Trade_Port; break; }
+                            case DeadlandsPhenotypes.Ship_Builders_Collective:  { townType = Any_Town_Phenotype.Ship_Builders_Collective; break; }
+                            case DeadlandsPhenotypes.Stronghold:        { townType = Any_Town_Phenotype.Stronghold; break; }
+                            case DeadlandsPhenotypes.Penal_Colony:      { townType = Any_Town_Phenotype.Sailors_Respite; break; }
+                            case DeadlandsPhenotypes.Ranchland:         { townType = Any_Town_Phenotype.Ranchland; break; }
+                            case DeadlandsPhenotypes.Wood_Shrouded:     { townType = Any_Town_Phenotype.Wood_Shrouded; break; }
+                            case DeadlandsPhenotypes.Native_Island:     { townType = Any_Town_Phenotype.Native_Island; break; }
+                        }
                         break;
                     }
             }
@@ -148,11 +242,14 @@ public class InitialTownGen : MonoBehaviour
             townAge = Random.Range(140, 220);
         }
         //Access town planner script
-
+        associatedTownPlanner.GetPossibleStructures(townType);
+        associatedTownPlanner.SetTownConstructionOrder(setTownTier);
         //Allegiance model
         //Economy model
         //Populate
         //Name Island
         //Update IslandMaster with requests/supplies
+
+        yield return null;
     }
 }
