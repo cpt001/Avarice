@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 /// <summary>
 /// This scripts entire purpose is to act as a library that determines
 /// - Master structure list of buildings belonging to town
@@ -16,8 +17,8 @@ using System.Collections.Generic;
 public class FutureTownPlanner : MonoBehaviour
 {
     [SerializeField] private GameObject structureContainer;
-    [SerializeField] private List<Town_Building> buildingWhitelist = new List<Town_Building>();
-    private List<Town_Building> BuildingQueue = new List<Town_Building>();
+    [SerializeField] private List<Transform> buildingWhitelist = new List<Transform>();
+    [SerializeField] private List<Town_Building> BuildingQueue = new List<Town_Building>();
 
     //This sorts through all structures to get their probabilities
     public void GetPossibleStructures(Any_Town_Phenotype town_Phenotype)
@@ -32,12 +33,11 @@ public class FutureTownPlanner : MonoBehaviour
                 {
                    if (town_Phenotype == kvp.Key)
                    {
-                        //Debug.Log("Key match " + kvp.Key.ToString());
-                        int queueAllowanceRandomNumber = Random.Range(0, 11);
-                        if (queueAllowanceRandomNumber <= kvp.Value)
+                        //This needs to be changed to generate per building instance, rather than the overall whitelist
+                        //Remove the buildings that have 0 as the kvp value, then check each new structure for that chance, and move on to next in list if chance fails
+                        if (kvp.Value != 0)
                         {
-                            //Debug.Log("Value allowed");
-                            buildingWhitelist.Add(bldg.GetComponent<Town_Building>());
+                            buildingWhitelist.Add(bldg.transform);
                         }
                    }
                 }
@@ -50,9 +50,77 @@ public class FutureTownPlanner : MonoBehaviour
         }
     }
 
-    public void SetTownConstructionOrder(int townMaxTier)
+    public void SetTownConstructionOrder(int internalTier, Any_Town_Phenotype town_Phenotype)
     {
-        int internalTier = 0;
+        int buildingCount = 0;
+        switch (internalTier)
+        {
+            case 0: { buildingCount = Mathf.RoundToInt(Random.Range(2, 6));     break; }
+            case 1: { buildingCount = Mathf.RoundToInt(Random.Range(6, 9));     break; }
+            case 2: { buildingCount = Mathf.RoundToInt(Random.Range(6, 10));    break; }
+            case 3: { buildingCount = Mathf.RoundToInt(Random.Range(5, 12));    break; }
+            case 4: { buildingCount = Mathf.RoundToInt(Random.Range(4, 8));     break; }
+        }
+
+        //Adds structures from selected tier
+        List<Transform> buildingsInTier = new List<Transform>();
+        buildingsInTier.Clear();
+        foreach (Transform bldg in buildingWhitelist)
+        {
+            if (bldg.GetComponent<Town_Building>().BuildingTier == internalTier && !bldg.GetComponent<Town_Building>().isSpecialStructure)
+            {
+                buildingsInTier.Add(bldg);
+            }
+        }
+        
+        //Adds buildings up to the building count
+        if (BuildingQueue.Count < buildingCount)
+        {
+            //Debug.Log("began queueing");
+            for (int i = 0; i < buildingCount; i++)
+            {
+                int buildingRandomizer = Mathf.RoundToInt(Random.Range(0, buildingsInTier.Count));
+
+                foreach (Transform bldg in buildingsInTier)
+                {
+                    if (bldg == buildingsInTier[buildingRandomizer])
+                    {
+                        foreach (KeyValuePair<Any_Town_Phenotype, int> buildingSCD in bldg.GetComponent<BuildingSpawnChanceData>().phenotypeChanceDict)
+                        {
+                            if (buildingSCD.Key == town_Phenotype)
+                            {
+                                //roll value against rand 0-11
+                                int rand = Mathf.RoundToInt(Random.Range(0, 11));
+                                if (buildingSCD.Value < rand)
+                                {
+                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                }
+                                else
+                                {
+                                    i--;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        /*for (int i = 0; i < buildingCount; i++)
+        {
+            int buildingRandomizer = Mathf.RoundToInt(Random.Range(0, buildingsInTier.Count));
+            if (buildingsInTier.Count != 0)
+            {
+                BuildingQueue.Add(buildingsInTier[buildingRandomizer]);
+            }
+            else
+            {
+                Debug.Log(transform + " has 0 buildings in tier " + internalTier);
+            }
+        }*/
+
+        #region Old Implementation
+        /*Debug.Log(internalTier + " int tier");
         //Check town max tier
         
         //Generate a number of required building to reach the next tier
@@ -60,35 +128,41 @@ public class FutureTownPlanner : MonoBehaviour
         {
             case 0:
                 {
-                    int t0Buildings = Mathf.RoundToInt(Random.Range(5, 8));
+                    int t0BuildingCount = Mathf.RoundToInt(Random.Range(5, 8));
+                    List<Town_Building> buildingsInTier = new List<Town_Building>();
+                    foreach (Town_Building bldg in buildingWhitelist)
+                    {
+                        if (bldg.BuildingTier == 0)
+                        {
+                            //Debug.Log("Adding " + bldg + " to tier " + internalTier);
+                            buildingsInTier.Add(bldg);
+                        }
+                    }
+                    for (int i = 0; i < t0BuildingCount; i++)
+                    {
+                        int buildingRandomizer = Mathf.RoundToInt(Random.Range(0, buildingsInTier.Count));
+                        //Debug.Log("Randomizer " + buildingRandomizer + " bldg count:" + i);
+                        if (buildingsInTier.Count != 0)
+                        {
+                            BuildingQueue.Add(buildingsInTier[buildingRandomizer]);     //Why is this out of range??
+                        }
+                        else
+                        {
+                            Debug.Log(gameObject + " has 0 buildings in tier!");
+                        }
+                    }
                     break;
                 }
-            case 1:
-                {
-                    int t1Buildings = Mathf.RoundToInt(Random.Range(8, 12));
-                    break;
-                }
-            case 2:
-                {
-                    int t2Buildings = Mathf.RoundToInt(Random.Range(6, 10));
-                    break;
-                }
-            case 3:
-                {
-                    int t3Buildings = Mathf.RoundToInt(Random.Range(5, 12));
-                    break;
-                }
-            case 4:
-                {
-                    int t4Buildings = Mathf.RoundToInt(Random.Range(4, 8));
-                    break;
-                }
-        }
+        }*/
+        #endregion
+
+
         //Randomly select from buildings in each tier
         //Add housing to fill in resident cap per tier, order these in before building that requires it
         //Add demolition orders if necessary
         //Move to next tier until mex tier reached
         //Set and limit number of models to generate
+
 
         #region Town Phenotypes
         /*switch (town_Phenotype)
@@ -159,5 +233,24 @@ public class FutureTownPlanner : MonoBehaviour
                 }
         }*/
         #endregion
+    }
+
+    private IEnumerator SetBuildingQueueForTier()
+    {
+        yield return null;
+    }
+
+    public void SetSpecialConstruction(int internalTier)
+    {
+        foreach (Transform bldg in buildingWhitelist)
+        {
+            if (bldg.GetComponent<Town_Building>().isSpecialStructure)
+            {
+                if (bldg.GetComponent<Town_Building>().BuildingTier == internalTier)
+                {
+
+                }
+            }
+        }
     }
 }

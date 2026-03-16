@@ -27,5 +27,7 @@ public class Town_Building : MonoBehaviour
         Rubble,             //Building has collapsed
     }
     [SerializeField] private DamageState damage;
+    public int BuildingTier;
+    public bool isSpecialStructure;
 }
 //FTP accesses master list, and populates phenotypes with matching tags
