@@ -18,6 +18,12 @@ public class FutureTownPlanner : MonoBehaviour
 {
     [SerializeField] private GameObject structureContainer;
     [SerializeField] private List<Transform> buildingWhitelist = new List<Transform>();
+    [SerializeField] private List<Transform> t0Bldg = new List<Transform>();
+    [SerializeField] private List<Transform> t1Bldg = new List<Transform>();
+    [SerializeField] private List<Transform> t2Bldg = new List<Transform>();
+    [SerializeField] private List<Transform> t3Bldg = new List<Transform>();
+    [SerializeField] private List<Transform> t4Bldg = new List<Transform>();
+    [SerializeField] private List<Transform> t5Bldg = new List<Transform>();
     [SerializeField] private List<Town_Building> BuildingQueue = new List<Town_Building>();
 
     //This sorts through all structures to get their probabilities
@@ -38,6 +44,39 @@ public class FutureTownPlanner : MonoBehaviour
                         if (kvp.Value != 0)
                         {
                             buildingWhitelist.Add(bldg.transform);
+                            switch (bldg.GetComponent<Town_Building>().BuildingTier)
+                            {
+                                case 0:
+                                    {
+                                        t0Bldg.Add(bldg);
+                                        break;
+                                    }
+                                case 1:
+                                    {
+                                        t1Bldg.Add(bldg);
+                                        break;
+                                    }
+                                case 2:
+                                    {
+                                        t2Bldg.Add(bldg);
+                                        break;
+                                    }
+                                case 3:
+                                    {
+                                        t3Bldg.Add(bldg);
+                                        break;
+                                    }
+                                case 4:
+                                    {
+                                        t4Bldg.Add(bldg);
+                                        break;
+                                    }
+                                case 5:
+                                    {
+                                        t5Bldg.Add(bldg);
+                                        break;
+                                    }
+                            }
                         }
                    }
                 }
@@ -52,14 +91,36 @@ public class FutureTownPlanner : MonoBehaviour
 
     public void SetTownConstructionOrder(int internalTier, Any_Town_Phenotype town_Phenotype)
     {
+        StartCoroutine(SetBuildingQueueForTier(internalTier, town_Phenotype));
+        
+
+        //->> might need to change generation to account for town slots instead of randomly picking a tier
+        //->> that may also allow for higher building caps?
+        //->> may be smart to simply split buildings between tiers instead
+        //->> fishing huts need to be built near ocean
+        //-->> find nearest beach point, drop dock and fishing huts on that
+        //Add housing to fill in resident cap per tier, order these in before building that requires it
+        //-Foreach loop through buildings in tier, and add necessary housing
+        //Add demolition/move building orders if necessary
+        //Set and limit number of models to generate for simulated growth
+    }
+
+    private IEnumerator SetBuildingQueueForTier(int internalTier, Any_Town_Phenotype town_Phenotype)
+    {
         int buildingCount = 0;
+        int t0Additions = 0;
+        int t1Additions = 0;
+        int t2Additions = 0;
+        int t3Additions = 0;
+        int t4Additions = 0;
         switch (internalTier)
         {
-            case 0: { buildingCount = Mathf.RoundToInt(Random.Range(2, 6));     break; }
-            case 1: { buildingCount = Mathf.RoundToInt(Random.Range(6, 9));     break; }
-            case 2: { buildingCount = Mathf.RoundToInt(Random.Range(6, 10));    break; }
-            case 3: { buildingCount = Mathf.RoundToInt(Random.Range(5, 12));    break; }
-            case 4: { buildingCount = Mathf.RoundToInt(Random.Range(4, 8));     break; }
+            case 0: { buildingCount = Mathf.RoundToInt(Random.Range(5, 9)); break; }
+            case 1: { buildingCount += Mathf.RoundToInt(Random.Range(4, 6)); t0Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
+            case 2: { buildingCount += Mathf.RoundToInt(Random.Range(6, 10)); t1Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
+            case 3: { buildingCount += Mathf.RoundToInt(Random.Range(3, 7)); t2Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
+            case 4: { buildingCount += Mathf.RoundToInt(Random.Range(4, 8)); t3Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
+            case 5: { buildingCount += 1; t4Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
         }
 
         //Adds structures from selected tier
@@ -72,15 +133,14 @@ public class FutureTownPlanner : MonoBehaviour
                 buildingsInTier.Add(bldg);
             }
         }
-        
-        //Adds buildings up to the building count
+
+        //Randomly selects and adds buildings up to the building count
         if (BuildingQueue.Count < buildingCount)
         {
             //Debug.Log("began queueing");
             for (int i = 0; i < buildingCount; i++)
             {
                 int buildingRandomizer = Mathf.RoundToInt(Random.Range(0, buildingsInTier.Count));
-
                 foreach (Transform bldg in buildingsInTier)
                 {
                     if (bldg == buildingsInTier[buildingRandomizer])
@@ -106,138 +166,165 @@ public class FutureTownPlanner : MonoBehaviour
             }
         }
 
-        /*for (int i = 0; i < buildingCount; i++)
+        #region Retroactive addition after town tier up
+        if (BuildingQueue.Count < BuildingQueue.Count + t0Additions)
         {
-            int buildingRandomizer = Mathf.RoundToInt(Random.Range(0, buildingsInTier.Count));
-            if (buildingsInTier.Count != 0)
+            for (int i = 0; i < t0Additions; i++)
             {
-                BuildingQueue.Add(buildingsInTier[buildingRandomizer]);
-            }
-            else
-            {
-                Debug.Log(transform + " has 0 buildings in tier " + internalTier);
-            }
-        }*/
-
-        #region Old Implementation
-        /*Debug.Log(internalTier + " int tier");
-        //Check town max tier
-        
-        //Generate a number of required building to reach the next tier
-        switch (internalTier)
-        {
-            case 0:
+                int randBldg = Mathf.RoundToInt(Random.Range(0, t0Bldg.Count));
+                foreach (Transform bldg in t0Bldg)
                 {
-                    int t0BuildingCount = Mathf.RoundToInt(Random.Range(5, 8));
-                    List<Town_Building> buildingsInTier = new List<Town_Building>();
-                    foreach (Town_Building bldg in buildingWhitelist)
+                    if (bldg == t0Bldg[randBldg])
                     {
-                        if (bldg.BuildingTier == 0)
+                        foreach (KeyValuePair<Any_Town_Phenotype, int> buildingSCD in bldg.GetComponent<BuildingSpawnChanceData>().phenotypeChanceDict)
                         {
-                            //Debug.Log("Adding " + bldg + " to tier " + internalTier);
-                            buildingsInTier.Add(bldg);
+                            if (buildingSCD.Key == town_Phenotype)
+                            {
+                                int rand = Mathf.RoundToInt(Random.Range(0, 11));
+                                if (buildingSCD.Value < rand)
+                                {
+                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                }
+                                else
+                                {
+                                    i--;
+                                }
+                            }
                         }
                     }
-                    for (int i = 0; i < t0BuildingCount; i++)
+                }
+            }
+        }
+        if (BuildingQueue.Count < BuildingQueue.Count + t1Additions)
+        {
+            for (int i = 0; i < t1Additions; i++)
+            {
+                int randBldg = Mathf.RoundToInt(Random.Range(0, t1Bldg.Count));
+                foreach (Transform bldg in t1Bldg)
+                {
+                    if (bldg == t1Bldg[randBldg])
                     {
-                        int buildingRandomizer = Mathf.RoundToInt(Random.Range(0, buildingsInTier.Count));
-                        //Debug.Log("Randomizer " + buildingRandomizer + " bldg count:" + i);
-                        if (buildingsInTier.Count != 0)
+                        foreach (KeyValuePair<Any_Town_Phenotype, int> buildingSCD in bldg.GetComponent<BuildingSpawnChanceData>().phenotypeChanceDict)
                         {
-                            BuildingQueue.Add(buildingsInTier[buildingRandomizer]);     //Why is this out of range??
-                        }
-                        else
-                        {
-                            Debug.Log(gameObject + " has 0 buildings in tier!");
+                            if (buildingSCD.Key == town_Phenotype)
+                            {
+                                int rand = Mathf.RoundToInt(Random.Range(0, 11));
+                                if (buildingSCD.Value < rand)
+                                {
+                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                }
+                                else
+                                {
+                                    i--;
+                                }
+                            }
                         }
                     }
-                    break;
                 }
-        }*/
-        #endregion
-
-
-        //Randomly select from buildings in each tier
-        //Add housing to fill in resident cap per tier, order these in before building that requires it
-        //Add demolition orders if necessary
-        //Move to next tier until mex tier reached
-        //Set and limit number of models to generate
-
-
-        #region Town Phenotypes
-        /*switch (town_Phenotype)
+            }
+        }
+        if (BuildingQueue.Count < BuildingQueue.Count + t2Additions)
         {
-            case Any_Town_Phenotype.Caravan_Site:
+            for (int i = 0; i < t2Additions; i++)
+            {
+                int randBldg = Mathf.RoundToInt(Random.Range(0, t2Bldg.Count));
+                foreach (Transform bldg in t2Bldg)
                 {
-                    break;
+                    if (bldg == t2Bldg[randBldg])
+                    {
+                        foreach (KeyValuePair<Any_Town_Phenotype, int> buildingSCD in bldg.GetComponent<BuildingSpawnChanceData>().phenotypeChanceDict)
+                        {
+                            if (buildingSCD.Key == town_Phenotype)
+                            {
+                                int rand = Mathf.RoundToInt(Random.Range(0, 11));
+                                if (buildingSCD.Value < rand)
+                                {
+                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                }
+                                else
+                                {
+                                    i--;
+                                }
+                            }
+                        }
+                    }
                 }
-            case Any_Town_Phenotype.Fertile_Island:
+            }
+        }
+        if (BuildingQueue.Count < BuildingQueue.Count + t3Additions)
+        {
+            for (int i = 0; i < t3Additions; i++)
+            {
+                int randBldg = Mathf.RoundToInt(Random.Range(0, t3Bldg.Count));
+                foreach (Transform bldg in t3Bldg)
                 {
-                    break;
+                    if (bldg == t3Bldg[randBldg])
+                    {
+                        foreach (KeyValuePair<Any_Town_Phenotype, int> buildingSCD in bldg.GetComponent<BuildingSpawnChanceData>().phenotypeChanceDict)
+                        {
+                            if (buildingSCD.Key == town_Phenotype)
+                            {
+                                int rand = Mathf.RoundToInt(Random.Range(0, 11));
+                                if (buildingSCD.Value < rand)
+                                {
+                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                }
+                                else
+                                {
+                                    i--;
+                                }
+                            }
+                        }
+                    }
                 }
-            case Any_Town_Phenotype.Free_Port:
+            }
+        }
+        if (BuildingQueue.Count < BuildingQueue.Count + t4Additions)
+        {
+            for (int i = 0; i < t4Additions; i++)
+            {
+                int randBldg = Mathf.RoundToInt(Random.Range(0, t4Bldg.Count));
+                foreach (Transform bldg in t4Bldg)
                 {
-                    break;
+                    if (bldg == t4Bldg[randBldg])
+                    {
+                        foreach (KeyValuePair<Any_Town_Phenotype, int> buildingSCD in bldg.GetComponent<BuildingSpawnChanceData>().phenotypeChanceDict)
+                        {
+                            if (buildingSCD.Key == town_Phenotype)
+                            {
+                                int rand = Mathf.RoundToInt(Random.Range(0, 11));
+                                if (buildingSCD.Value < rand)
+                                {
+                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                }
+                                else
+                                {
+                                    i--;
+                                }
+                            }
+                        }
+                    }
                 }
-            case Any_Town_Phenotype.Fishing_Village:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Lighthouse_Keep:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Industrial_Town:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Mining_Colony:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Mercantile_Trade_Port:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Ship_Builders_Collective:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Stronghold:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Sailors_Respite:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Swamp_Town:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Penal_Colony:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Ranchland:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Wood_Shrouded:
-                {
-                    break;
-                }
-            case Any_Town_Phenotype.Native_Island:
-                {
-                    break;
-                }
-        }*/
+            }
+        }
         #endregion
+        yield return null;
     }
 
-    private IEnumerator SetBuildingQueueForTier()
+    //With each building added, check the housing deficit. 
+    //If the available resident slots are below worker slots, add a house
+    //If the total resident slots exceeds the needed housing, mark house for demolition
+    private void AppendHousing()
     {
-        yield return null;
+        
+    }
+
+    //This needs to check physical space on the island.
+    //If the total footprint will exceed the size, mark a structure for demolition
+    //Priority -> duplicates, then higher SCD structures
+    private void MarkDemolitionOrders()
+    {
+
     }
 
     public void SetSpecialConstruction(int internalTier)
@@ -252,5 +339,11 @@ public class FutureTownPlanner : MonoBehaviour
                 }
             }
         }
+    }
+
+    //Places down the first structure, allowing the construction of a roadmap from it
+    public void SetInitialStructure()
+    {
+
     }
 }
