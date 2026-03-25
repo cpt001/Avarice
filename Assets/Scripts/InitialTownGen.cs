@@ -35,7 +35,8 @@ public class InitialTownGen : MonoBehaviour
     public IslandMaster islandMaster;// => GameObject.FindWithTag("IslandMaster").GetComponent<IslandMaster>();
     public Any_Town_Phenotype townType;
 
-    private int setTownTier;        //Sets the town's possible generation tier.
+    private int setMaxTownTier;        //Sets the town's possible generation tier.
+    private int setTownStarterTier;
     private float townAge;          //Sets a town's age, for historical purposes
 
     private FutureTownPlanner associatedTownPlanner => GetComponent<FutureTownPlanner>();
@@ -67,8 +68,8 @@ public class InitialTownGen : MonoBehaviour
             else
             {
                 townType = islandMaster.townsOnIsland[0].townType;
+                transform.parent = islandMaster.townsOnIsland[0].transform;
                 gameObject.SetActive(false);    //Just for now during diagnostics
-                //transform.parent = islandMaster.townsOnIsland[0].transform;
                 //Future town planner needs to account for multiple town locations
             }
         }
@@ -77,14 +78,19 @@ public class InitialTownGen : MonoBehaviour
             SetTownFromPhenotype();
         }
         #endregion
+        //Determine the town's initial generation tier
+        setTownStarterTier = Mathf.RoundToInt(Random.Range(0, setMaxTownTier));
+
+
         //Set town age based on tier
-        if (setTownTier == 0) { townAge = Random.Range(2, 30); }
-        else if (setTownTier == 1) { townAge = Random.Range(10, 70); }
-        else if (setTownTier == 2) { townAge = Random.Range(30, 60); }
-        else if (setTownTier == 3) { townAge = Random.Range(60, 120); }
-        else if (setTownTier == 4) { townAge = Random.Range(90, 170); }
-        else if (setTownTier == 5) { townAge = Random.Range(140, 220); }
-        
+        if (setMaxTownTier == 0) { townAge = Random.Range(2, 30); }
+        else if (setMaxTownTier == 1) { townAge = Random.Range(10, 70); }
+        else if (setMaxTownTier == 2) { townAge = Random.Range(30, 60); }
+        else if (setMaxTownTier == 3) { townAge = Random.Range(60, 120); }
+        else if (setMaxTownTier == 4) { townAge = Random.Range(90, 170); }
+        else if (setMaxTownTier == 5) { townAge = Random.Range(140, 220); }
+
+
         yield return new WaitForSeconds(1);
         //Access town planner script
         StartTownPlanning();
@@ -97,13 +103,14 @@ public class InitialTownGen : MonoBehaviour
         yield return null;
     }
 
+    //Sets town details, max tier, phenotype, and the type of village that can exist within
     void SetTownFromPhenotype()
     {
         switch (islandMaster.islandBiome)
         {
             case IslandMaster.IslandBiome.Desert:
                 {
-                    setTownTier = Mathf.RoundToInt(Random.Range(0, 4));
+                    setMaxTownTier = Mathf.RoundToInt(Random.Range(0, 4));
                     var desertPhenotype = (DesertPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(Any_Town_Phenotype)).Length);
                     //Above sets from limited enum, and below sets to universal enum (Selection: CS, FP, FV, NI)
                     switch (desertPhenotype)
@@ -117,7 +124,7 @@ public class InitialTownGen : MonoBehaviour
                 }
             case IslandMaster.IslandBiome.Swamp:
                 {
-                    setTownTier = Mathf.RoundToInt(Random.Range(0, 4));
+                    setMaxTownTier = Mathf.RoundToInt(Random.Range(0, 4));
                     var swampPhenotype = (SwampPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(SwampPhenotypes)).Length);
                     //CS, FP, LK, St, ST, WS, NI
                     switch (swampPhenotype)
@@ -134,7 +141,7 @@ public class InitialTownGen : MonoBehaviour
                 }
             case IslandMaster.IslandBiome.Jungle:
                 {
-                    setTownTier = Mathf.RoundToInt(Random.Range(0, 5));
+                    setMaxTownTier = Mathf.RoundToInt(Random.Range(0, 5));
                     var junglePhenotype = (JunglePhenotypes)Random.Range(0, System.Enum.GetValues(typeof(JunglePhenotypes)).Length);
                     //CS, FI, FP, FV, LK, IT, MTP, SBC, St, SR, RL, WS, NI
                     switch (junglePhenotype)
@@ -157,7 +164,7 @@ public class InitialTownGen : MonoBehaviour
                 }
             case IslandMaster.IslandBiome.DormantVolcano:
                 {
-                    setTownTier = Mathf.RoundToInt(Random.Range(0, 5));
+                    setMaxTownTier = Mathf.RoundToInt(Random.Range(0, 5));
                     var dormantVolcanoPhenotypes = (DormantVolcanoPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(DormantVolcanoPhenotypes)).Length);
                     //CS, FI, FP, IT, MC, MTP, SBC, St, SR, RL, WS, NI
                     switch (dormantVolcanoPhenotypes)
@@ -179,7 +186,7 @@ public class InitialTownGen : MonoBehaviour
                 }
             case IslandMaster.IslandBiome.ActiveVolcano:
                 {
-                    setTownTier = Mathf.RoundToInt(Random.Range(0, 4));
+                    setMaxTownTier = Mathf.RoundToInt(Random.Range(0, 4));
                     var activeVolcanoPhenotypes = (ActiveVolcanoPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(ActiveVolcanoPhenotypes)).Length);
                     //CS, FP, FV, LK, IT, MC, St, PC, NI
                     switch (activeVolcanoPhenotypes)
@@ -198,7 +205,7 @@ public class InitialTownGen : MonoBehaviour
                 }
             case IslandMaster.IslandBiome.Tundra:
                 {
-                    setTownTier = Mathf.RoundToInt(Random.Range(0, 3));
+                    setMaxTownTier = Mathf.RoundToInt(Random.Range(0, 3));
                     var tundraPhenotypes = (TundraPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(TundraPhenotypes)).Length);
                     //FP, FV, LK, MTP, St, SR, PC, NI
                     switch (tundraPhenotypes)
@@ -216,7 +223,7 @@ public class InitialTownGen : MonoBehaviour
                 }
             case IslandMaster.IslandBiome.Ethereal:
                 {
-                    setTownTier = Mathf.RoundToInt(Random.Range(0, 5));
+                    setMaxTownTier = Mathf.RoundToInt(Random.Range(0, 5));
                     var etherealPhenotypes = (EtherealPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(EtherealPhenotypes)).Length);
                     //CS, FP, FV, MC, LK, MTP, St, PC, WS, NI
                     switch (etherealPhenotypes)
@@ -236,7 +243,7 @@ public class InitialTownGen : MonoBehaviour
                 }
             case IslandMaster.IslandBiome.Deadlands:    //Town will generate dead
                 {
-                    setTownTier = Mathf.RoundToInt(Random.Range(0, 5));
+                    setMaxTownTier = Mathf.RoundToInt(Random.Range(0, 5));
                     var deadlandsPhenotypes = (DeadlandsPhenotypes)Random.Range(0, System.Enum.GetValues(typeof(DeadlandsPhenotypes)).Length);
                     //FP, FV, LK, MC, MTP, SBC, St, PC, RL, WS, NI
                     switch (deadlandsPhenotypes)
@@ -261,12 +268,14 @@ public class InitialTownGen : MonoBehaviour
     void StartTownPlanning()
     {
         associatedTownPlanner.GetPossibleStructures(townType);
-        //Debug.Log("Town setup should have triggered with town tier " + setTownTier);
-        for (int i = 0; i < setTownTier; i++)
+        associatedTownPlanner.SetInitialStructure(setMaxTownTier);
+        for (int i = 0; i < setMaxTownTier; i++)
         {
             //Debug.Log("Town setup triggered");
             associatedTownPlanner.SetTownConstructionOrder(i, townType);
             associatedTownPlanner.SetSpecialConstruction(i);
         }
+        //associatedTownPlanner.SetDemolitionOrders();      ---Just not needed right now, needs review of further function in game
+        associatedTownPlanner.GenerateInitialTown(setTownStarterTier);
     }
 }

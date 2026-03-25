@@ -84,6 +84,8 @@ public class Building : ScriptableObject
     [Header("Ownership Details")]
     [SerializeField] private int baseTaxRate;
     [SerializeField] private string[] REPLACE_masterShopInventory;
+    public int residentMax;
+    public int workerMax;
 
     [Header("Construction Materials")]
     [SerializeField] private int bricksRequired;

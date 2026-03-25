@@ -24,7 +24,10 @@ public class FutureTownPlanner : MonoBehaviour
     [SerializeField] private List<Transform> t3Bldg = new List<Transform>();
     [SerializeField] private List<Transform> t4Bldg = new List<Transform>();
     [SerializeField] private List<Transform> t5Bldg = new List<Transform>();
-    [SerializeField] private List<Town_Building> BuildingQueue = new List<Town_Building>();
+    [SerializeField] private List<Town_Building> masterBuildingQueue = new List<Town_Building>();
+    [SerializeField] private List<Town_Building> starterGenerationQueue = new List<Town_Building>();
+    [SerializeField] private int numberOfResidents;
+    [SerializeField] private int numberOfWorkers;
 
     //This sorts through all structures to get their probabilities
     public void GetPossibleStructures(Any_Town_Phenotype town_Phenotype)
@@ -39,8 +42,6 @@ public class FutureTownPlanner : MonoBehaviour
                 {
                    if (town_Phenotype == kvp.Key)
                    {
-                        //This needs to be changed to generate per building instance, rather than the overall whitelist
-                        //Remove the buildings that have 0 as the kvp value, then check each new structure for that chance, and move on to next in list if chance fails
                         if (kvp.Value != 0)
                         {
                             buildingWhitelist.Add(bldg.transform);
@@ -94,13 +95,11 @@ public class FutureTownPlanner : MonoBehaviour
         StartCoroutine(SetBuildingQueueForTier(internalTier, town_Phenotype));
         
 
-        //->> might need to change generation to account for town slots instead of randomly picking a tier
+        //->> might need to change generation to account for town slots on island instead of randomly picking a tier
         //->> that may also allow for higher building caps?
         //->> may be smart to simply split buildings between tiers instead
         //->> fishing huts need to be built near ocean
         //-->> find nearest beach point, drop dock and fishing huts on that
-        //Add housing to fill in resident cap per tier, order these in before building that requires it
-        //-Foreach loop through buildings in tier, and add necessary housing
         //Add demolition/move building orders if necessary
         //Set and limit number of models to generate for simulated growth
     }
@@ -116,10 +115,10 @@ public class FutureTownPlanner : MonoBehaviour
         switch (internalTier)
         {
             case 0: { buildingCount = Mathf.RoundToInt(Random.Range(5, 9)); break; }
-            case 1: { buildingCount += Mathf.RoundToInt(Random.Range(4, 6)); t0Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
-            case 2: { buildingCount += Mathf.RoundToInt(Random.Range(6, 10)); t1Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
-            case 3: { buildingCount += Mathf.RoundToInt(Random.Range(3, 7)); t2Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
-            case 4: { buildingCount += Mathf.RoundToInt(Random.Range(4, 8)); t3Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
+            case 1: { buildingCount += Mathf.RoundToInt(Random.Range(4, 6)); t0Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
+            case 2: { buildingCount += Mathf.RoundToInt(Random.Range(6, 10)); t1Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
+            case 3: { buildingCount += Mathf.RoundToInt(Random.Range(3, 7)); t2Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
+            case 4: { buildingCount += Mathf.RoundToInt(Random.Range(4, 8)); t3Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
             case 5: { buildingCount += 1; t4Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
         }
 
@@ -135,9 +134,9 @@ public class FutureTownPlanner : MonoBehaviour
         }
 
         //Randomly selects and adds buildings up to the building count
-        if (BuildingQueue.Count < buildingCount)
+        if (masterBuildingQueue.Count < buildingCount)
         {
-            //Debug.Log("began queueing");
+            int tryCount = 0;   //This is to attempt to create more unique structures
             for (int i = 0; i < buildingCount; i++)
             {
                 int buildingRandomizer = Mathf.RoundToInt(Random.Range(0, buildingsInTier.Count));
@@ -145,21 +144,45 @@ public class FutureTownPlanner : MonoBehaviour
                 {
                     if (bldg == buildingsInTier[buildingRandomizer])
                     {
-                        foreach (KeyValuePair<Any_Town_Phenotype, int> buildingSCD in bldg.GetComponent<BuildingSpawnChanceData>().phenotypeChanceDict)
+                        if (!masterBuildingQueue.Contains(bldg.GetComponent<Town_Building>()) || masterBuildingQueue.Contains(bldg.GetComponent<Town_Building>()) && tryCount != 0)
                         {
-                            if (buildingSCD.Key == town_Phenotype)
+                            foreach (KeyValuePair<Any_Town_Phenotype, int> buildingSCD in bldg.GetComponent<BuildingSpawnChanceData>().phenotypeChanceDict)
                             {
-                                //roll value against rand 0-11
-                                int rand = Mathf.RoundToInt(Random.Range(0, 11));
-                                if (buildingSCD.Value < rand)
+                                if (buildingSCD.Key == town_Phenotype)
                                 {
-                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
-                                }
-                                else
-                                {
-                                    i--;
+                                    //roll value against rand 0-11
+                                    int rand = Mathf.RoundToInt(Random.Range(0, 11));
+                                    if (buildingSCD.Value < rand)
+                                    {
+                                        Town_Building targetBldg = bldg.GetComponent<Town_Building>();
+                                        //Added for loop related to building resident count, to balance #houses vs residents
+                                        if (targetBldg.buildingData.residentMax < targetBldg.buildingData.workerMax)
+                                        {
+                                            int adjustment = Mathf.RoundToInt((targetBldg.buildingData.workerMax - targetBldg.buildingData.residentMax) / 2);
+                                            for (int n = 0; n > adjustment; n++)
+                                            {
+                                                AppendHousing();
+                                            }
+                                            if (adjustment == 0)
+                                            {
+                                                AppendHousing();
+                                            }
+                                        }
+                                        masterBuildingQueue.Add(targetBldg);
+                                        tryCount = 0;
+                                    }
+                                    else
+                                    {
+                                        i--;
+                                    }
                                 }
                             }
+                        }
+                        else
+                        {
+                            //Debug.Log("Reroll triggered");
+                            tryCount++;
+                            i--;
                         }
                     }
                 }
@@ -167,7 +190,7 @@ public class FutureTownPlanner : MonoBehaviour
         }
 
         #region Retroactive addition after town tier up
-        if (BuildingQueue.Count < BuildingQueue.Count + t0Additions)
+        if (masterBuildingQueue.Count < masterBuildingQueue.Count + t0Additions)
         {
             for (int i = 0; i < t0Additions; i++)
             {
@@ -180,10 +203,25 @@ public class FutureTownPlanner : MonoBehaviour
                         {
                             if (buildingSCD.Key == town_Phenotype)
                             {
+                                //roll value against rand 0-11
                                 int rand = Mathf.RoundToInt(Random.Range(0, 11));
                                 if (buildingSCD.Value < rand)
                                 {
-                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                    Town_Building targetBldg = bldg.GetComponent<Town_Building>();
+                                    //Added for loop related to building resident count, to balance #houses vs residents
+                                    if (targetBldg.buildingData.residentMax < targetBldg.buildingData.workerMax)
+                                    {
+                                        int adjustment = Mathf.RoundToInt((targetBldg.buildingData.workerMax - targetBldg.buildingData.residentMax) / 2);
+                                        for (int n = 0; n > adjustment; n++)
+                                        {
+                                            AppendHousing();
+                                        }
+                                        if (adjustment == 0)
+                                        {
+                                            AppendHousing();
+                                        }
+                                    }
+                                    masterBuildingQueue.Add(targetBldg);
                                 }
                                 else
                                 {
@@ -195,7 +233,7 @@ public class FutureTownPlanner : MonoBehaviour
                 }
             }
         }
-        if (BuildingQueue.Count < BuildingQueue.Count + t1Additions)
+        if (masterBuildingQueue.Count < masterBuildingQueue.Count + t1Additions)
         {
             for (int i = 0; i < t1Additions; i++)
             {
@@ -208,10 +246,25 @@ public class FutureTownPlanner : MonoBehaviour
                         {
                             if (buildingSCD.Key == town_Phenotype)
                             {
+                                //roll value against rand 0-11
                                 int rand = Mathf.RoundToInt(Random.Range(0, 11));
                                 if (buildingSCD.Value < rand)
                                 {
-                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                    Town_Building targetBldg = bldg.GetComponent<Town_Building>();
+                                    //Added for loop related to building resident count, to balance #houses vs residents
+                                    if (targetBldg.buildingData.residentMax < targetBldg.buildingData.workerMax)
+                                    {
+                                        int adjustment = Mathf.RoundToInt((targetBldg.buildingData.workerMax - targetBldg.buildingData.residentMax) / 2);
+                                        for (int n = 0; n > adjustment; n++)
+                                        {
+                                            AppendHousing();
+                                        }
+                                        if (adjustment == 0)
+                                        {
+                                            AppendHousing();
+                                        }
+                                    }
+                                    masterBuildingQueue.Add(targetBldg);
                                 }
                                 else
                                 {
@@ -223,7 +276,7 @@ public class FutureTownPlanner : MonoBehaviour
                 }
             }
         }
-        if (BuildingQueue.Count < BuildingQueue.Count + t2Additions)
+        if (masterBuildingQueue.Count < masterBuildingQueue.Count + t2Additions)
         {
             for (int i = 0; i < t2Additions; i++)
             {
@@ -236,10 +289,25 @@ public class FutureTownPlanner : MonoBehaviour
                         {
                             if (buildingSCD.Key == town_Phenotype)
                             {
+                                //roll value against rand 0-11
                                 int rand = Mathf.RoundToInt(Random.Range(0, 11));
                                 if (buildingSCD.Value < rand)
                                 {
-                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                    Town_Building targetBldg = bldg.GetComponent<Town_Building>();
+                                    //Added for loop related to building resident count, to balance #houses vs residents
+                                    if (targetBldg.buildingData.residentMax < targetBldg.buildingData.workerMax)
+                                    {
+                                        int adjustment = Mathf.RoundToInt((targetBldg.buildingData.workerMax - targetBldg.buildingData.residentMax) / 2);
+                                        for (int n = 0; n > adjustment; n++)
+                                        {
+                                            AppendHousing();
+                                        }
+                                        if (adjustment == 0)
+                                        {
+                                            AppendHousing();
+                                        }
+                                    }
+                                    masterBuildingQueue.Add(targetBldg);
                                 }
                                 else
                                 {
@@ -251,7 +319,7 @@ public class FutureTownPlanner : MonoBehaviour
                 }
             }
         }
-        if (BuildingQueue.Count < BuildingQueue.Count + t3Additions)
+        if (masterBuildingQueue.Count < masterBuildingQueue.Count + t3Additions)
         {
             for (int i = 0; i < t3Additions; i++)
             {
@@ -264,10 +332,25 @@ public class FutureTownPlanner : MonoBehaviour
                         {
                             if (buildingSCD.Key == town_Phenotype)
                             {
+                                //roll value against rand 0-11
                                 int rand = Mathf.RoundToInt(Random.Range(0, 11));
                                 if (buildingSCD.Value < rand)
                                 {
-                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                    Town_Building targetBldg = bldg.GetComponent<Town_Building>();
+                                    //Added for loop related to building resident count, to balance #houses vs residents
+                                    if (targetBldg.buildingData.residentMax < targetBldg.buildingData.workerMax)
+                                    {
+                                        int adjustment = Mathf.RoundToInt((targetBldg.buildingData.workerMax - targetBldg.buildingData.residentMax) / 2);
+                                        for (int n = 0; n > adjustment; n++)
+                                        {
+                                            AppendHousing();
+                                        }
+                                        if (adjustment == 0)
+                                        {
+                                            AppendHousing();
+                                        }
+                                    }
+                                    masterBuildingQueue.Add(targetBldg);
                                 }
                                 else
                                 {
@@ -279,7 +362,7 @@ public class FutureTownPlanner : MonoBehaviour
                 }
             }
         }
-        if (BuildingQueue.Count < BuildingQueue.Count + t4Additions)
+        if (masterBuildingQueue.Count < masterBuildingQueue.Count + t4Additions)
         {
             for (int i = 0; i < t4Additions; i++)
             {
@@ -292,10 +375,25 @@ public class FutureTownPlanner : MonoBehaviour
                         {
                             if (buildingSCD.Key == town_Phenotype)
                             {
+                                //roll value against rand 0-11
                                 int rand = Mathf.RoundToInt(Random.Range(0, 11));
                                 if (buildingSCD.Value < rand)
                                 {
-                                    BuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                                    Town_Building targetBldg = bldg.GetComponent<Town_Building>();
+                                    //Added for loop related to building resident count, to balance #houses vs residents
+                                    if (targetBldg.buildingData.residentMax < targetBldg.buildingData.workerMax)
+                                    {
+                                        int adjustment = Mathf.RoundToInt((targetBldg.buildingData.workerMax - targetBldg.buildingData.residentMax) / 2);
+                                        for (int n = 0; n > adjustment; n++)
+                                        {
+                                            AppendHousing();
+                                        }
+                                        if (adjustment == 0)
+                                        {
+                                            AppendHousing();
+                                        }
+                                    }
+                                    masterBuildingQueue.Add(targetBldg);
                                 }
                                 else
                                 {
@@ -316,14 +414,27 @@ public class FutureTownPlanner : MonoBehaviour
     //If the total resident slots exceeds the needed housing, mark house for demolition
     private void AppendHousing()
     {
-        
+        Transform houseObject = buildingWhitelist.Find(tran => tran.name == "House");
+        masterBuildingQueue.Add(houseObject.GetComponent<Town_Building>());
+        numberOfResidents += houseObject.GetComponent<Town_Building>().buildingData.residentMax;
     }
 
     //This needs to check physical space on the island.
     //If the total footprint will exceed the size, mark a structure for demolition
-    //Priority -> duplicates, then higher SCD structures
-    private void MarkDemolitionOrders()
+    //Priority -> extra houses, duplicates, then higher SCD structures
+    public void SetDemolitionOrders()
     {
+        numberOfResidents = 0;
+        numberOfWorkers = 0;
+        foreach (Town_Building bldg in masterBuildingQueue)
+        {
+            numberOfResidents += bldg.buildingData.residentMax;
+            numberOfWorkers += bldg.buildingData.workerMax;
+        }
+        if (numberOfResidents > numberOfWorkers)
+        {
+
+        }
 
     }
 
@@ -335,15 +446,63 @@ public class FutureTownPlanner : MonoBehaviour
             {
                 if (bldg.GetComponent<Town_Building>().BuildingTier == internalTier)
                 {
-
+                    if (!masterBuildingQueue.Contains(bldg.GetComponent<Town_Building>()))
+                    {
+                        masterBuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                    }
                 }
             }
         }
     }
 
     //Places down the first structure, allowing the construction of a roadmap from it
-    public void SetInitialStructure()
+    //Choose based on max possible tier, then utilize one of the advancement structures
+    public void SetInitialStructure(int maxTier)
     {
+        List<Transform> starterPossibilities = new List<Transform>();
+        int rand = Mathf.RoundToInt(Random.Range(0, starterPossibilities.Count));
 
+        foreach (Transform bldg in buildingWhitelist)
+        {
+            if (bldg.GetComponent<Town_Building>().isSpecialStructure && bldg.GetComponent<Town_Building>().BuildingTier == maxTier)
+            {
+                starterPossibilities.Add(bldg);
+            }
+        }
+        if (starterPossibilities[rand] != null)
+        {
+            masterBuildingQueue.Add(starterPossibilities[rand].GetComponent<Town_Building>());
+        }
+        Debug.Log("Starter: " + starterPossibilities[rand]);
+    }
+
+    public void GenerateInitialTown(int StarterTier)
+    {
+        List<Town_Building> buildingsAtTier = new List<Town_Building>();
+        int numConstructions = Mathf.RoundToInt(Random.Range(0, 3));
+        foreach (Town_Building bldg in masterBuildingQueue)
+        {
+            if (bldg.BuildingTier < StarterTier)
+            {
+                //Bounce through master queue. Anything under starterTier is automatically built. Anything at ST is evaluated. Anything over is ignored
+                starterGenerationQueue.Add(bldg);
+
+            }
+            else if (bldg.BuildingTier == StarterTier)
+            {
+                //Generate with up to 3 under construction
+                buildingsAtTier.Add(bldg);
+            }
+        }
+        int numAlreadyEstablished = Mathf.RoundToInt(Random.Range(0, buildingsAtTier.Count));
+        for (int i = 0; i > numAlreadyEstablished; i++)
+        {
+            starterGenerationQueue.Add(buildingsAtTier[i]);
+        }
+        for (int j = 0; j > numConstructions; j++)
+        {
+            starterGenerationQueue[starterGenerationQueue.Count - j].isUnderConstruction = true;
+            Debug.Log("Construction: " + starterGenerationQueue[starterGenerationQueue.Count - j].isUnderConstruction);
+        }
     }
 }

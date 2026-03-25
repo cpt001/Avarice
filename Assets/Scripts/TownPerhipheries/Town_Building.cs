@@ -14,7 +14,7 @@ using UnityEngine;
 [RequireComponent(typeof(BuildingSpawnChanceData))]
 public class Town_Building : MonoBehaviour
 {
-    [SerializeField] private Building buildingData;
+    public Building buildingData;
     private BuildingSpawnChanceData spawnChanceData => GetComponent<BuildingSpawnChanceData>();
     [SerializeField] private GameObject buildingModel;
     private enum DamageState
@@ -29,5 +29,6 @@ public class Town_Building : MonoBehaviour
     [SerializeField] private DamageState damage;
     public int BuildingTier;
     public bool isSpecialStructure;
+    public bool isUnderConstruction;
 }
 //FTP accesses master list, and populates phenotypes with matching tags
