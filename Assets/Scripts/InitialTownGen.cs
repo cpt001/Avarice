@@ -276,6 +276,7 @@ public class InitialTownGen : MonoBehaviour
             associatedTownPlanner.SetSpecialConstruction(i);
         }
         //associatedTownPlanner.SetDemolitionOrders();      ---Just not needed right now, needs review of further function in game
-        associatedTownPlanner.GenerateInitialTown(setTownStarterTier);
+        associatedTownPlanner.GenerateInitialTown(setTownStarterTier, setMaxTownTier);
+        transform.name = "DebugTown " + islandMaster.islandBiome.ToString() + " | " + townType.ToString() + " | MT: " + setMaxTownTier + " | ST" + setTownStarterTier;
     }
 }

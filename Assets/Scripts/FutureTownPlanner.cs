@@ -26,6 +26,7 @@ public class FutureTownPlanner : MonoBehaviour
     [SerializeField] private List<Transform> t5Bldg = new List<Transform>();
     [SerializeField] private List<Town_Building> masterBuildingQueue = new List<Town_Building>();
     [SerializeField] private List<Town_Building> starterGenerationQueue = new List<Town_Building>();
+    [SerializeField] private List<Town_Building> constructionOrders = new List<Town_Building>();
     [SerializeField] private int numberOfResidents;
     [SerializeField] private int numberOfWorkers;
 
@@ -114,7 +115,7 @@ public class FutureTownPlanner : MonoBehaviour
         int t4Additions = 0;
         switch (internalTier)
         {
-            case 0: { buildingCount = Mathf.RoundToInt(Random.Range(5, 9)); break; }
+            case 0: { buildingCount = Mathf.RoundToInt(Random.Range(5, 9));  break; }
             case 1: { buildingCount += Mathf.RoundToInt(Random.Range(4, 6)); t0Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
             case 2: { buildingCount += Mathf.RoundToInt(Random.Range(6, 10)); t1Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
             case 3: { buildingCount += Mathf.RoundToInt(Random.Range(3, 7)); t2Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
@@ -459,7 +460,8 @@ public class FutureTownPlanner : MonoBehaviour
     //Choose based on max possible tier, then utilize one of the advancement structures
     public void SetInitialStructure(int maxTier)
     {
-        List<Transform> starterPossibilities = new List<Transform>();
+        #region Choose random structure from advancement tiers [DEFUNCT]
+        /*List<Transform> starterPossibilities = new List<Transform>();
         int rand = Mathf.RoundToInt(Random.Range(0, starterPossibilities.Count));
 
         foreach (Transform bldg in buildingWhitelist)
@@ -474,16 +476,95 @@ public class FutureTownPlanner : MonoBehaviour
             masterBuildingQueue.Add(starterPossibilities[rand].GetComponent<Town_Building>());
         }
         Debug.Log("Starter: " + starterPossibilities[rand]);
+        */
+        #endregion
+
+        //Randomly decides between church and town square as origin
+        int rand = Mathf.RoundToInt(Random.Range(0, 10));
+        foreach (Transform bldg in buildingWhitelist)
+        {
+            if (rand <= 7)
+            {
+                if (bldg.name == "Town Square")
+                {
+                    masterBuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                    starterGenerationQueue.Add(bldg.GetComponent<Town_Building>());
+                }
+            }
+            else
+            {
+                if (bldg.name == "Church")
+                {
+                    masterBuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                    starterGenerationQueue.Add(bldg.GetComponent<Town_Building>());
+                    break;
+                }
+                else
+                {
+                    if (bldg.name == "Town Square")
+                    {
+                        masterBuildingQueue.Add(bldg.GetComponent<Town_Building>());
+                    }
+                }
+            }
+        }
     }
 
-    public void GenerateInitialTown(int StarterTier)
+    public void GenerateInitialTown(int StarterTier, int maxTier)
     {
         List<Town_Building> buildingsAtTier = new List<Town_Building>();
-        int numConstructions = Mathf.RoundToInt(Random.Range(0, 3));
+
+        if (StarterTier != 0)
+        {
+
+        }
+        else
+        {
+            Debug.Log("Starter T0");
+            foreach (Town_Building bldg in masterBuildingQueue)
+            {
+                if (bldg.BuildingTier == 0)
+                {
+                    buildingsAtTier.Add(bldg);
+                }
+                constructionOrders.Add(bldg);
+            }
+            int builtCount = Mathf.RoundToInt(Random.Range(2, buildingsAtTier.Count));
+            for (int i = 0; i < builtCount; i++)
+            {
+                if (buildingsAtTier[i] != null)
+                {
+                    starterGenerationQueue.Add(buildingsAtTier[i]);
+                    constructionOrders.Remove(buildingsAtTier[i]);
+                }
+                else
+                {
+                    Debug.Log("BAT " + i + " is invalid, check GO, MBQ may be blank");
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+        /*if (StarterTier != 0)
+        {
+            numConstructions = Mathf.RoundToInt(Random.Range(0, 3));
+        }
+        else
+        {
+            numConstructions = Mathf.RoundToInt(Random.Range(2, 5));
+        }
         foreach (Town_Building bldg in masterBuildingQueue)
         {
             if (bldg.BuildingTier < StarterTier)
             {
+                Debug.Log(bldg + " added to starterqueue");
                 //Bounce through master queue. Anything under starterTier is automatically built. Anything at ST is evaluated. Anything over is ignored
                 starterGenerationQueue.Add(bldg);
 
@@ -494,15 +575,18 @@ public class FutureTownPlanner : MonoBehaviour
                 buildingsAtTier.Add(bldg);
             }
         }
+
         int numAlreadyEstablished = Mathf.RoundToInt(Random.Range(0, buildingsAtTier.Count));
+
         for (int i = 0; i > numAlreadyEstablished; i++)
         {
+            Debug.Log(buildingsAtTier[i] + " added to starterqueue");
             starterGenerationQueue.Add(buildingsAtTier[i]);
         }
         for (int j = 0; j > numConstructions; j++)
         {
             starterGenerationQueue[starterGenerationQueue.Count - j].isUnderConstruction = true;
             Debug.Log("Construction: " + starterGenerationQueue[starterGenerationQueue.Count - j].isUnderConstruction);
-        }
+        }*/
     }
 }
