@@ -91,9 +91,9 @@ public class InitialTownGen : MonoBehaviour
         else if (setMaxTownTier == 5) { townAge = Random.Range(140, 220); }
 
 
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(0.3f);
         //Access town planner script
-        StartTownPlanning();
+        StartCoroutine(StartTownPlanning());
         //Allegiance model
         //Economy model
         //Populate
@@ -265,18 +265,28 @@ public class InitialTownGen : MonoBehaviour
         }
         townType = (Any_Town_Phenotype)Random.Range(0, System.Enum.GetValues(typeof(Any_Town_Phenotype)).Length);
     }
-    void StartTownPlanning()
+    private IEnumerator StartTownPlanning()
     {
         associatedTownPlanner.GetPossibleStructures(townType);
         associatedTownPlanner.SetInitialStructure(setMaxTownTier);
-        for (int i = 0; i < setMaxTownTier; i++)
+        if (setMaxTownTier == 0)
         {
-            //Debug.Log("Town setup triggered");
-            associatedTownPlanner.SetTownConstructionOrder(i, townType);
-            associatedTownPlanner.SetSpecialConstruction(i);
+            int i = 0;
+            associatedTownPlanner.SetTownConstructionOrder(i, townType, setMaxTownTier);
+        }
+        else
+        {
+            for (int i = 0; i < setMaxTownTier; i++)
+            {
+                //Debug.Log("Town setup triggered");
+                associatedTownPlanner.SetTownConstructionOrder(i, townType, setMaxTownTier);
+                associatedTownPlanner.SetSpecialConstruction(i);
+            }
         }
         //associatedTownPlanner.SetDemolitionOrders();      ---Just not needed right now, needs review of further function in game
+        yield return new WaitForSeconds(1);
         associatedTownPlanner.GenerateInitialTown(setTownStarterTier, setMaxTownTier);
         transform.name = "DebugTown " + islandMaster.islandBiome.ToString() + " | " + townType.ToString() + " | MT: " + setMaxTownTier + " | ST" + setTownStarterTier;
+        yield return null;
     }
 }

@@ -26,6 +26,7 @@ public class FutureTownPlanner : MonoBehaviour
     [SerializeField] private List<Transform> t5Bldg = new List<Transform>();
     [SerializeField] private List<Town_Building> masterBuildingQueue = new List<Town_Building>();
     [SerializeField] private List<Town_Building> starterGenerationQueue = new List<Town_Building>();
+    [SerializeField] private List<Transform> buildingsInTier = new List<Transform>();
     [SerializeField] private List<Town_Building> constructionOrders = new List<Town_Building>();
     [SerializeField] private int numberOfResidents;
     [SerializeField] private int numberOfWorkers;
@@ -91,9 +92,9 @@ public class FutureTownPlanner : MonoBehaviour
         }
     }
 
-    public void SetTownConstructionOrder(int internalTier, Any_Town_Phenotype town_Phenotype)
+    public void SetTownConstructionOrder(int internalTier, Any_Town_Phenotype town_Phenotype, int maxTier)
     {
-        StartCoroutine(SetBuildingQueueForTier(internalTier, town_Phenotype));
+        StartCoroutine(SetBuildingQueueForTier(internalTier, town_Phenotype, maxTier));
         
 
         //->> might need to change generation to account for town slots on island instead of randomly picking a tier
@@ -105,7 +106,7 @@ public class FutureTownPlanner : MonoBehaviour
         //Set and limit number of models to generate for simulated growth
     }
 
-    private IEnumerator SetBuildingQueueForTier(int internalTier, Any_Town_Phenotype town_Phenotype)
+    private IEnumerator SetBuildingQueueForTier(int internalTier, Any_Town_Phenotype town_Phenotype, int maxTier)
     {
         int buildingCount = 0;
         int t0Additions = 0;
@@ -115,7 +116,7 @@ public class FutureTownPlanner : MonoBehaviour
         int t4Additions = 0;
         switch (internalTier)
         {
-            case 0: { buildingCount = Mathf.RoundToInt(Random.Range(5, 9));  break; }
+            case 0: { buildingCount = Mathf.RoundToInt(Random.Range(5, 9)); break; }
             case 1: { buildingCount += Mathf.RoundToInt(Random.Range(4, 6)); t0Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
             case 2: { buildingCount += Mathf.RoundToInt(Random.Range(6, 10)); t1Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
             case 3: { buildingCount += Mathf.RoundToInt(Random.Range(3, 7)); t2Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
@@ -124,8 +125,10 @@ public class FutureTownPlanner : MonoBehaviour
         }
 
         //Adds structures from selected tier
-        List<Transform> buildingsInTier = new List<Transform>();
-        buildingsInTier.Clear();
+        if (internalTier != 0)
+        {
+            buildingsInTier.Clear();
+        }
         foreach (Transform bldg in buildingWhitelist)
         {
             if (bldg.GetComponent<Town_Building>().BuildingTier == internalTier && !bldg.GetComponent<Town_Building>().isSpecialStructure)
@@ -133,7 +136,6 @@ public class FutureTownPlanner : MonoBehaviour
                 buildingsInTier.Add(bldg);
             }
         }
-
         //Randomly selects and adds buildings up to the building count
         if (masterBuildingQueue.Count < buildingCount)
         {
@@ -149,8 +151,11 @@ public class FutureTownPlanner : MonoBehaviour
                         {
                             foreach (KeyValuePair<Any_Town_Phenotype, int> buildingSCD in bldg.GetComponent<BuildingSpawnChanceData>().phenotypeChanceDict)
                             {
+
                                 if (buildingSCD.Key == town_Phenotype)
                                 {
+
+
                                     //roll value against rand 0-11
                                     int rand = Mathf.RoundToInt(Random.Range(0, 11));
                                     if (buildingSCD.Value < rand)
@@ -174,7 +179,10 @@ public class FutureTownPlanner : MonoBehaviour
                                     }
                                     else
                                     {
-                                        i--;
+                                        if (i != 0)
+                                        {
+                                            i--;
+                                        }
                                     }
                                 }
                             }
@@ -513,14 +521,12 @@ public class FutureTownPlanner : MonoBehaviour
     public void GenerateInitialTown(int StarterTier, int maxTier)
     {
         List<Town_Building> buildingsAtTier = new List<Town_Building>();
-
         if (StarterTier != 0)
         {
 
         }
         else
         {
-            Debug.Log("Starter T0");
             foreach (Town_Building bldg in masterBuildingQueue)
             {
                 if (bldg.BuildingTier == 0)
@@ -534,6 +540,7 @@ public class FutureTownPlanner : MonoBehaviour
             {
                 if (buildingsAtTier[i] != null)
                 {
+                    //Max tier 0 is bugging this function
                     starterGenerationQueue.Add(buildingsAtTier[i]);
                     constructionOrders.Remove(buildingsAtTier[i]);
                 }
