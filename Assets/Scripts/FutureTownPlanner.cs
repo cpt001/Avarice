@@ -13,6 +13,16 @@ using System.Collections;
 /// Some structures are guaranteed spawns
 /// - Some are guaranteed based on phenotype
 /// 
+/// 
+/// 
+/// =->> might need to change generation to account for town slots on island instead of randomly picking a tier
+/// ->> that may also allow for higher building caps?
+/// ->> may be smart to simply split buildings between tiers instead
+/// ->> fishing huts need to be built near ocean
+/// -->> find nearest beach point, drop dock and fishing huts on that
+/// Add demolition/move building orders if necessary
+/// 
+/// Fort needs to reduce town max tier by 1
 /// </summary>
 public class FutureTownPlanner : MonoBehaviour
 {
@@ -26,7 +36,6 @@ public class FutureTownPlanner : MonoBehaviour
     [SerializeField] private List<Transform> t5Bldg = new List<Transform>();
     [SerializeField] private List<Town_Building> masterBuildingQueue = new List<Town_Building>();
     [SerializeField] private List<Town_Building> starterGenerationQueue = new List<Town_Building>();
-    [SerializeField] private List<Transform> buildingsInTier = new List<Transform>();
     [SerializeField] private List<Town_Building> constructionOrders = new List<Town_Building>();
     [SerializeField] private int numberOfResidents;
     [SerializeField] private int numberOfWorkers;
@@ -51,32 +60,32 @@ public class FutureTownPlanner : MonoBehaviour
                             {
                                 case 0:
                                     {
-                                        t0Bldg.Add(bldg);
+                                        if (!bldg.GetComponent<Town_Building>().isSpecialStructure) { t0Bldg.Add(bldg); }
                                         break;
                                     }
                                 case 1:
                                     {
-                                        t1Bldg.Add(bldg);
+                                        if (!bldg.GetComponent<Town_Building>().isSpecialStructure) { t1Bldg.Add(bldg); }
                                         break;
                                     }
                                 case 2:
                                     {
-                                        t2Bldg.Add(bldg);
+                                        if (!bldg.GetComponent<Town_Building>().isSpecialStructure) { t2Bldg.Add(bldg); }
                                         break;
                                     }
                                 case 3:
                                     {
-                                        t3Bldg.Add(bldg);
+                                        if (!bldg.GetComponent<Town_Building>().isSpecialStructure) { t3Bldg.Add(bldg); }
                                         break;
                                     }
                                 case 4:
                                     {
-                                        t4Bldg.Add(bldg);
+                                        if (!bldg.GetComponent<Town_Building>().isSpecialStructure) { t4Bldg.Add(bldg); }
                                         break;
                                     }
                                 case 5:
                                     {
-                                        t5Bldg.Add(bldg);
+                                        if (!bldg.GetComponent<Town_Building>().isSpecialStructure) { t5Bldg.Add(bldg); }
                                         break;
                                     }
                             }
@@ -95,15 +104,6 @@ public class FutureTownPlanner : MonoBehaviour
     public void SetTownConstructionOrder(int internalTier, Any_Town_Phenotype town_Phenotype, int maxTier)
     {
         StartCoroutine(SetBuildingQueueForTier(internalTier, town_Phenotype, maxTier));
-        
-
-        //->> might need to change generation to account for town slots on island instead of randomly picking a tier
-        //->> that may also allow for higher building caps?
-        //->> may be smart to simply split buildings between tiers instead
-        //->> fishing huts need to be built near ocean
-        //-->> find nearest beach point, drop dock and fishing huts on that
-        //Add demolition/move building orders if necessary
-        //Set and limit number of models to generate for simulated growth
     }
 
     private IEnumerator SetBuildingQueueForTier(int internalTier, Any_Town_Phenotype town_Phenotype, int maxTier)
@@ -123,12 +123,10 @@ public class FutureTownPlanner : MonoBehaviour
             case 4: { buildingCount += Mathf.RoundToInt(Random.Range(4, 8)); t3Additions = Mathf.RoundToInt(Random.Range(1, 4)); break; }
             case 5: { buildingCount += 1; t4Additions = Mathf.RoundToInt(Random.Range(0, 3)); break; }
         }
+        List<Transform> buildingsInTier = new List<Transform>();
 
         //Adds structures from selected tier
-        if (internalTier != 0)
-        {
-            buildingsInTier.Clear();
-        }
+        buildingsInTier.Clear();
         foreach (Transform bldg in buildingWhitelist)
         {
             if (bldg.GetComponent<Town_Building>().BuildingTier == internalTier && !bldg.GetComponent<Town_Building>().isSpecialStructure)
@@ -420,7 +418,7 @@ public class FutureTownPlanner : MonoBehaviour
 
     //With each building added, check the housing deficit. 
     //If the available resident slots are below worker slots, add a house
-    //If the total resident slots exceeds the needed housing, mark house for demolition
+    //If the total resident slots exceeds the needed housing, mark house for demolition -- TBI
     private void AppendHousing()
     {
         Transform houseObject = buildingWhitelist.Find(tran => tran.name == "House");
@@ -446,6 +444,10 @@ public class FutureTownPlanner : MonoBehaviour
         }
 
     }
+    public void RelocateBuilding()
+    {
+
+    }
 
     public void SetSpecialConstruction(int internalTier)
     {
@@ -468,25 +470,6 @@ public class FutureTownPlanner : MonoBehaviour
     //Choose based on max possible tier, then utilize one of the advancement structures
     public void SetInitialStructure(int maxTier)
     {
-        #region Choose random structure from advancement tiers [DEFUNCT]
-        /*List<Transform> starterPossibilities = new List<Transform>();
-        int rand = Mathf.RoundToInt(Random.Range(0, starterPossibilities.Count));
-
-        foreach (Transform bldg in buildingWhitelist)
-        {
-            if (bldg.GetComponent<Town_Building>().isSpecialStructure && bldg.GetComponent<Town_Building>().BuildingTier == maxTier)
-            {
-                starterPossibilities.Add(bldg);
-            }
-        }
-        if (starterPossibilities[rand] != null)
-        {
-            masterBuildingQueue.Add(starterPossibilities[rand].GetComponent<Town_Building>());
-        }
-        Debug.Log("Starter: " + starterPossibilities[rand]);
-        */
-        #endregion
-
         //Randomly decides between church and town square as origin
         int rand = Mathf.RoundToInt(Random.Range(0, 10));
         foreach (Transform bldg in buildingWhitelist)
@@ -523,10 +506,38 @@ public class FutureTownPlanner : MonoBehaviour
         List<Town_Building> buildingsAtTier = new List<Town_Building>();
         if (StarterTier != 0)
         {
+            int builtCount = Mathf.RoundToInt(Random.Range(0, buildingsAtTier.Count));
 
+            foreach (Town_Building bldg in masterBuildingQueue)
+            {
+                constructionOrders.Add(bldg);
+
+                if (bldg.BuildingTier < StarterTier)
+                {
+                    starterGenerationQueue.Add(bldg);
+                    constructionOrders.Remove(bldg);
+                }
+                else if (bldg.BuildingTier == StarterTier)
+                {
+                    buildingsAtTier.Add(bldg);
+                }
+            }
+            for (int i = 0; i < builtCount; i++)
+            {
+                if (buildingsAtTier[i] != null)
+                {
+                    starterGenerationQueue.Add(buildingsAtTier[i]);
+                    constructionOrders.Remove(buildingsAtTier[i]);
+                }
+                else
+                {
+                    Debug.Log("BAT " + i + " is invalid, check GO, MBQ may be blank");
+                }
+            }
         }
         else
         {
+            //This code can be recycled for buildings at the maximum tier. 
             foreach (Town_Building bldg in masterBuildingQueue)
             {
                 if (bldg.BuildingTier == 0)
@@ -540,7 +551,6 @@ public class FutureTownPlanner : MonoBehaviour
             {
                 if (buildingsAtTier[i] != null)
                 {
-                    //Max tier 0 is bugging this function
                     starterGenerationQueue.Add(buildingsAtTier[i]);
                     constructionOrders.Remove(buildingsAtTier[i]);
                 }
@@ -550,50 +560,75 @@ public class FutureTownPlanner : MonoBehaviour
                 }
             }
         }
+    }
 
-
-
-
-
-
-
-
-
-        /*if (StarterTier != 0)
-        {
-            numConstructions = Mathf.RoundToInt(Random.Range(0, 3));
-        }
-        else
-        {
-            numConstructions = Mathf.RoundToInt(Random.Range(2, 5));
-        }
+    public void SpawnStructures()
+    {
+        StartCoroutine(SpawnStructuresCoroutine());
+    }
+    private IEnumerator SpawnStructuresCoroutine()
+    {
         foreach (Town_Building bldg in masterBuildingQueue)
         {
-            if (bldg.BuildingTier < StarterTier)
+            foreach (Transform t in buildingWhitelist)
             {
-                Debug.Log(bldg + " added to starterqueue");
-                //Bounce through master queue. Anything under starterTier is automatically built. Anything at ST is evaluated. Anything over is ignored
-                starterGenerationQueue.Add(bldg);
-
-            }
-            else if (bldg.BuildingTier == StarterTier)
-            {
-                //Generate with up to 3 under construction
-                buildingsAtTier.Add(bldg);
+                if (bldg.name == t.name)
+                {
+                    float random = Random.Range(0, 90);
+                    Quaternion rotation = Quaternion.Euler(0, random, 0);
+                    Instantiate(t.gameObject, transform.position, rotation, gameObject.transform);
+                }
             }
         }
+        yield return null;
+    }
 
-        int numAlreadyEstablished = Mathf.RoundToInt(Random.Range(0, buildingsAtTier.Count));
-
-        for (int i = 0; i > numAlreadyEstablished; i++)
+    public void ManageSpawnedStructures()
+    {
+        foreach (Transform t in transform)
         {
-            Debug.Log(buildingsAtTier[i] + " added to starterqueue");
-            starterGenerationQueue.Add(buildingsAtTier[i]);
+            foreach (Town_Building tb in starterGenerationQueue)
+            {
+                if (t.name == tb.name)
+                {
+                    t.gameObject.SetActive(true);
+                }
+                else
+                {
+                    t.gameObject.SetActive(false);
+                }
+            }
+            foreach (Town_Building tb in constructionOrders)
+            {
+                if (t.name == tb.name)
+                {
+                    t.gameObject.SetActive(true);
+                }
+            }
+
+            switch (t.GetComponent<Town_Building>().setupCondition)
+            {
+                case Town_Building.SetupCondition.Beach:
+                    {
+                        //Structures that are better served by remaining on the beach: docks, fishing huts etc
+                        break;
+                    }
+                case Town_Building.SetupCondition.Standalone:
+                    {
+                        //This is reserved for structures that dont belong to part of the city: forts and such
+                        break;
+                    }
+                case Town_Building.SetupCondition.CityScape:
+                    {
+                        //Check for closest spawn point from town center
+                        //If closest node is occupied, proceed to +1 etc
+                        //Check for mirror on road
+                        //Test collision
+                        break;
+                    }
+            }
+
+
         }
-        for (int j = 0; j > numConstructions; j++)
-        {
-            starterGenerationQueue[starterGenerationQueue.Count - j].isUnderConstruction = true;
-            Debug.Log("Construction: " + starterGenerationQueue[starterGenerationQueue.Count - j].isUnderConstruction);
-        }*/
     }
 }

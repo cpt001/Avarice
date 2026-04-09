@@ -93,7 +93,7 @@ public class InitialTownGen : MonoBehaviour
 
         yield return new WaitForSeconds(0.3f);
         //Access town planner script
-        StartCoroutine(StartTownPlanning());
+        StartTownPlanning();
         //Allegiance model
         //Economy model
         //Populate
@@ -265,7 +265,7 @@ public class InitialTownGen : MonoBehaviour
         }
         townType = (Any_Town_Phenotype)Random.Range(0, System.Enum.GetValues(typeof(Any_Town_Phenotype)).Length);
     }
-    private IEnumerator StartTownPlanning()
+    private void StartTownPlanning()
     {
         associatedTownPlanner.GetPossibleStructures(townType);
         associatedTownPlanner.SetInitialStructure(setMaxTownTier);
@@ -284,9 +284,8 @@ public class InitialTownGen : MonoBehaviour
             }
         }
         //associatedTownPlanner.SetDemolitionOrders();      ---Just not needed right now, needs review of further function in game
-        yield return new WaitForSeconds(1);
         associatedTownPlanner.GenerateInitialTown(setTownStarterTier, setMaxTownTier);
         transform.name = "DebugTown " + islandMaster.islandBiome.ToString() + " | " + townType.ToString() + " | MT: " + setMaxTownTier + " | ST" + setTownStarterTier;
-        yield return null;
+        associatedTownPlanner.SpawnStructures();
     }
 }

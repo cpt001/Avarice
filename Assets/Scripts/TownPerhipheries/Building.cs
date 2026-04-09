@@ -104,6 +104,7 @@ public class Building : ScriptableObject
     public BuildingTier buildingTier;
 
     [Header("Prefabs")]
+    [SerializeField] private GameObject debugObject;
     [SerializeField] private GameObject[] GenericModelSet;
     [SerializeField] private GameObject[] DesertModelSet;
     [SerializeField] private GameObject[] SwampModelSet;

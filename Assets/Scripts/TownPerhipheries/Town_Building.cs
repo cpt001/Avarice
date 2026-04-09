@@ -7,8 +7,6 @@ using UnityEngine;
 /// - Associated data not kept in SO
 /// - Model used based on Biome
 /// - Damage state
-/// 
-/// Maybe define building size 1-4, then have this building change into the appropriate model
 /// </summary>
 
 [RequireComponent(typeof(BuildingSpawnChanceData))]
@@ -17,7 +15,7 @@ public class Town_Building : MonoBehaviour
     public Building buildingData;
     private BuildingSpawnChanceData spawnChanceData => GetComponent<BuildingSpawnChanceData>();
     [SerializeField] private GameObject buildingModel;
-    private enum DamageState
+    public enum DamageState
     {
         Nominal,            //The building is fine
         Worn,               //Building is worn down in places, and could use some minor repair
@@ -26,9 +24,16 @@ public class Town_Building : MonoBehaviour
         Unstable,           //Building may collapse at any moment
         Rubble,             //Building has collapsed
     }
-    [SerializeField] private DamageState damage;
+    public DamageState damage;
     public int BuildingTier;
     public bool isSpecialStructure;
     public bool isUnderConstruction;
+    public enum SetupCondition
+    {
+        Beach,
+        CityScape,
+        Standalone,
+    }
+    public SetupCondition setupCondition;
 }
 //FTP accesses master list, and populates phenotypes with matching tags
