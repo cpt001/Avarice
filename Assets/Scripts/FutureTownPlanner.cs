@@ -585,8 +585,71 @@ public class FutureTownPlanner : MonoBehaviour
 
     public void ManageSpawnedStructures()
     {
+        //This needs a rework, but first, buildings need creation
+
+        List<SlotFillStatus> slots = new List<SlotFillStatus>();
+
         foreach (Transform t in transform)
         {
+
+
+            switch (t.GetComponent<Town_Building>().setupCondition)
+            {
+                case Town_Building.SetupCondition.Beach:
+                    {
+                        //Structures that are better served by remaining on the beach: docks, fishing huts etc
+                        break;
+                    }
+                case Town_Building.SetupCondition.Standalone:
+                    {
+                        //This is reserved for structures that dont belong to part of the city: forts and such
+                        break;
+                    }
+                case Town_Building.SetupCondition.CityScape:
+                    {
+                        foreach (Transform i in t.transform)
+                        {
+                            if (i.GetComponent<SlotFillStatus>())
+                            {
+                                slots.Add(i.GetComponent<SlotFillStatus>());
+                            }
+                        }
+                        
+                        foreach (SlotFillStatus slot in slots)
+                        {
+                            switch (slot.slotStatus)
+                            {
+                                case SlotFillStatus.SlotFillEnum.Occupied:
+                                    {
+                                        //Test Fit
+                                        
+                                        //If able to place
+                                        //Else return
+                                        break;
+                                    }
+                                case SlotFillStatus.SlotFillEnum.Available:
+                                    {
+                                        //Pick priority slot
+                                        //Snap to position
+                                        //
+                                        
+                                        break;
+                                    }
+
+                                case SlotFillStatus.SlotFillEnum.Unavailable:
+                                    {
+                                        slots.Remove(slot);
+                                        Destroy(slot.gameObject);
+                                        break;
+                                    }
+                            }
+                            
+                        }
+
+                        break;
+                    }
+            }
+            //Buildings placed before activation
             foreach (Town_Building tb in starterGenerationQueue)
             {
                 if (t.name == tb.name)
@@ -605,29 +668,6 @@ public class FutureTownPlanner : MonoBehaviour
                     t.gameObject.SetActive(true);
                 }
             }
-
-            switch (t.GetComponent<Town_Building>().setupCondition)
-            {
-                case Town_Building.SetupCondition.Beach:
-                    {
-                        //Structures that are better served by remaining on the beach: docks, fishing huts etc
-                        break;
-                    }
-                case Town_Building.SetupCondition.Standalone:
-                    {
-                        //This is reserved for structures that dont belong to part of the city: forts and such
-                        break;
-                    }
-                case Town_Building.SetupCondition.CityScape:
-                    {
-                        //Check for closest spawn point from town center
-                        //If closest node is occupied, proceed to +1 etc
-                        //Check for mirror on road
-                        //Test collision
-                        break;
-                    }
-            }
-
 
         }
     }
