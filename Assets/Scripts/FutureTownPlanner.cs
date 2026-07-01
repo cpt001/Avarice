@@ -26,6 +26,8 @@ using System.Collections;
 /// </summary>
 public class FutureTownPlanner : MonoBehaviour
 {
+    [SerializeField] private bool useDebugBuildings = false;
+    [SerializeField] private IslandMaster islandMaster;
     [SerializeField] private GameObject structureContainer;
     [SerializeField] private List<Transform> buildingWhitelist = new List<Transform>();
     [SerializeField] private List<Transform> t0Bldg = new List<Transform>();
@@ -564,6 +566,13 @@ public class FutureTownPlanner : MonoBehaviour
 
     public void SpawnStructures()
     {
+        foreach (GameObject ims in GameObject.FindGameObjectsWithTag("IslandMaster"))
+        {
+            if (ims.transform.parent == transform.parent)
+            {
+                islandMaster = ims.GetComponent<IslandMaster>();
+            }
+        }
         StartCoroutine(SpawnStructuresCoroutine());
     }
     private IEnumerator SpawnStructuresCoroutine()
@@ -576,7 +585,57 @@ public class FutureTownPlanner : MonoBehaviour
                 {
                     float random = Random.Range(0, 90);
                     Quaternion rotation = Quaternion.Euler(0, random, 0);
-                    Instantiate(t.gameObject, transform.position, rotation, gameObject.transform);
+                    if (!useDebugBuildings)
+                    {
+                        switch (islandMaster.islandBiome)
+                        {
+                            case IslandMaster.IslandBiome.Desert:
+                                {
+                                    break;
+                                }
+                            case IslandMaster.IslandBiome.Swamp:
+                                {
+                                    break;
+                                }
+                            case IslandMaster.IslandBiome.Jungle:
+                                {
+                                    break;
+                                }
+                            case IslandMaster.IslandBiome.DormantVolcano:
+                                {
+                                    break;
+                                }
+                            case IslandMaster.IslandBiome.ActiveVolcano:
+                                {
+                                    break;
+                                }
+                            case IslandMaster.IslandBiome.Tundra:
+                                {
+                                    break;
+                                }
+                            case IslandMaster.IslandBiome.Ethereal:
+                                {
+                                    break;
+                                }
+                            case IslandMaster.IslandBiome.Deadlands:
+                                {
+                                    break;
+                                }
+                        }
+                    }
+                    else
+                    {
+                        GameObject g = Instantiate(t.gameObject, transform.position, rotation, gameObject.transform);
+                        if (t.GetComponent<Town_Building>().buildingData.debugObject)
+                        {
+                            GameObject bldgModel = t.GetComponent<Town_Building>().buildingData.debugObject;
+                            Instantiate(bldgModel, g.transform.position, g.transform.rotation, g.transform);
+                            foreach(SlotFillStatus slot in bldgModel.transform.GetComponentsInChildren <SlotFillStatus>())
+                            {
+                                slot.slotStatus = SlotFillStatus.SlotFillEnum.Unavailable;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -591,8 +650,6 @@ public class FutureTownPlanner : MonoBehaviour
 
         foreach (Transform t in transform)
         {
-
-
             switch (t.GetComponent<Town_Building>().setupCondition)
             {
                 case Town_Building.SetupCondition.Beach:
@@ -621,7 +678,7 @@ public class FutureTownPlanner : MonoBehaviour
                             {
                                 case SlotFillStatus.SlotFillEnum.Occupied:
                                     {
-                                        //Test Fit
+                                        //Test Fit 
                                         
                                         //If able to place
                                         //Else return

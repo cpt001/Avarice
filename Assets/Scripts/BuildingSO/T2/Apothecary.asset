@@ -23,6 +23,8 @@ MonoBehaviour:
   planksRequired: 4
   toolsRequired: 4
   buildingTier: 0
+  debugObject: {fileID: 2961374464626647219, guid: 686917fef0c03d54b8d278ebbe852028,
+    type: 3}
   GenericModelSet: []
   DesertModelSet: []
   SwampModelSet: []

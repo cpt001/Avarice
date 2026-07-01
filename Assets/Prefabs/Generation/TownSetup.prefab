@@ -45,8 +45,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a078dbc7e9264c249a6196f3174ab31d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FutureTownPlanner
+  useDebugBuildings: 1
+  islandMaster: {fileID: 0}
   structureContainer: {fileID: 0}
   buildingWhitelist: []
+  t0Bldg: []
+  t1Bldg: []
+  t2Bldg: []
+  t3Bldg: []
+  t4Bldg: []
+  t5Bldg: []
+  masterBuildingQueue: []
+  starterGenerationQueue: []
+  constructionOrders: []
+  numberOfResidents: 0
+  numberOfWorkers: 0
 --- !u!114 &9178979062447897104
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -59,4 +72,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 78a6c07286c084640886464585f8df2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InitialTownGen
+  islandMaster: {fileID: 0}
   townType: 0
