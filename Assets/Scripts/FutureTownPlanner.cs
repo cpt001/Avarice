@@ -39,6 +39,7 @@ public class FutureTownPlanner : MonoBehaviour
     [SerializeField] private List<Town_Building> masterBuildingQueue = new List<Town_Building>();
     [SerializeField] private List<Town_Building> starterGenerationQueue = new List<Town_Building>();
     [SerializeField] private List<Town_Building> constructionOrders = new List<Town_Building>();
+    [SerializeField] private List<GameObject> adjustedBuildings = new List<GameObject>();
     [SerializeField] private int numberOfResidents;
     [SerializeField] private int numberOfWorkers;
 
@@ -533,7 +534,7 @@ public class FutureTownPlanner : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log("BAT " + i + " is invalid, check GO, MBQ may be blank");
+                    Debug.Log("BAT " + i + " is invalid, check GO, MBQ may be blank", gameObject);
                 }
             }
         }
@@ -583,149 +584,143 @@ public class FutureTownPlanner : MonoBehaviour
             {
                 if (bldg.name == t.name)
                 {
-                    float random = Random.Range(0, 90);
-                    Quaternion rotation = Quaternion.Euler(0, random, 0);
+                    GameObject g = Instantiate(t.gameObject, transform.position, transform.rotation, gameObject.transform);
+
+                    #region Building model identity
                     if (!useDebugBuildings)
                     {
                         switch (islandMaster.islandBiome)
                         {
                             case IslandMaster.IslandBiome.Desert:
                                 {
+                                    GameObject bldgModel = t.GetComponent<Town_Building>().buildingData.DesertModelSet;
+                                    Instantiate(bldgModel, g.transform.position, g.transform.rotation, g.transform);
                                     break;
                                 }
                             case IslandMaster.IslandBiome.Swamp:
                                 {
+                                    GameObject bldgModel = t.GetComponent<Town_Building>().buildingData.SwampModelSet;
+                                    Instantiate(bldgModel, g.transform.position, g.transform.rotation, g.transform);
                                     break;
                                 }
                             case IslandMaster.IslandBiome.Jungle:
                                 {
+                                    GameObject bldgModel = t.GetComponent<Town_Building>().buildingData.JungleModelSet;
+                                    Instantiate(bldgModel, g.transform.position, g.transform.rotation, g.transform);
                                     break;
                                 }
                             case IslandMaster.IslandBiome.DormantVolcano:
                                 {
+                                    GameObject bldgModel = t.GetComponent<Town_Building>().buildingData.DormantVolcanoModelSet;
+                                    Instantiate(bldgModel, g.transform.position, g.transform.rotation, g.transform);
                                     break;
                                 }
                             case IslandMaster.IslandBiome.ActiveVolcano:
                                 {
+                                    GameObject bldgModel = t.GetComponent<Town_Building>().buildingData.ActiveVolcanicModelSet;
+                                    Instantiate(bldgModel, g.transform.position, g.transform.rotation, g.transform);
                                     break;
                                 }
                             case IslandMaster.IslandBiome.Tundra:
                                 {
+                                    GameObject bldgModel = t.GetComponent<Town_Building>().buildingData.TundraModelSet;
+                                    Instantiate(bldgModel, g.transform.position, g.transform.rotation, g.transform);
                                     break;
                                 }
                             case IslandMaster.IslandBiome.Ethereal:
                                 {
+                                    GameObject bldgModel = t.GetComponent<Town_Building>().buildingData.EtherealModelSet;
+                                    Instantiate(bldgModel, g.transform.position, g.transform.rotation, g.transform);
                                     break;
                                 }
                             case IslandMaster.IslandBiome.Deadlands:
                                 {
+                                    Debug.Log("Deadlands spawn; NYI, needs to pick randomly from another model set");
                                     break;
                                 }
                         }
                     }
                     else
                     {
-                        GameObject g = Instantiate(t.gameObject, transform.position, rotation, gameObject.transform);
+
                         if (t.GetComponent<Town_Building>().buildingData.debugObject)
                         {
                             GameObject bldgModel = t.GetComponent<Town_Building>().buildingData.debugObject;
                             Instantiate(bldgModel, g.transform.position, g.transform.rotation, g.transform);
-                            foreach(SlotFillStatus slot in bldgModel.transform.GetComponentsInChildren <SlotFillStatus>())
+
+                            //May be unneeded
+                            foreach (BuildingSlot slot in bldgModel.transform.GetComponentsInChildren<BuildingSlot>())
                             {
-                                slot.slotStatus = SlotFillStatus.SlotFillEnum.Unavailable;
+                                slot.slotStatus = BuildingSlot.SlotFillEnum.Unavailable;
                             }
                         }
                     }
+                    #endregion
+
+                    #region Building Attachment and Adjustment
+                    if (bldg == masterBuildingQueue[0])
+                    {
+                        Debug.Log("MBQ/0: " + bldg);
+                        float rand = Random.Range(-180, 180);
+                        Quaternion randomRot = Quaternion.Euler(0, rand, 0);
+                        transform.rotation = randomRot;
+                        adjustedBuildings.Add(g);
+                        g.GetComponentInChildren<SlotBuilder>().distanceFromCenter = 0;
+                        g.GetComponentInChildren<SlotBuilder>().BuildStructureSlots(true);
+                    }
+                    else
+                    {
+                        List<GameObject> availableSlots = new List<GameObject>();
+                        switch (bldg.setupCondition)
+                        {
+                            case Town_Building.SetupCondition.Beach:
+                                {
+                                    //Structures that are better served by remaining on the beach: docks, fishing huts etc
+                                    //Map magic's built in randomizer can serve as placement points for these, but will need to be retrofitted for this task
+                                    break;
+                                }
+                            case Town_Building.SetupCondition.Standalone:
+                                {
+                                    //This is reserved for structures that dont belong to part of the city: forts and such
+                                    //These will be spawned at another town setup location
+                                    break;
+                                }
+                            case Town_Building.SetupCondition.CityScape:
+                                {
+                                    foreach (GameObject adjustedStructure in adjustedBuildings)
+                                    {
+                                        //access slots
+                                        //determine slot to attach to
+                                        //move initial slot to target slot
+                                        //check available rotations
+                                        //pick random valid rotation
+                                    }
+                                    //t.GetComponent<SlotBuilder>().
+
+                                    List<float> validRotations = new List<float>();
+                                    float rand = Random.Range(-180, 180);
+                                    Quaternion randomRot = Quaternion.Euler(0, rand, 0);
+                                    transform.rotation = randomRot;
+
+
+                                    break;
+                                }
+                        }
+
+                        if (starterGenerationQueue.Contains(bldg))
+                        {
+                            t.gameObject.SetActive(true);
+                        }
+                        if (constructionOrders.Contains(bldg))
+                        {
+                            t.gameObject.SetActive(true);
+                        }
+                    }
+
+                    #endregion
                 }
             }
         }
         yield return null;
-    }
-
-    public void ManageSpawnedStructures()
-    {
-        //This needs a rework, but first, buildings need creation
-
-        List<SlotFillStatus> slots = new List<SlotFillStatus>();
-
-        foreach (Transform t in transform)
-        {
-            switch (t.GetComponent<Town_Building>().setupCondition)
-            {
-                case Town_Building.SetupCondition.Beach:
-                    {
-                        //Structures that are better served by remaining on the beach: docks, fishing huts etc
-                        break;
-                    }
-                case Town_Building.SetupCondition.Standalone:
-                    {
-                        //This is reserved for structures that dont belong to part of the city: forts and such
-                        break;
-                    }
-                case Town_Building.SetupCondition.CityScape:
-                    {
-                        foreach (Transform i in t.transform)
-                        {
-                            if (i.GetComponent<SlotFillStatus>())
-                            {
-                                slots.Add(i.GetComponent<SlotFillStatus>());
-                            }
-                        }
-                        
-                        foreach (SlotFillStatus slot in slots)
-                        {
-                            switch (slot.slotStatus)
-                            {
-                                case SlotFillStatus.SlotFillEnum.Occupied:
-                                    {
-                                        //Test Fit 
-                                        
-                                        //If able to place
-                                        //Else return
-                                        break;
-                                    }
-                                case SlotFillStatus.SlotFillEnum.Available:
-                                    {
-                                        //Pick priority slot
-                                        //Snap to position
-                                        //
-                                        
-                                        break;
-                                    }
-
-                                case SlotFillStatus.SlotFillEnum.Unavailable:
-                                    {
-                                        slots.Remove(slot);
-                                        Destroy(slot.gameObject);
-                                        break;
-                                    }
-                            }
-                            
-                        }
-
-                        break;
-                    }
-            }
-            //Buildings placed before activation
-            foreach (Town_Building tb in starterGenerationQueue)
-            {
-                if (t.name == tb.name)
-                {
-                    t.gameObject.SetActive(true);
-                }
-                else
-                {
-                    t.gameObject.SetActive(false);
-                }
-            }
-            foreach (Town_Building tb in constructionOrders)
-            {
-                if (t.name == tb.name)
-                {
-                    t.gameObject.SetActive(true);
-                }
-            }
-
-        }
     }
 }

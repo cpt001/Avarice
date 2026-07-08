@@ -105,13 +105,13 @@ public class Building : ScriptableObject
 
     [Header("Prefabs")]
     public GameObject debugObject;
-    [SerializeField] private GameObject[] GenericModelSet;
-    [SerializeField] private GameObject[] DesertModelSet;
-    [SerializeField] private GameObject[] SwampModelSet;
-    [SerializeField] private GameObject[] JungleModelSet;
-    [SerializeField] private GameObject[] DormantVolcanoModelSet;
-    [SerializeField] private GameObject[] ActiveVolcanicModelSet;
-    [SerializeField] private GameObject[] TundraModelSet;
-    [SerializeField] private GameObject[] EtherealModelSet;
+    public GameObject GenericModelSet;
+    public GameObject DesertModelSet;
+    public GameObject SwampModelSet;
+    public GameObject JungleModelSet;
+    public GameObject DormantVolcanoModelSet;
+    public GameObject ActiveVolcanicModelSet;
+    public GameObject TundraModelSet;
+    public GameObject EtherealModelSet;
     //Deadlands skipped. Solution - generate from random existing set, then spawn semi-broken
 }

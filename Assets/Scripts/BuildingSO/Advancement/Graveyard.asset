@@ -23,11 +23,13 @@ MonoBehaviour:
   planksRequired: 0
   toolsRequired: 0
   buildingTier: 0
-  GenericModelSet: []
-  DesertModelSet: []
-  SwampModelSet: []
-  JungleModelSet: []
-  DormantVolcanoModelSet: []
-  ActiveVolcanicModelSet: []
-  TundraModelSet: []
-  EtherealModelSet: []
+  debugObject: {fileID: 5938571387752153569, guid: 1ba650128b8723f4dbf944b4820b3e9a,
+    type: 3}
+  GenericModelSet: {fileID: 0}
+  DesertModelSet: {fileID: 0}
+  SwampModelSet: {fileID: 0}
+  JungleModelSet: {fileID: 0}
+  DormantVolcanoModelSet: {fileID: 0}
+  ActiveVolcanicModelSet: {fileID: 0}
+  TundraModelSet: {fileID: 0}
+  EtherealModelSet: {fileID: 0}

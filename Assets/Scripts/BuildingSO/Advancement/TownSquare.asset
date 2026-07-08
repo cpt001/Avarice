@@ -17,14 +17,19 @@ MonoBehaviour:
   REPLACE_CargoOutput: []
   baseTaxRate: 0
   REPLACE_masterShopInventory: []
+  residentMax: 0
+  workerMax: 0
   bricksRequired: 0
   planksRequired: 0
   toolsRequired: 0
-  GenericModelSet: []
-  DesertModelSet: []
-  SwampModelSet: []
-  JungleModelSet: []
-  DormantVolcanoModelSet: []
-  ActiveVolcanicModelSet: []
-  TundraModelSet: []
-  EtherealModelSet: []
+  buildingTier: 0
+  debugObject: {fileID: 4979138952414305665, guid: a819fa6b06648b845808a1ef73858f43,
+    type: 3}
+  GenericModelSet: {fileID: 0}
+  DesertModelSet: {fileID: 0}
+  SwampModelSet: {fileID: 0}
+  JungleModelSet: {fileID: 0}
+  DormantVolcanoModelSet: {fileID: 0}
+  ActiveVolcanicModelSet: {fileID: 0}
+  TundraModelSet: {fileID: 0}
+  EtherealModelSet: {fileID: 0}
