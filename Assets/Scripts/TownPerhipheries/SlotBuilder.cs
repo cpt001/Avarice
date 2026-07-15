@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 public class SlotBuilder : MonoBehaviour
 {
@@ -16,6 +17,8 @@ public class SlotBuilder : MonoBehaviour
     private int numNodesSpawnOnX;
     private int numNodesSpawnOnY;
     private int numSides;
+
+    public bool triggerDetectingObject = false;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void BuildStructureSlots(bool overrideSideValue)
@@ -129,9 +132,19 @@ public class SlotBuilder : MonoBehaviour
     {
         int rand = Random.Range(0, slots.Count);
         initialSlot = slots[rand];
+    }
 
+    public void CheckCollider()
+    {
+        Collider[] hitColliders = Physics.OverlapBox(transform.position, transform.localScale / 2, Quaternion.identity, ~LayerMask.NameToLayer("TownBuilding"));
 
-        //Reparent object to become primary pivot
-        initialSlot.transform.SetAsFirstSibling();
+        foreach (Collider c in hitColliders)
+        {
+            if (c != bldgCol)
+            {
+                //Debug.Log("Live trigger found: " + c.gameObject);
+                triggerDetectingObject = true;
+            }
+        }
     }
 }

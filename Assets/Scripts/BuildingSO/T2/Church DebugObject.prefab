@@ -271,11 +271,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 278589ec26a84d744a62beec1078316b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotBuilder
-  initalSlot: {fileID: 0}
+  initialSlot: {fileID: 0}
   distanceFromCenter: 0
   slotPrefab: {fileID: 6517440054968892920, guid: 0163ff9084cf9b84d89c0741cef1cd1e,
     type: 3}
   slots: []
+  triggerDetectingObject: 0
 --- !u!65 &8571010762332344309
 BoxCollider:
   m_ObjectHideFlags: 0

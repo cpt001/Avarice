@@ -67,8 +67,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 278589ec26a84d744a62beec1078316b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotBuilder
+  initialSlot: {fileID: 0}
+  distanceFromCenter: 0
   slotPrefab: {fileID: 6517440054968892920, guid: 0163ff9084cf9b84d89c0741cef1cd1e,
     type: 3}
+  slots: []
+  triggerDetectingObject: 0
 --- !u!1001 &1915490371228742396
 PrefabInstance:
   m_ObjectHideFlags: 0

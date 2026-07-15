@@ -1355,7 +1355,7 @@ GameObject:
   - component: {fileID: 4670552152983891437}
   - component: {fileID: 7685736079853430087}
   - component: {fileID: 3649644695964049982}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Graveyard DebugObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1404,12 +1404,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 278589ec26a84d744a62beec1078316b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotBuilder
-  initalSlot: {fileID: 0}
-  buildingAdjustedToLocation: 0
+  initialSlot: {fileID: 0}
   distanceFromCenter: 0
   slotPrefab: {fileID: 6517440054968892920, guid: 0163ff9084cf9b84d89c0741cef1cd1e,
     type: 3}
   slots: []
+  triggerDetectingObject: 0
 --- !u!65 &3649644695964049982
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1758,4 +1758,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c20a3f680fda724e9f8e18a3a1b96d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  slotStatus: 0
+  slotStatus: 2

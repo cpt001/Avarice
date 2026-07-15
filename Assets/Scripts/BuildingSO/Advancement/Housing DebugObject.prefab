@@ -571,7 +571,7 @@ GameObject:
   - component: {fileID: 1975158203106239690}
   - component: {fileID: 7328065963505853215}
   - component: {fileID: 4108231306151245891}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Housing DebugObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -611,12 +611,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 278589ec26a84d744a62beec1078316b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotBuilder
-  initalSlot: {fileID: 0}
-  buildingAdjustedToLocation: 0
+  initialSlot: {fileID: 0}
   distanceFromCenter: 0
   slotPrefab: {fileID: 6517440054968892920, guid: 0163ff9084cf9b84d89c0741cef1cd1e,
     type: 3}
   slots: []
+  triggerDetectingObject: 0
 --- !u!65 &4108231306151245891
 BoxCollider:
   m_ObjectHideFlags: 0
