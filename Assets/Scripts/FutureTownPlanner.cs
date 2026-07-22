@@ -692,13 +692,20 @@ public class FutureTownPlanner : MonoBehaviour
                                     List<Transform> slots = new List<Transform>();
                                     foreach (GameObject adjustedStructure in adjustedBuildings)
                                     {
-                                        Debug.Log("Adjusted building count: " + adjustedBuildings.Count);
+                                        //Debug.Log("Adjusted building count: " + adjustedBuildings.Count);
                                         SlotBuilder adjStrSB = adjustedStructure.GetComponentInChildren<SlotBuilder>();
                                         adjStrSB.BuildStructureSlots(false);
                                         //access slots
-                                        for (int i = 0; i < adjStrSB.slots.Count; i++)
+                                        //for (int i = 0; i < adjStrSB.slots.Count; i++)
                                         {
-                                            slots.Add(adjStrSB.slots[i].transform);
+                                            //slots.Add(adjStrSB.slots[i].transform);
+                                            foreach (GameObject actualSlot in adjStrSB.slots)
+                                            {
+                                                if (actualSlot.GetComponent<BuildingSlot>().slotStatus == BuildingSlot.SlotFillEnum.Available)
+                                                {
+                                                    slots.Add(actualSlot.transform);
+                                                }
+                                            }
                                         }
                                     }
                                     while (placementAndRotationFinalized == false)        //While building !finalized ??

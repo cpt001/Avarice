@@ -18,7 +18,7 @@ public class BuildingSlot : MonoBehaviour
             if (c != GetComponent<BoxCollider>())
             {
                 //This breaks the search and set algorithm. Needs better implementation
-                Destroy(gameObject);
+                slotStatus = SlotFillEnum.Occupied;
             }
         }
     }

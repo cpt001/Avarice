@@ -50,8 +50,11 @@ public class InitialTownGen : MonoBehaviour
                 islandMaster = ims.GetComponent<IslandMaster>();
             }
         }
-        islandMaster.townsOnIsland.Add(this);
-        StartCoroutine(GenerateTown());
+        if (islandMaster)
+        {
+            islandMaster.townsOnIsland.Add(this);
+            StartCoroutine(GenerateTown());
+        }
     }
 
     private IEnumerator GenerateTown()

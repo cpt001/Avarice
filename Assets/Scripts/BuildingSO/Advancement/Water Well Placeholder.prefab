@@ -296,9 +296,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SlotBuilder
   initialSlot: {fileID: 0}
   distanceFromCenter: 0
-  slotPrefab: {fileID: 0}
+  slotPrefab: {fileID: 6517440054968892920, guid: 0163ff9084cf9b84d89c0741cef1cd1e,
+    type: 3}
   slots: []
   triggerDetectingObject: 0
+  debuggerOverride: 0
 --- !u!1 &8797201279032131441
 GameObject:
   m_ObjectHideFlags: 0

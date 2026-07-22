@@ -166,6 +166,7 @@ MonoBehaviour:
     type: 3}
   slots: []
   triggerDetectingObject: 0
+  debuggerOverride: 0
 --- !u!65 &7826508908866304106
 BoxCollider:
   m_ObjectHideFlags: 0

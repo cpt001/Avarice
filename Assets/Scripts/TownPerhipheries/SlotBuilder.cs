@@ -20,6 +20,15 @@ public class SlotBuilder : MonoBehaviour
 
     public bool triggerDetectingObject = false;
 
+    public bool debuggerOverride = false;
+    private void Start()
+    {
+        if (debuggerOverride)
+        {
+            BuildStructureSlots(true);
+        }
+    }
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void BuildStructureSlots(bool overrideSideValue)
     {
@@ -33,17 +42,6 @@ public class SlotBuilder : MonoBehaviour
 
     void SpawnCorners(bool overrideSideValue)
     {
-        //Resets list of slots if present
-        if (slots.Count != 0)
-        {
-            neCorner = null;
-            swCorner = null;
-            foreach (GameObject g in slots)
-            {
-                Destroy(g);
-            }
-        }
-
         if (neCorner == null)
         {
             neCorner = Instantiate(slotPrefab, transform.position, transform.rotation, transform);
