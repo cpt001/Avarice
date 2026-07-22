@@ -7,7 +7,7 @@ public class QuickDetector : MonoBehaviour
 
     void Update()
     {
-        Collider[] hitColliders = Physics.OverlapBox(transform.position, transform.localScale / 2, Quaternion.identity, ~LayerMask.NameToLayer("TownBuilding"));
+        Collider[] hitColliders = Physics.OverlapBox(transform.position, transform.localScale / 2, Quaternion.identity, 1 << LayerMask.NameToLayer("TownBuilding"));
         
         foreach (Collider c in hitColliders)
         {

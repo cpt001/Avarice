@@ -23,25 +23,37 @@ public class SlotBuilder : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void BuildStructureSlots(bool overrideSideValue)
     {
-        //if (GetComponentInParent<Town_Building>().setupCondition == Town_Building.SetupCondition.CityScape)
-        {
-            adjustedCollider = new Vector3(bldgCol.size.x + roadOffset, 0, bldgCol.size.z + roadOffset);
-            numNodesSpawnOnX = Mathf.RoundToInt(adjustedCollider.x * 2 / nodeThreshhold) + 1;
-            numNodesSpawnOnY = Mathf.RoundToInt(adjustedCollider.z * 2 / nodeThreshhold);
+        adjustedCollider = new Vector3(bldgCol.size.x + roadOffset, 0, bldgCol.size.z + roadOffset);
+        numNodesSpawnOnX = Mathf.RoundToInt(adjustedCollider.x * 2 / nodeThreshhold) + 1;
+        numNodesSpawnOnY = Mathf.RoundToInt(adjustedCollider.z * 2 / nodeThreshhold);
 
-            SpawnCorners(overrideSideValue); //Also spawns sides
-            PickPrimaryHook();
-        }
+        SpawnCorners(overrideSideValue); //Also spawns sides
+        PickPrimaryHook();
     }
 
     void SpawnCorners(bool overrideSideValue)
     {
+        //Resets list of slots if present
+        if (slots.Count != 0)
+        {
+            neCorner = null;
+            swCorner = null;
+            foreach (GameObject g in slots)
+            {
+                Destroy(g);
+            }
+        }
+
         if (neCorner == null)
         {
             neCorner = Instantiate(slotPrefab, transform.position, transform.rotation, transform);
             neCorner.transform.localPosition += new Vector3(adjustedCollider.x, 0, adjustedCollider.z);
             neCorner.name = "NE";
-            slots.Add(neCorner);
+            neCorner.GetComponent<BuildingSlot>().LookForBuilding();
+            if (neCorner)
+            {
+                slots.Add(neCorner);
+            }
         }
         if (swCorner == null)
         {
@@ -101,7 +113,11 @@ public class SlotBuilder : MonoBehaviour
             if (i == 3)
             {
                 SpawnEdge(numNodesSpawnOnX, "S", swCorner);
-                slots.Add(swCorner);
+                swCorner.GetComponent<BuildingSlot>().LookForBuilding();
+                if (swCorner)
+                {
+                    slots.Add(swCorner);
+                }
             }
 
         }
@@ -123,7 +139,11 @@ public class SlotBuilder : MonoBehaviour
                 if (direction == "W") { g.transform.localPosition += new Vector3(0, 0, i * nodeThreshhold); }
                 if (direction == "S") { g.transform.localPosition += new Vector3(i * nodeThreshhold, 0); }
 
-                slots.Add(g);
+                g.GetComponent<BuildingSlot>().LookForBuilding();
+                if (g)
+                {
+                    slots.Add(g);
+                }
             }
         }
     }
@@ -136,15 +156,23 @@ public class SlotBuilder : MonoBehaviour
 
     public void CheckCollider()
     {
-        Collider[] hitColliders = Physics.OverlapBox(transform.position, transform.localScale / 2, Quaternion.identity, ~LayerMask.NameToLayer("TownBuilding"));
+        StartCoroutine(CheckCollisions());
+    }
+
+    private IEnumerator CheckCollisions()
+    {
+        //triggerDetectingObject = false;
+        yield return new WaitForEndOfFrame();
+        Collider[] hitColliders = Physics.OverlapBox(transform.position, transform.localScale / 2, Quaternion.identity, 1 << LayerMask.NameToLayer("TownBuilding"));
 
         foreach (Collider c in hitColliders)
         {
             if (c != bldgCol)
             {
-                //Debug.Log("Live trigger found: " + c.gameObject);
+                Debug.Log("Live trigger found: " + c.gameObject + " affecting " + gameObject, gameObject);
                 triggerDetectingObject = true;
             }
         }
+        yield return null;
     }
 }

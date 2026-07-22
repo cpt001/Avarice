@@ -688,85 +688,80 @@ public class FutureTownPlanner : MonoBehaviour
                                 }
                             case Town_Building.SetupCondition.CityScape:
                                 {
+                                    bool placementAndRotationFinalized = false;
                                     List<Transform> slots = new List<Transform>();
                                     foreach (GameObject adjustedStructure in adjustedBuildings)
                                     {
+                                        Debug.Log("Adjusted building count: " + adjustedBuildings.Count);
                                         SlotBuilder adjStrSB = adjustedStructure.GetComponentInChildren<SlotBuilder>();
+                                        adjStrSB.BuildStructureSlots(false);
                                         //access slots
                                         for (int i = 0; i < adjStrSB.slots.Count; i++)
                                         {
                                             slots.Add(adjStrSB.slots[i].transform);
                                         }
+                                    }
+                                    while (placementAndRotationFinalized == false)        //While building !finalized ??
+                                    {
+                                        int randomSlot = Random.Range(0, slots.Count);
+                                        Transform trySlot = slots[randomSlot];
+                                        List<int> validRots = new List<int>();
+                                        SlotBuilder sb = null;
 
-                                        while (true)
+                                        if (slots.Count != 0)
                                         {
-                                            bool placementAndRotationFinalized = false;
-                                            int randomSlot = Random.Range(0, slots.Count);
-                                            Transform trySlot = slots[randomSlot];
-                                            List<Quaternion> validRots = new List<Quaternion>();
-                                            SlotBuilder sb = null;
-
-                                            if (slots.Count != 0)
+                                            if (g.GetComponentInChildren<SlotBuilder>())
                                             {
-                                                if (g.GetComponentInChildren<SlotBuilder>())
+                                                sb = g.GetComponentInChildren<SlotBuilder>();
+                                                for (int i = 0; i < 24; i++)
                                                 {
-                                                    sb = g.GetComponentInChildren<SlotBuilder>();
-                                                    for (int i = 0; i < 24; i++)
+                                                    Quaternion rotation = Quaternion.Euler(0, i * 15, 0);
+                                                    g.transform.SetLocalPositionAndRotation(trySlot.localPosition, rotation);
+                                                    sb.triggerDetectingObject = false;
+                                                    sb.CheckCollider();
+                                                    yield return new WaitForEndOfFrame();
+                                                    if (!sb.triggerDetectingObject)
                                                     {
-                                                        Quaternion rotation = Quaternion.Euler(0, i * 15, 0);
-                                                        g.transform.SetLocalPositionAndRotation(trySlot.localPosition, rotation);
-                                                        sb.CheckCollider();
-                                                        if (!sb.triggerDetectingObject)
-                                                        {
-                                                            validRots.Add(g.transform.rotation);
-                                                        }
-                                                        else
-                                                        {
-                                                            //may be better methodology to remove spawn points intersecting building collider instead
-                                                            Debug.Log("SB detected something; continuing loop");
-                                                            continue;
-                                                        }
-                                                    }
-                                                    if (validRots.Count != 0)
-                                                    {
-                                                        int randFinalRot = Random.Range(0, validRots.Count);
-                                                        Quaternion rotation = validRots[randFinalRot];
-                                                        g.transform.SetLocalPositionAndRotation(trySlot.localPosition, rotation);
-                                                        //This breaks the loop in a big way
-                                                        //adjustedBuildings.Add(g);
-                                                        placementAndRotationFinalized = true;
+                                                        validRots.Add(Mathf.RoundToInt(g.transform.rotation.eulerAngles.y));
                                                     }
                                                     else
                                                     {
-                                                        //Try a different slot
-                                                        //slots.RemoveAt(randomSlot);
-                                                        break;
+                                                        //Debug.Log("SB detected something; continuing loop");
+                                                        yield return null;
+                                                        continue;
                                                     }
                                                 }
+                                                if (validRots.Count != 0)
+                                                {
+                                                    int randFinalRot = Random.Range(0, validRots.Count);
+                                                    g.transform.SetLocalPositionAndRotation(trySlot.localPosition, transform.rotation = Quaternion.Euler(new Vector3(0, validRots[randFinalRot], 0)));
+                                                    //This breaks the loop in a big way
+                                                    adjustedBuildings.Add(g);
+                                                    placementAndRotationFinalized = true;
+                                                }
                                                 else
                                                 {
-                                                    Debug.Log("Missing SB: " + g, g);
-                                                    break;
-                                                }
-                                                if (placementAndRotationFinalized == true)
-                                                {
-                                                    break;
-                                                }
-                                                else
-                                                {
+                                                    Debug.Log("No rotations ", gameObject);
+                                                    //Try a different slot
+                                                    slots.RemoveAt(randomSlot);
                                                     continue;
                                                 }
                                             }
                                             else
                                             {
-                                                Debug.Log("All slots filled, or an issue has occured. Loop failure.");
+                                                //Debug.Log("Missing SlotBuilder: " + g, g);
                                                 break;
                                             }
                                         }
+                                        else
+                                        {
+                                            Debug.Log("All slots filled, or an issue has occured. Loop failure.");
+                                            break;
+                                        }
                                     }
-                                    //t.GetComponent<SlotBuilder>().
-                                    break;
                                 }
+                                //t.GetComponent<SlotBuilder>().
+                                break;
                         }
 
                         if (starterGenerationQueue.Contains(bldg))

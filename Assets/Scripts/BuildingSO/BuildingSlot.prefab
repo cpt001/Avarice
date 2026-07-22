@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 5698023306067188974}
   - component: {fileID: 4718513012719176615}
   - component: {fileID: -8883697656832982941}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: BuildingSlot
   m_TagString: BuildingSpawnPoint
   m_Icon: {fileID: 0}
