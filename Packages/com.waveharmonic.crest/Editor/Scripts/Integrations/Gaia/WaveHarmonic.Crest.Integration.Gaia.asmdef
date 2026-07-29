@@ -23,6 +23,11 @@
     ],
     "versionDefines": [
         {
+            "name": "com.unity.modules.wind",
+            "expression": "",
+            "define": "d_UnityModuleWind"
+        },
+        {
             "name": "com.waveharmonic.crest.shallow-water",
             "expression": "",
             "define": "d_WaveHarmonic_Crest_ShallowWater"

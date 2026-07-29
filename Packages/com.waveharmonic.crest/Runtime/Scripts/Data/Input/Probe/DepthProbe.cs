@@ -38,7 +38,9 @@ namespace WaveHarmonic.Crest
         [Tooltip("Populates the DepthProbe in Start.")]
         OnStart = 0,
 
-        // EveryFrame = 1,
+        /// <inheritdoc cref="Generated.DepthProbeRefreshMode.EveryFrame"/>
+        [Tooltip("Populates the DepthProbe every frame.")]
+        EveryFrame = 1,
 
         /// <inheritdoc cref="Generated.DepthProbeRefreshMode.ViaScripting"/>
         [Tooltip("Requires manual updating via DepthProbe.Populate.")]
@@ -73,18 +75,28 @@ namespace WaveHarmonic.Crest
     /// <see cref="DepthLodInput"/> component.
     /// </remarks>
     [@ExecuteDuringEditMode]
-    [@HelpURL("Manual/ShallowsAndShorelines.html")]
+    [@HelpURL("Manual/Simulation/ShallowsAndShorelines.html#depth-simulation")]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Depth Probe")]
     public sealed partial class DepthProbe : ManagedBehaviour<WaterRenderer>
     {
         [Tooltip("Specifies the setup for this probe.")]
+        [@Disable(typeof(DepthProbe), nameof(ExternallyManagedExecution))]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         internal DepthProbeMode _Type = DepthProbeMode.RealTime;
 
-        [Tooltip("Controls how the probe is refreshed in the Player.\n\nCall Populate() if scripting.")]
-        [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.RealTime), hide: true)]
-        [@GenerateAPI]
+        [Tooltip("Where the Depth Probe is placed.\n\nThe default performs the best.")]
+        [@Disable(typeof(DepthProbe), nameof(ExternallyManaged))]
+        [@Hide(nameof(_Type), nameof(DepthProbeMode.Baked))]
+        [@GenerateAPI(Getter.Custom)]
+        [@DecoratedField, SerializeField]
+        Placement _Placement;
+
+        [Tooltip("Controls how the probe is refreshed in the Player.\n\nCall Populate() if scripting.\n\nWhen Placement is not set to Fixed, EveryFrame is still applicable, but the others are not (update only happens on position change).")]
+        [@Show(nameof(_Type), nameof(DepthProbeMode.RealTime))]
+        [@Disable(typeof(DepthProbe), nameof(ExternallyManagedExecution))]
+        [@GenerateAPI(Getter.Custom)]
         [@DecoratedField, SerializeField]
         internal DepthProbeRefreshMode _RefreshMode = DepthProbeRefreshMode.OnStart;
 
@@ -92,26 +104,26 @@ namespace WaveHarmonic.Crest
         [@Heading("Capture")]
 
         [Tooltip("The layers to render into the probe.")]
-        [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.RealTime))]
+        [@Enable(nameof(_Type), nameof(DepthProbeMode.RealTime))]
         [@GenerateAPI(Setter.Dirty)]
         [@DecoratedField, SerializeField]
         internal LayerMask _Layers = 1; // Default
 
         [Tooltip("The resolution of the probe.\n\nLower will be more efficient.")]
-        [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.RealTime))]
+        [@Enable(nameof(_Type), nameof(DepthProbeMode.RealTime))]
         [@GenerateAPI(Setter.Dirty)]
         [@DecoratedField, SerializeField]
         internal int _Resolution = 512;
 
         [Tooltip("The far and near plane of the depth probe camera respectively, relative to the transform.\n\nDepth is captured top-down and orthographically. The gizmo will visualize this range as the bottom box.")]
-        [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.RealTime))]
+        [@Enable(nameof(_Type), nameof(DepthProbeMode.RealTime))]
         [@Range(-100f, 100f, Range.Clamp.None)]
         [@GenerateAPI(Setter.Dirty)]
         [SerializeField]
         internal Vector2 _CaptureRange = new(-1000f, 1000f);
 
         [Tooltip("Fills holes left by the maximum of the capture range.\n\nSetting the maximum capture range lower than the highest point of geometry can be useful for eliminating depth artifacts from overhangs, but the side effect is there will be a hole in the depth data where geometry is clipped by the near plane. This will only capture where the holes are to fill them in. This height is relative to the maximum capture range. Set to zero to skip.")]
-        [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.RealTime))]
+        [@Enable(nameof(_Type), nameof(DepthProbeMode.RealTime))]
         [@Range(0f, 100f, Range.Clamp.Minimum)]
         [UnityEngine.Serialization.FormerlySerializedAs("_MaximumHeight")]
         [@GenerateAPI(Setter.Dirty)]
@@ -120,14 +132,14 @@ namespace WaveHarmonic.Crest
 
         [@Label("Enable Back-Face Inclusion")]
         [Tooltip("Increase coverage by testing mesh back faces within the Fill Holes area.\n\nUses the back-faces to include meshes where the front-face is within the Fill Holes area and the back-face is within the capture area. An example would be an upright cylinder not over a hole but was not captured due to the top being clipped by the near plane.")]
-        [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.RealTime))]
-        [@Predicated(nameof(_FillHolesCaptureHeight), inverted: false, 0f)]
+        [@Enable(nameof(_Type), nameof(DepthProbeMode.RealTime))]
+        [@Disable(nameof(_FillHolesCaptureHeight), 0f)]
         [@GenerateAPI(Setter.Dirty)]
         [@DecoratedField, SerializeField]
         bool _EnableBackFaceInclusion = true;
 
         [Tooltip("Overrides global quality settings.")]
-        [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.RealTime))]
+        [@Enable(nameof(_Type), nameof(DepthProbeMode.RealTime))]
         [GenerateAPI(Setter.None)]
         [@DecoratedField, SerializeField]
         QualitySettingsOverride _QualitySettingsOverride = new()
@@ -144,7 +156,7 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Baked probe.\n\nCan only bake in edit mode.")]
         [@Disabled]
-        [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.Baked), hide: true)]
+        [@Show(nameof(_Type), nameof(DepthProbeMode.Baked))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
 #pragma warning disable 649
@@ -156,7 +168,7 @@ namespace WaveHarmonic.Crest
 
         [@Label("Generate")]
         [Tooltip("Generate a signed distance field for the shoreline.")]
-        [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.RealTime))]
+        [@Enable(nameof(_Type), nameof(DepthProbeMode.RealTime))]
         [@GenerateAPI(Setter.Dirty)]
         [@DecoratedField, SerializeField]
         internal bool _GenerateSignedDistanceField = true;
@@ -164,8 +176,8 @@ namespace WaveHarmonic.Crest
         // Additional rounds of JFA, over the standard log2(resolution), can help reduce
         // innacuracies from JFA, see paper for details.
         [Tooltip("How many additional Jump Flood rounds to use.\n\nThe standard number of rounds is log2(resolution). Additional rounds can reduce innaccuracies.")]
-        [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.RealTime))]
-        [@Predicated(nameof(_GenerateSignedDistanceField))]
+        [@Enable(nameof(_Type), nameof(DepthProbeMode.RealTime))]
+        [@Enable(nameof(_GenerateSignedDistanceField))]
         [@GenerateAPI(Setter.Dirty)]
         [@DecoratedField, SerializeField]
         int _AdditionalJumpFloodRounds = 7;
@@ -179,11 +191,6 @@ namespace WaveHarmonic.Crest
         [System.Serializable]
         internal sealed class DebugFields
         {
-            [Tooltip("Will render into the probe every frame. Intended for debugging, will generate garbage.")]
-            [@Predicated(nameof(_Type), inverted: true, nameof(DepthProbeMode.RealTime))]
-            [@DecoratedField, SerializeField]
-            public bool _ForceAlwaysUpdateDebug;
-
             [Tooltip("Shows hidden objects like the camera which renders into the probe.")]
             [@DecoratedField, SerializeField]
             public bool _ShowHiddenObjects;
@@ -197,6 +204,8 @@ namespace WaveHarmonic.Crest
 
         const int k_CopyKernel = 0;
         const int k_FillKernel = 1;
+
+        internal static bool s_RenderingCamera;
 
         internal Camera _Camera;
         Rect _Rect;
@@ -218,8 +227,12 @@ namespace WaveHarmonic.Crest
         }
 
         internal Texture Texture => _Type == DepthProbeMode.Baked ? SavedTexture : RealtimeTexture;
-        internal RenderTexture RealtimeTexture { get; set; }
-        internal RenderTexture TargetTexture { get; set; }
+
+        RenderTexture _RealtimeTexture;
+        internal RenderTexture RealtimeTexture => _RealtimeTexture;
+
+        RenderTexture _TargetTexture;
+        internal RenderTexture TargetTexture => _TargetTexture;
 
         // Allows another component to take control of the transform.
         bool _Managed;
@@ -231,6 +244,30 @@ namespace WaveHarmonic.Crest
             {
                 if (_Managed != value) _RecalculateBounds = true;
                 _Managed = value;
+            }
+        }
+
+        bool ManagedExecution { get; set; }
+
+        bool _ExternallyManaged;
+        internal bool ExternallyManaged
+        {
+            get => _ExternallyManaged;
+            set
+            {
+                Managed = value;
+                _ExternallyManaged = value;
+            }
+        }
+
+        bool _ExternallyManagedExecution;
+        internal bool ExternallyManagedExecution
+        {
+            get => _ExternallyManagedExecution;
+            set
+            {
+                ManagedExecution = value;
+                _ExternallyManagedExecution = value;
             }
         }
 
@@ -327,26 +364,46 @@ namespace WaveHarmonic.Crest
         {
             base.OnStart();
 
-            if (_Type == DepthProbeMode.RealTime && _RefreshMode == DepthProbeRefreshMode.OnStart)
+            // TODO: non-managed should populate in start too.
+            if (ManagedExecution || Placement != Placement.Fixed)
+            {
+                return;
+            }
+
+            if (RefreshMode == DepthProbeRefreshMode.OnStart)
             {
                 Populate();
             }
         }
 
-        void OnDestroy()
+        private protected override void OnDestroy()
         {
-            if (_Camera != null) Helpers.Destroy(_Camera.gameObject);
+            base.OnDestroy();
 
-            _CommandBuffer?.Release();
-            _CommandBuffer = null;
+            Helpers.DestroyGameObject(ref _Camera);
+
+            Helpers.Destroy(ref _CommandBuffer);
+
+            Helpers.Destroy(ref _RealtimeTexture);
+            Helpers.Destroy(ref _TargetTexture);
         }
 
         private protected override System.Action<WaterRenderer> OnUpdateMethod => OnUpdate;
         void OnUpdate(WaterRenderer water)
         {
+            if (RefreshMode == DepthProbeRefreshMode.EveryFrame && Placement == Placement.Fixed && !Managed)
+            {
+                Populate();
+            }
+
             if (transform.hasChanged)
             {
                 _RecalculateBounds = true;
+
+                if (Placement == Placement.Transform)
+                {
+                    UpdatePosition(water, transform);
+                }
             }
         }
 
@@ -354,6 +411,14 @@ namespace WaveHarmonic.Crest
         void OnLateUpdate(WaterRenderer water)
         {
             transform.hasChanged = false;
+        }
+
+        void OnBeforeBuildCommandBuffer(WaterRenderer water, Camera camera)
+        {
+            if (Placement == Placement.Viewpoint)
+            {
+                UpdatePosition(water, camera.transform);
+            }
         }
 
         internal bool Outdated => _CurrentStateHash != _RenderedStateHash;
@@ -366,7 +431,9 @@ namespace WaveHarmonic.Crest
                 texture.graphicsFormat != (target ? SystemInfo.GetGraphicsFormat(DefaultFormat.DepthStencil) : FinalFormat);
         }
 
-        GraphicsFormat FinalFormat => _GenerateSignedDistanceField ? Helpers.GetCompatibleTextureFormat(GraphicsFormat.R32G32_SFloat, true) : GraphicsFormat.R32_SFloat;
+        GraphicsFormat FinalFormat => _GenerateSignedDistanceField
+            ? Helpers.GetCompatibleTextureFormat(GraphicsFormat.R32G32_SFloat, Helpers.s_DataGraphicsFormatUsage, "Depth Probe", randomWrite: true)
+            : GraphicsFormat.R32_SFloat;
 
         void MakeRT(RenderTexture texture, bool target)
         {
@@ -392,7 +459,7 @@ namespace WaveHarmonic.Crest
         {
             if (RealtimeTexture == null)
             {
-                RealtimeTexture = new RenderTexture(0, 0, 0)
+                _RealtimeTexture = new RenderTexture(0, 0, 0)
                 {
                     name = $"_Crest_WaterDepthCache_{gameObject.name}",
                     anisoLevel = 0,
@@ -456,7 +523,7 @@ namespace WaveHarmonic.Crest
 
             if (TargetTexture == null)
             {
-                TargetTexture = new RenderTexture(0, 0, 0)
+                _TargetTexture = new RenderTexture(0, 0, 0)
                 {
                     name = $"_Crest_WaterDepthTarget_{gameObject.name}",
                 };
@@ -610,16 +677,9 @@ namespace WaveHarmonic.Crest
 #endif
 
                 // Render scene, saving depths in depth buffer.
-#if d_UnityURP
-                if (RenderPipelineHelper.IsUniversal)
-                {
-                    Helpers.RenderCameraWithoutCustomPasses(_Camera);
-                }
-                else
-#endif
-                {
-                    _Camera.Render();
-                }
+                s_RenderingCamera = true;
+                Helpers.RenderCamera(_Camera);
+                s_RenderingCamera = false;
 
                 _Camera.targetTexture = target;
 
@@ -634,16 +694,9 @@ namespace WaveHarmonic.Crest
             }
 
             // Render scene, saving depths in depth buffer.
-#if d_UnityURP
-            if (RenderPipelineHelper.IsUniversal)
-            {
-                Helpers.RenderCameraWithoutCustomPasses(_Camera);
-            }
-            else
-#endif
-            {
-                _Camera.Render();
-            }
+            s_RenderingCamera = true;
+            Helpers.RenderCamera(_Camera);
+            s_RenderingCamera = false;
 
             var wrapper = new PropertyWrapperCompute(_CommandBuffer, WaterResources.Instance.Compute._RenderDepthProbe, kernel);
 
@@ -714,7 +767,7 @@ namespace WaveHarmonic.Crest
             var descriptor = new RenderTextureDescriptor(_Resolution, _Resolution)
             {
                 autoGenerateMips = false,
-                graphicsFormat = Helpers.GetCompatibleTextureFormat(GraphicsFormat.R16G16_SFloat, true),
+                graphicsFormat = Helpers.GetCompatibleTextureFormat(GraphicsFormat.R16G16_SFloat, Helpers.s_DataGraphicsFormatUsage, "Depth Probe SDF", randomWrite: true),
                 useMipMap = false,
                 enableRandomWrite = true,
                 depthBufferBits = 0,
@@ -833,6 +886,16 @@ namespace WaveHarmonic.Crest
             if (previous == current) return;
             HashState(ref _CurrentStateHash);
         }
+
+        Placement GetPlacement()
+        {
+            return _Type == DepthProbeMode.RealTime ? _Placement : Placement.Fixed;
+        }
+
+        DepthProbeRefreshMode GetRefreshMode()
+        {
+            return _Type == DepthProbeMode.RealTime ? _RefreshMode : DepthProbeRefreshMode.ViaScripting;
+        }
     }
 
     // LodInput
@@ -848,6 +911,9 @@ namespace WaveHarmonic.Crest
             ILodInput.Attach(_Input, DepthLod.s_Inputs);
             HashState(ref _CurrentStateHash);
 
+            WaterRenderer.s_OnBeforeBuildCommandBuffer -= OnBeforeBuildCommandBuffer;
+            WaterRenderer.s_OnBeforeBuildCommandBuffer += OnBeforeBuildCommandBuffer;
+
 #if CREST_DEBUG
             if (_Debug._ShowSimulationDataInScene)
             {
@@ -857,10 +923,12 @@ namespace WaveHarmonic.Crest
         }
 
         /// <inheritdoc/>
-        private protected override void OnDisable()
+        private protected override void Disable()
         {
-            base.OnDisable();
+            base.Disable();
             ILodInput.Detach(_Input, DepthLod.s_Inputs);
+
+            WaterRenderer.s_OnBeforeBuildCommandBuffer -= OnBeforeBuildCommandBuffer;
 
 #if CREST_DEBUG
             if (_Debug._ShowSimulationDataInScene)
@@ -938,6 +1006,41 @@ namespace WaveHarmonic.Crest
 
     sealed partial class DepthProbe
     {
+        Vector3 _PreviousPosition;
+
+        void UpdatePosition(WaterRenderer water, Transform target)
+        {
+            if (ExternallyManagedExecution)
+            {
+                return;
+            }
+
+            var position = target.position.XNZ(water.transform.position.y);
+            var texelSize = Scale / _Resolution;
+            position.x = Mathf.Round(position.x / texelSize.x) * texelSize.x;
+            position.z = Mathf.Round(position.z / texelSize.y) * texelSize.y;
+
+            // User wants to control execution.
+            if (RefreshMode == DepthProbeRefreshMode.ViaScripting)
+            {
+                return;
+            }
+
+            // If multiple viewpoints, then we must execute.
+            if ((Placement == Placement.Viewpoint && !water.IsSingleViewpointMode) || RefreshMode == DepthProbeRefreshMode.EveryFrame || _PreviousPosition != position)
+            {
+                Managed = true;
+                OverridePosition = true;
+                Position = position;
+                Scale = new(transform.lossyScale.x, transform.lossyScale.z);
+                Populate();
+                _PreviousPosition = position;
+            }
+        }
+    }
+
+    sealed partial class DepthProbe
+    {
         // Hash is used to notify whether the probe is outdated in the UI.
         int _RenderedStateHash;
         int _CurrentStateHash;
@@ -958,69 +1061,23 @@ namespace WaveHarmonic.Crest
             Hash.AddObject(Managed ? Quaternion.identity : Rotation, ref hash);
             Hash.AddObject(Managed ? Vector2.zero : Scale, ref hash);
         }
-
-#if UNITY_EDITOR
-        private protected override void OnValidate()
-        {
-            base.OnValidate();
-            // OnChange has a bug (possibly with Unity) with LayerMask where it cannot detect changes.
-            HashState(ref _CurrentStateHash);
-        }
-
-        [@OnChange]
-        void OnChange(string propertyPath, object oldValue)
-        {
-#if CREST_DEBUG
-            ILodInput.Detach(_Input, ClipLod.s_Inputs);
-            if (_Debug._ShowSimulationDataInScene)
-            {
-                ILodInput.Attach(_Input, ClipLod.s_Inputs);
-            }
-#endif
-
-            if (_Camera == null) return;
-            _Camera.gameObject.hideFlags = _Debug._ShowHiddenObjects ? HideFlags.DontSave : HideFlags.HideAndDontSave;
-        }
-
-        void Update()
-        {
-            if (_Debug._ForceAlwaysUpdateDebug && _Type != DepthProbeMode.Baked)
-            {
-                Populate();
-            }
-
-            if (transform.hasChanged)
-            {
-                HashState(ref _CurrentStateHash);
-            }
-        }
-#endif
     }
 
-    partial class DepthProbe : ISerializationCallbackReceiver
+    partial class DepthProbe
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 1;
-#pragma warning restore 414
+        private protected override int Version => Mathf.Max(base.Version, 1);
 
-        /// <inheritdoc/>
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        private protected override void OnMigrate()
         {
+            base.OnMigrate();
+
             // Version 1 (2024.06.04)
             // - Added new capture options replacing Maximum Height's behaviour.
             if (_Version < 1)
             {
                 _CaptureRange.y = _FillHolesCaptureHeight;
                 _FillHolesCaptureHeight = 0f;
-                _Version = 1;
             }
-        }
-
-        /// <inheritdoc/>
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-
         }
     }
 }

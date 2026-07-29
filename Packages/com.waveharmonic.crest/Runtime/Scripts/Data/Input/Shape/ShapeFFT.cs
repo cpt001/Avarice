@@ -14,21 +14,32 @@ namespace WaveHarmonic.Crest
     {
         // Waves
 
-        [Tooltip("Whether to use the wind turbulence on this component rather than the global wind turbulence.\n\nGlobal wind turbulence comes from the Water Renderer component.")]
+        [Tooltip("Whether to apply the options shown when \"Show Advanced Controls\" is active.")]
+        [@Order(nameof(_EvaluateSpectrumAtRunTimeEveryFrame), Order.Placement.Below)]
+        [@DecoratedField]
         [@GenerateAPI]
-        [@InlineToggle(order = -4), SerializeField]
+        [@SerializeField]
+        bool _ApplyAdvancedSpectrumControls;
+
+        [Tooltip("Whether to use the wind turbulence on this component rather than the global wind turbulence.\n\nGlobal wind turbulence comes from the Water Renderer component.")]
+        [@Order("Waves")]
+        [@InlineToggle]
+        [@GenerateAPI]
+        [@SerializeField]
         bool _OverrideGlobalWindTurbulence;
 
         [Tooltip("How turbulent/chaotic the waves are.")]
-        [@Predicated(nameof(_OverrideGlobalWindTurbulence), hide: true)]
+        [@Order("Waves")]
+        [@Show(nameof(_OverrideGlobalWindTurbulence))]
         [@ShowComputedProperty(nameof(WindTurbulence))]
-        [@Range(0, 1, order = -5)]
+        [@Range(0, 1)]
         [@GenerateAPI(Getter.Custom)]
         [SerializeField]
         float _WindTurbulence = 0.145f;
 
         [Tooltip("How aligned the waves are with wind.")]
-        [@Range(0, 1, order = -6)]
+        [@Range(0, 1)]
+        [@Order("Waves")]
         [@GenerateAPI]
         [SerializeField]
         float _WindAlignment;
@@ -37,26 +48,30 @@ namespace WaveHarmonic.Crest
         // Generation
 
         [Tooltip("FFT waves will loop with a period of this many seconds.")]
-        [@Range(4f, 128f, Range.Clamp.Minimum, order = -6)]
+        [@Order("Generation Settings")]
+        [@Range(4f, 128f, Range.Clamp.Minimum)]
         [@GenerateAPI]
         [SerializeField]
         float _TimeLoopLength = Mathf.Infinity;
 
 
-        [Header("Culling")]
+        [@Heading("Culling")]
 
         [Tooltip("Whether to override automatic culling based on heuristics.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         bool _OverrideCulling;
 
         [Tooltip("Maximum amount the surface will be displaced vertically from sea level.\n\nIncrease this if gaps appear at bottom of screen.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         float _MaximumVerticalDisplacement = 10f;
 
         [Tooltip("Maximum amount a point on the surface will be displaced horizontally by waves from its rest position.\n\nIncrease this if gaps appear at sides of screen.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         float _MaximumHorizontalDisplacement = 15f;
 
@@ -68,7 +83,7 @@ namespace WaveHarmonic.Crest
 #endif
 
         [Tooltip("Enable running this FFT with baked data.\n\nThis makes the FFT periodic (repeating in time).")]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(LodInputMode.Global), hide: true)]
+        [@Show(nameof(_Mode), nameof(LodInputMode.Global))]
         [@DecoratedField, SerializeField]
         internal bool _EnableBakedCollision = false;
 
@@ -77,8 +92,8 @@ namespace WaveHarmonic.Crest
 #endif
 
         [Tooltip("Frames per second of baked data.\n\nLarger values may help the collision track the surface closely at the cost of more frames and increase baked data size.")]
-        [@Predicated(nameof(_EnableBakedCollision))]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(LodInputMode.Global), hide: true)]
+        [@Enable(nameof(_EnableBakedCollision))]
+        [@Show(nameof(_Mode), nameof(LodInputMode.Global))]
         [@DecoratedField, SerializeField]
         internal int _TimeResolution = 4;
 
@@ -87,8 +102,8 @@ namespace WaveHarmonic.Crest
 #endif
 
         [Tooltip("Smallest wavelength required in collision.\n\nTo preview the effect of this, disable power sliders in spectrum for smaller values than this number. Smaller values require more resolution and increase baked data size.")]
-        [@Predicated(nameof(_EnableBakedCollision))]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(LodInputMode.Global), hide: true)]
+        [@Enable(nameof(_EnableBakedCollision))]
+        [@Show(nameof(_Mode), nameof(LodInputMode.Global))]
         [@DecoratedField, SerializeField]
         internal float _SmallestWavelengthRequired = 2f;
 
@@ -97,8 +112,8 @@ namespace WaveHarmonic.Crest
 #endif
 
         [Tooltip("FFT waves will loop with a period of this many seconds.\n\nSmaller values decrease data size but can make waves visibly repetitive.")]
-        [@Predicated(nameof(_EnableBakedCollision))]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(LodInputMode.Global), hide: true)]
+        [@Enable(nameof(_EnableBakedCollision))]
+        [@Show(nameof(_Mode), nameof(LodInputMode.Global))]
         [@Range(4f, 128f)]
         [SerializeField]
         internal float _BakedTimeLoopLength = 32f;
@@ -125,7 +140,8 @@ namespace WaveHarmonic.Crest
             WindDirRadForFFT,
             WindTurbulence,
             _WindAlignment,
-            gravity
+            gravity,
+            _ApplyAdvancedSpectrumControls
         );
 
         private protected override void OnUpdate(WaterRenderer water)
@@ -271,29 +287,18 @@ namespace WaveHarmonic.Crest
         }
     }
 
-    partial class ShapeFFT : ISerializationCallbackReceiver
+    partial class ShapeFFT
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 2;
-#pragma warning restore 414
+        private protected override int Version => Mathf.Max(base.Version, 2);
 
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        private protected override void OnMigrate()
         {
-            _Version = MigrateV1(_Version);
+            base.OnMigrate();
 
             if (_Version < 2)
             {
                 _OverrideGlobalWindTurbulence = true;
             }
-
-            _Version = MigrateV2(_Version);
-            _Version = MigrateV3(_Version);
-        }
-
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-            // Empty.
         }
     }
 

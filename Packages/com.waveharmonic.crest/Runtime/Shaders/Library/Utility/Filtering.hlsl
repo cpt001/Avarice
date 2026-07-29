@@ -8,6 +8,36 @@
 
 m_UtilityNameSpace
 
+// NOTE: We have to roll our own bilinear filter in Compute shaders when
+// reading from a RWTexture. The documentation below explains how SRV
+// and UAV mappings of the same texture cannot exist at the same time.
+// https://docs.microsoft.com/en-us/windows/desktop/direct3dhlsl/sm5-object-rwtexture2d
+float4 SampleBilinear(const RWTexture2DArray<float4> i_Texture, const float2 i_UV, const uint i_Slice, const float i_Resolution)
+{
+    // Make relative to pixel centers.
+    const float2 center = i_UV * i_Resolution - 0.5;
+
+    // Compute integral (bottom left) and fractional parts
+    // Prevent overflow from possible negative cast to unsigned.
+    const uint maximum = (uint)i_Resolution - 1;
+    const uint2 integral = max((float2)0.0, floor(center));
+    const uint2 opposite = uint2(min(integral.x + 1, maximum), min(integral.y + 1, maximum));
+    const float2 fractional = frac(center);
+
+    // Clamp from below and above (desired?).
+    const float4 bl = i_Texture[uint3(integral, i_Slice)];
+    const float4 br = i_Texture[uint3(uint2(opposite.x, integral.y), i_Slice)];
+    const float4 tl = i_Texture[uint3(uint2(integral.x, opposite.y), i_Slice)];
+    const float4 tr = i_Texture[uint3(opposite, i_Slice)];
+
+    return lerp
+    (
+        lerp(bl, br, fractional.x),
+        lerp(tl, tr, fractional.x),
+        fractional.y
+    );
+}
+
 // Taken from:
 // https://gist.github.com/TheRealMJP/c83b8c0f46b63f3a88a5986f4fa982b1
 //

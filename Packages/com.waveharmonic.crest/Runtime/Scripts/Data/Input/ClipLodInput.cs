@@ -13,25 +13,20 @@ namespace WaveHarmonic.Crest
     /// <remarks>
     /// Attach this to objects that you want to use to clip the surface of the water.
     /// </remarks>
-    [@HelpURL("Manual/Clipping.html#clip-inputs")]
+    [@HelpURL("Manual/Basics/Clipping.html#user-inputs")]
     public sealed partial class ClipLodInput : LodInput
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [@Heading("Primitive")]
 
         [Tooltip("The primitive to render (signed distance) into the simulation.")]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(LodInputMode.Primitive), hide: true)]
+        [@Show(nameof(_Mode), nameof(LodInputMode.Primitive))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         internal LodInputPrimitive _Primitive = LodInputPrimitive.Cube;
 
         // Only Mode.Primitive SDF supports inverted.
         [Tooltip("Removes clip surface data instead of adding it.")]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(LodInputMode.Primitive), hide: true)]
+        [@Show(nameof(_Mode), nameof(LodInputMode.Primitive))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _Inverted;
@@ -39,8 +34,7 @@ namespace WaveHarmonic.Crest
         [@Heading("Culling")]
 
         [Tooltip("Prevents inputs from cancelling each other out when aligned vertically.\n\nIt is imperfect so custom logic might be needed for your use case.")]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Paint), hide: true)]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(LodInputMode.Renderer))]
+        [@Show(nameof(_Mode), nameof(LodInputMode.Renderer))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _WaterHeightDistanceCulling = false;

@@ -96,6 +96,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d64d1f50f3b548bcbe279507f0e78da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 1
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -111,7 +112,6 @@ MonoBehaviour:
   _MaximumDisplacementVertical: 0
   _MaximumDisplacementHorizontal: 0
   _ReportRendererBounds: 0
-  _Version: 1
   _RenderPostCombine: 1
   references:
     version: 2
@@ -119,6 +119,7 @@ MonoBehaviour:
     - rid: 5163698717554376716
       type: {class: AnimatedWavesRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 684761497578884912}
         _Renderer: {fileID: 6400578777511710056}
         _DisableRenderer: 1

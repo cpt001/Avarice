@@ -3,27 +3,20 @@
 
 #if d_UnityHDRP
 
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
-using WaveHarmonic.Crest.Internal;
+
+#if UNITY_6000_5_OR_NEWER
+using MipGenerator = UnityEngine.Rendering.HighDefinition.MipGenerator;
+#endif
 
 namespace WaveHarmonic.Crest
 {
     // High Definition Render Pipeline
     partial class WaterRenderer
     {
-        internal static partial class ShaderIDs
-        {
-            // High Definition Render Pipeline
-            public static readonly int s_PrimaryLightDirection = Shader.PropertyToID("g_Crest_PrimaryLightDirection");
-            public static readonly int s_PrimaryLightIntensity = Shader.PropertyToID("g_Crest_PrimaryLightIntensity");
-        }
-
         internal static bool s_CameraMSAA;
-
-        bool _DoneHighDefinitionLighting;
 
         void OnBeginContextRendering(ScriptableRenderContext context, System.Collections.Generic.List<Camera> cameras)
         {
@@ -32,55 +25,30 @@ namespace WaveHarmonic.Crest
 
         // This use to be in OnBeginContextRendering with comment: "Most compatible with
         // lighting options if computed here". Cannot remember what that meant.
-        internal void UpdateHighDefinitionLighting(Camera camera)
+        Color ApplyAtmosphericAttenuation(Camera camera, Light sun, Vector3 direction, Color intensity)
         {
-            if (_DoneHighDefinitionLighting)
+            if (sun.TryGetComponent<HDAdditionalLightData>(out var data))
             {
-                return;
-            }
-
-            var lightDirection = Vector3.zero;
-            var lightIntensity = Color.black;
-            var sun = PrimaryLight;
-
-            if (sun != null && sun.isActiveAndEnabled && sun.TryGetComponent<HDAdditionalLightData>(out var data))
-            {
-                lightDirection = -sun.transform.forward;
-                lightIntensity = Color.clear;
+                // We could get the main light in the shader the same way we get the main light
+                // shadows, but most of the data would be missing (including below horizon
+                // attenuation) which would require re-running the light loop which is expensive.
 
                 // It was reported that Light.intensity causes flickering when updated with
                 // HDAdditionalLightData.SetIntensity, unless we get intensity from there.
-                {
-                    // Adapted from Helpers.FinalColor.
-                    var light = data;
-                    var linear = GraphicsSettings.lightsUseLinearIntensity;
-                    var color = linear ? light.color.linear : light.color;
-#if UNITY_6000_0_OR_NEWER
-                    color *= sun.intensity;
-#else
-                    color *= light.intensity;
-#endif
-                    if (linear && light.useColorTemperature) color *= Mathf.CorrelatedColorTemperatureToRGB(sun.colorTemperature);
-                    if (!linear) color = color.MaybeLinear();
-                    lightIntensity = linear ? color.MaybeGamma() : color;
-                }
 
                 // Transmittance is for Physically Based Sky.
                 var hdCamera = HDCamera.GetOrCreate(camera);
                 var settings = SkyManager.GetSkySetting(hdCamera.volumeStack);
                 var transmittance = settings != null
-                    ? settings.EvaluateAtmosphericAttenuation(lightDirection, hdCamera.camera.transform.position)
+                    ? settings.EvaluateAtmosphericAttenuation(direction, hdCamera.camera.transform.position)
                     : Vector3.one;
 
-                lightIntensity *= transmittance.x;
-                lightIntensity *= transmittance.y;
-                lightIntensity *= transmittance.z;
+                intensity *= transmittance.x;
+                intensity *= transmittance.y;
+                intensity *= transmittance.z;
             }
 
-            Shader.SetGlobalVector(ShaderIDs.s_PrimaryLightDirection, lightDirection);
-            Shader.SetGlobalVector(ShaderIDs.s_PrimaryLightIntensity, lightIntensity);
-
-            _DoneHighDefinitionLighting = true;
+            return intensity;
         }
     }
 
@@ -153,7 +121,8 @@ namespace WaveHarmonic.Crest
         {
             if (this == null) return;
 
-            if (!WaterRenderer.ShouldRender(camera, _Water.Surface.Layer))
+            // Currently, only do this for the surface.
+            if (!_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Surface))
             {
                 return;
             }
@@ -164,7 +133,7 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            var rt = Shader.GetGlobalTexture(Shader.PropertyToID("_CameraDepthTexture")) as RenderTexture;
+            var rt = Shader.GetGlobalTexture(ShaderIDs.Unity.s_CameraDepthTexture) as RenderTexture;
             var hdCamera = HDCamera.GetOrCreate(camera);
 
             if (hdCamera.allowDynamicResolution && hdCamera.canDoDynamicResolution)
@@ -186,20 +155,12 @@ namespace WaveHarmonic.Crest
         }
 
         MipGenerator MipGenerator =>
-#if UNITY_6000_OR_NEWER
-            (RenderPipelineManager.currentPipeline as HDRenderPipeline).m_MipGenerator
+#if UNITY_6000_0_OR_NEWER
+            (RenderPipelineManager.currentPipeline as HDRenderPipeline).m_MipGenerator;
 #else
             s_MipGenerator.GetValue(RenderPipelineManager.currentPipeline) as MipGenerator;
-        static readonly FieldInfo s_MipGenerator = typeof(HDRenderPipeline).GetField("m_MipGenerator", BindingFlags.NonPublic | BindingFlags.Instance);
+        static readonly System.Reflection.FieldInfo s_MipGenerator = typeof(HDRenderPipeline).GetField("m_MipGenerator", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 #endif
-
-        static readonly MethodInfo s_UseScaling = typeof(RTHandle).GetProperty("useScaling", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance).SetMethod;
-        static readonly object[] s_UseScalingParameters = { true };
-
-        static void UseScaling(RTHandle rt)
-        {
-            s_UseScaling.Invoke(rt, s_UseScalingParameters);
-        }
 
         protected override void Execute(CustomPassContext context)
         {
@@ -213,23 +174,13 @@ namespace WaveHarmonic.Crest
             var camera = hdCamera.camera;
             var buffer = context.cmd;
 
-            if (!WaterRenderer.ShouldRender(camera, _Water.Surface.Layer))
-            {
-                return;
-            }
-
-            if (_Water.Surface.Material == null)
+            // Currently, only do this for the surface.
+            if (!_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Surface))
             {
                 return;
             }
 
             if (!SurfaceRenderer.IsTransparent(_Water.Surface.Material))
-            {
-                return;
-            }
-
-            // Our reflections do not need them.
-            if (camera == _Water.Reflections.ReflectionCamera)
             {
                 return;
             }
@@ -280,7 +231,7 @@ namespace WaveHarmonic.Crest
                     // Set up wrapper, so we can use Blitter.
                     _DepthPyramid ??= RTHandles.Alloc(depthTexture);
                     _DepthPyramid.SetRenderTexture(depthTexture);
-                    UseScaling(_DepthPyramid);
+                    _DepthPyramid.useScaling = true;
 
                     // Blit to the bottom of the depth atlas.
                     Blitter.BlitCameraTexture(buffer, context.cameraDepthBuffer, _DepthPyramid, new Rect(0, 0, hdCamera.actualWidth, hdCamera.actualHeight));

@@ -14,9 +14,11 @@ namespace WaveHarmonic.Crest
         Universal,
     }
 
-    sealed class RenderPipelineHelper
+    sealed partial class RenderPipelineHelper
     {
-        public static RenderPipeline RenderPipeline => GraphicsSettings.currentRenderPipeline switch
+        public static RenderPipeline RenderPipeline { get; private set; } = RenderPipelineAsset;
+
+        public static RenderPipeline RenderPipelineAsset => GraphicsSettings.currentRenderPipeline switch
         {
 #if d_UnityHDRP
             HDRenderPipelineAsset => RenderPipeline.HighDefinition,
@@ -27,31 +29,79 @@ namespace WaveHarmonic.Crest
             _ => RenderPipeline.Legacy,
         };
 
-        // GraphicsSettings.currentRenderPipeline could be from the graphics setting or current quality level.
-        public static bool IsLegacy => GraphicsSettings.currentRenderPipeline == null;
+        public static bool IsLegacy => RenderPipeline == RenderPipeline.Legacy;
+        public static bool IsUniversal => RenderPipeline == RenderPipeline.Universal;
+        public static bool IsHighDefinition => RenderPipeline == RenderPipeline.HighDefinition;
 
-        public static bool IsUniversal
+        public static bool s_SkipRenderPipelineChange;
+    }
+
+#if UNITY_EDITOR
+    sealed partial class RenderPipelineHelper
+    {
+        static bool s_ChangingRenderPipelines;
+        static bool s_Initialized;
+        public static System.Action s_ActiveRenderPipelineTypeChanged;
+        public static System.Action s_WillActiveRenderPipelineTypeChange;
+
+        [UnityEditor.InitializeOnLoadMethod]
+        static void Load()
         {
-            get
-            {
-#if d_UnityURP
-                return GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset;
-#else
-                return false;
-#endif
-            }
+            s_ChangingRenderPipelines = false;
+            s_Initialized = false;
+
+            RenderPipelineManager.activeRenderPipelineTypeChanged -= OnActiveRenderPipelineTypeChanged;
+            RenderPipelineManager.activeRenderPipelineTypeChanged += OnActiveRenderPipelineTypeChanged;
+
+            // Problem is that since there is a gap between these two calls, a LateUpdate will
+            // be called in between in bad state. Since this no longer runs in 6.4 anyway,
+            // let's leave it.
+            // UnityEditor.EditorApplication.update -= EditorUpdate;
+            // UnityEditor.EditorApplication.update += EditorUpdate;
         }
 
-        public static bool IsHighDefinition
+        static void OnActiveRenderPipelineTypeChanged()
         {
-            get
+            // In Unity 6 executed by Camera.Render which makes a mess of the test case.
+            if (s_SkipRenderPipelineChange)
             {
-#if d_UnityHDRP
-                return GraphicsSettings.currentRenderPipeline is HDRenderPipelineAsset;
-#else
-                return false;
-#endif
+                return;
+            }
+
+            // Fallback, as update does not work if changed via script.
+            // Tried all the other events in RenderPipelineManager to no avail.
+            if (RenderPipelineAsset != RenderPipeline)
+            {
+                s_WillActiveRenderPipelineTypeChange?.Invoke();
+            }
+
+            RenderPipeline = RenderPipelineAsset;
+            s_ChangingRenderPipelines = false;
+            s_ActiveRenderPipelineTypeChanged?.Invoke();
+        }
+
+        internal static void EditorUpdate()
+        {
+            if (!s_Initialized)
+            {
+                // This can be false on load.
+                if (RenderPipelineManager.pipelineSwitchCompleted)
+                {
+                    s_Initialized = true;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            if (!s_ChangingRenderPipelines && !RenderPipelineManager.pipelineSwitchCompleted)
+            {
+                s_ChangingRenderPipelines = true;
+                s_WillActiveRenderPipelineTypeChange?.Invoke();
+                RenderPipeline = RenderPipelineAsset;
             }
         }
     }
+#endif
 }

@@ -4,7 +4,7 @@
 #ifndef CREST_WATER_NORMAL_H
 #define CREST_WATER_NORMAL_H
 
-#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings.Crest.hlsl"
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Keywords.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Constants.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Texture.hlsl"
@@ -14,7 +14,7 @@
 #include "Packages/com.waveharmonic.crest.shifting-origin/Runtime/Shaders/ShiftingOrigin.hlsl"
 #endif
 
-#if _CREST_CUSTOM_MESH
+#if d_Crest_CustomMesh
 float4 _Crest_NormalMapParameters[MAX_LOD_COUNT];
 #define _Crest_ChunkNormalMapParameters _Crest_NormalMapParameters[i_CascadeData._IndexI]
 #else
@@ -72,11 +72,12 @@ half2 SampleNormalMaps
     const float farWeight = parameters.z;
 
     const float2 v0 = float2(0.94, 0.34), v1 = float2(-0.85, -0.53);
-    float scale = i_NormalMap._scale * i_CascadeData._Scale / 10.0;
-    const float spdmulL = speed.x * i_NormalMap._speed;
+    float scale = i_NormalMap._scale * i_CascadeData._Scale * 0.1;
+    const float time = i_NormalMap._speed * g_Crest_Time;
+    const float spdmulL = speed.x * time;
     half2 norm =
-        UnpackNormal(i_NormalMap.Sample((worldXZUndisplaced + v0 * g_Crest_Time * spdmulL) / scale)).xy +
-        UnpackNormal(i_NormalMap.Sample((worldXZUndisplaced + v1 * g_Crest_Time * spdmulL) / scale)).xy;
+        UnpackNormal(i_NormalMap.Sample((worldXZUndisplaced + v0 * spdmulL) / scale)).xy +
+        UnpackNormal(i_NormalMap.Sample((worldXZUndisplaced + v1 * spdmulL) / scale)).xy;
 
     // blend in next higher scale of normals to obtain continuity
     const half nblend = i_LodAlpha * farWeight;
@@ -84,10 +85,10 @@ half2 SampleNormalMaps
     {
         // next lod level
         scale *= 2.0;
-        const float spdmulH = speed.y * i_NormalMap._speed;
+        const float spdmulH = speed.y * time;
         norm = lerp(norm,
-            UnpackNormal(i_NormalMap.Sample((worldXZUndisplaced + v0 * g_Crest_Time * spdmulH) / scale)).xy +
-            UnpackNormal(i_NormalMap.Sample((worldXZUndisplaced + v1 * g_Crest_Time * spdmulH) / scale)).xy,
+            UnpackNormal(i_NormalMap.Sample((worldXZUndisplaced + v0 * spdmulH) / scale)).xy +
+            UnpackNormal(i_NormalMap.Sample((worldXZUndisplaced + v1 * spdmulH) / scale)).xy,
             nblend);
     }
 
@@ -159,25 +160,25 @@ half NormalMapTurbulence
 
 void WaterNormal
 (
-    const float2 i_WaterLevelDerivatives,
-    const half3 i_ViewDirectionWS,
-    const half i_MinimumReflectionDirectionY,
+    const half i_Strength,
     const bool i_Underwater,
     inout half3 io_NormalWS
 )
 {
-    // Account for water level changes which change angle of water surface, impacting normal.
-    io_NormalWS.xz += -i_WaterLevelDerivatives;
-
     // Finalise normal
     io_NormalWS = normalize(io_NormalWS);
 
-    if (i_Underwater)
+    if (i_Strength < 1.0)
     {
-        return;
+        io_NormalWS.xz *= i_Strength;
+        io_NormalWS.y = lerp(1.0, io_NormalWS.y, i_Strength);
     }
 
-    io_NormalWS = ApplyMinimumReflectionDirectionY(i_MinimumReflectionDirectionY, i_ViewDirectionWS, io_NormalWS);
+    if (i_Underwater)
+    {
+        // Flip when underwater.
+        io_NormalWS.xyz *= -1.0;
+    }
 }
 
 

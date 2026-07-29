@@ -40,7 +40,7 @@ namespace WaveHarmonic.Crest
 
         internal static ICollisionProvider Create(WaterRenderer water)
         {
-            return water.MultipleViewpoints ? new CollisionQueryPerCamera(water) : new CollisionQueryWithPasses(water);
+            return water.IsMultipleViewpointMode ? new CollisionQueryPerCamera(water) : new CollisionQueryWithPasses(water);
         }
 
         /// <summary>
@@ -75,7 +75,6 @@ namespace WaveHarmonic.Crest
         int Query(int hash, float minimumLength, Vector3[] points, float[] heights, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null);
 
         /// <param name="displacements">Resulting displacement vectors at the query positions. Add sea level to Y to get world space height.</param>
-        /// <inheritdoc cref="IQueryProvider.Query(int, float, Vector3[], int, Vector3?)" />
         /// <inheritdoc cref="Query(int, float, Vector3[], float[], Vector3[], Vector3[], CollisionLayer, Vector3?)" />
         int Query(int hash, float minimumLength, Vector3[] points, Vector3[] displacements, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null);
     }

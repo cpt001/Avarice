@@ -35,7 +35,7 @@ half  _Crest_ShadowsAffectsAmbientFactor;
 // Volume parameters.
 half  _Crest_SunBoost;
 half3 _Crest_AmbientLighting;
-int   _Crest_DataSliceOffset;
+uint  _Crest_DataSliceOffset;
 #endif
 
 half _Crest_Radius;
@@ -157,10 +157,21 @@ half4 Fragment(Varyings input)
         half3 scattering = _Crest_Scattering.xyz;
 
         // Keep the same as the volume.
-        const int sliceIndex = clamp(_Crest_DataSliceOffset, 0, g_Crest_LodCount - 2);
+        const uint sliceIndex = clamp(_Crest_DataSliceOffset, 0, g_Crest_LodCount - 2);
 
-        if (g_Crest_SampleAbsorptionSimulation) absorption = Cascade::MakeAbsorption(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
-        if (g_Crest_SampleScatteringSimulation) scattering = Cascade::MakeScattering(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
+#if d_Crest_AbsorptionLod
+        if (g_Crest_SampleAbsorptionSimulation)
+        {
+            absorption = Cascade::MakeAbsorption(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
+        }
+#endif
+
+#if d_Crest_ScatteringLod
+        if (g_Crest_SampleScatteringSimulation)
+        {
+            scattering = Cascade::MakeScattering(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
+        }
+#endif
 
         float3 lightDirection; float3 lightColor;
         PrimaryLight(positionWS, lightColor, lightDirection);
@@ -177,10 +188,13 @@ half4 Fragment(Varyings input)
 #endif
 
         half shadow = 1.0;
+
+#if d_Crest_ShadowLod
         {
             // Soft in red, hard in green. But hard not computed in HDRP.
             shadow = 1.0 - Cascade::MakeShadow(sliceIndex).SampleShadow(_WorldSpaceCameraPos.xz).x;
         }
+#endif
 
         half3 lighting = VolumeLighting
         (
@@ -193,8 +207,10 @@ half4 Fragment(Varyings input)
             lerp(half3(0, -1, 0), lightDirection, opacity),
             lightColor,
             half3(0.0, 0.0, 0.0), // Additional lights
+            1.0, // Additional light blend
             _Crest_AmbientTerm,
             _Crest_DirectTerm,
+            1.0, // Additional light term
             _Crest_SunBoost,
             _Crest_ShadowsAffectsAmbientFactor
         );

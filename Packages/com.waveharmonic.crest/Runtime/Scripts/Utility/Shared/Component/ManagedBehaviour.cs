@@ -43,8 +43,10 @@ namespace WaveHarmonic.Crest.Internal
             Broadcast(s_OnEnable);
         }
 
-        private protected virtual void Disable()
+        private protected override void Disable()
         {
+            base.Disable();
+
             Broadcast(s_OnDisable);
             Instance = null;
         }
@@ -61,7 +63,7 @@ namespace WaveHarmonic.Crest.Internal
 
         internal static void AfterScriptReload()
         {
-            Instance = FindFirstObjectByType<T>();
+            Instance = FindAnyObjectByType<T>();
         }
     }
 
@@ -131,8 +133,10 @@ namespace WaveHarmonic.Crest.Internal
         /// <summary>
         /// Unity's OnDisable method. Make sure to call base if overriden.
         /// </summary>
-        private protected virtual void OnDisable()
+        private protected override void OnDisable()
         {
+            base.OnDisable();
+
             UpdateSubscription(listen: false);
 
             if (_OnDisable != null && ManagerBehaviour<T>.Instance != null)

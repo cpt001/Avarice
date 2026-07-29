@@ -124,6 +124,11 @@ namespace WaveHarmonic.Crest.Generated
         OnStart,
 
         /// <summary>
+        /// Populates the DepthProbe every frame.
+        /// </summary>
+        EveryFrame,
+
+        /// <summary>
         /// Requires manual updating via DepthProbe.Populate.
         /// </summary>
         ViaScripting,
@@ -406,6 +411,60 @@ namespace WaveHarmonic.Crest.Generated
         /// Depth color based on shoreline distance.
         /// </summary>
         Distance,
+    }
+}
+
+
+namespace WaveHarmonic.Crest.Generated
+{
+    enum WaterBodyAffects
+    {
+        /// <summary>
+        /// Affects nothing.
+        /// </summary>
+        Nothing,
+
+        /// <summary>
+        /// Affects the water surface.
+        /// </summary>
+        Surface,
+
+        /// <summary>
+        /// Affects the water volume.
+        /// </summary>
+        Volume,
+
+        /// <summary>
+        /// Affects water physics (anything that calls HasWater).
+        /// </summary>
+        Physics,
+
+        /// <summary>
+        /// Affects everything.
+        /// </summary>
+        Everything,
+    }
+}
+
+
+namespace WaveHarmonic.Crest.Generated
+{
+    enum WaterBodyExclusion
+    {
+        /// <summary>
+        /// No exclusion applied.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// Include this area.
+        /// </summary>
+        Include,
+
+        /// <summary>
+        /// Exclude this area.
+        /// </summary>
+        Exclude,
     }
 }
 

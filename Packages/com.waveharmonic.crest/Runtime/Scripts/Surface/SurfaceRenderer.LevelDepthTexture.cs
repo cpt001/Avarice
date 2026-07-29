@@ -3,7 +3,6 @@
 
 #if UNITY_EDITOR
 
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -12,36 +11,24 @@ namespace WaveHarmonic.Crest
     partial class SurfaceRenderer
     {
         RenderTexture _WaterLevelDepthTexture;
-        internal RenderTexture WaterLevelDepthTexture { get; private set; }
+        internal RenderTexture WaterLevelDepthTexture => _WaterLevelDepthTexture;
         RenderTargetIdentifier _WaterLevelDepthTarget;
         Material _WaterLevelDepthMaterial;
-
-        internal RenderTexture GetWaterLevelDepthTexture(Camera camera)
-        {
-            // Do not use SeparateViewpoint here, as this is called outside the camera loop.
-            if (_Water.SingleViewpoint)
-            {
-                return WaterLevelDepthTexture;
-            }
-            else if (_PerCameraLevelDepthTexture.ContainsKey(camera))
-            {
-                return _PerCameraLevelDepthTexture[camera];
-            }
-
-            return null;
-        }
 
         const string k_WaterLevelDepthTextureName = "Crest Water Level Depth Texture";
 
         void ExecuteWaterLevelDepthTexture(Camera camera, CommandBuffer buffer)
         {
-            if (_Water.SingleViewpoint && _WaterLevelDepthTexture == null)
+            // Currently, only used for painting which means only when mouse is over the view.
+            if (!_Water._CurrentSceneCameraHasMouseHover)
             {
-                _WaterLevelDepthTexture = new(0, 0, 0);
-                WaterLevelDepthTexture = _WaterLevelDepthTexture;
+                return;
             }
 
-            LoadCameraDataLDT(camera);
+            if (_WaterLevelDepthTexture == null)
+            {
+                _WaterLevelDepthTexture = new(0, 0, 0);
+            }
 
             WaterLevelDepthTexture.name = k_WaterLevelDepthTextureName;
 
@@ -105,53 +92,15 @@ namespace WaveHarmonic.Crest
 
         void DisableWaterLevelDepthTexture()
         {
+            Helpers.Destroy(ref _WaterLevelDepthTexture);
+            Helpers.Destroy(ref _WaterLevelDepthBuffer);
+            Helpers.Destroy(ref _WaterLevelDepthMaterial);
+
             if (Application.isPlaying) return;
 
 #if d_UnityHDRP
             WaterLevelDepthTextureHDRP.Disable();
 #endif
-        }
-    }
-
-    // Multiple Viewpoints
-    // Technically, this should always store an RT per camera, as it is screen-space.
-    // But having it opt-in is not a bad idea.
-    partial class SurfaceRenderer
-    {
-        internal Dictionary<Camera, RenderTexture> _PerCameraLevelDepthTexture = new();
-
-        void LoadCameraDataLDT(Camera camera)
-        {
-            if (_Water.SingleViewpoint)
-            {
-                return;
-            }
-
-            if (!_PerCameraLevelDepthTexture.ContainsKey(camera))
-            {
-                var descriptor = new RenderTextureDescriptor(camera.pixelWidth, camera.pixelHeight)
-                {
-                    graphicsFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.None,
-                    depthBufferBits = 32,
-                };
-
-                WaterLevelDepthTexture = new(descriptor);
-                _PerCameraLevelDepthTexture.Add(camera, WaterLevelDepthTexture);
-            }
-            else
-            {
-                WaterLevelDepthTexture = _PerCameraLevelDepthTexture[camera];
-            }
-        }
-
-        internal void RemoveCameraDataLDT(Camera camera)
-        {
-            if (_PerCameraLevelDepthTexture.ContainsKey(camera))
-            {
-                _PerCameraLevelDepthTexture[camera].Release();
-                Helpers.Destroy(_PerCameraLevelDepthTexture[camera]);
-                _PerCameraLevelDepthTexture.Remove(camera);
-            }
         }
     }
 }

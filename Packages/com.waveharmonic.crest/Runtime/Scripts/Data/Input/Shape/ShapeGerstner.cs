@@ -19,14 +19,18 @@ namespace WaveHarmonic.Crest
 
         [@Space(10)]
 
+        // If disabled, there will be a difference due to Random.value.
         [Tooltip("Use a swell spectrum as the default.\n\nUses a swell spectrum as default (when none is assigned), and disabled reverse waves.")]
+        [@Order("Waves")]
+        [@DecoratedField]
         [@GenerateAPI]
-        [@DecoratedField(order = -4), SerializeField]
+        [@SerializeField]
         bool _Swell = true;
 
         [Tooltip("The weight of the opposing, second pair of Gerstner waves.\n\nEach Gerstner wave is actually a pair of waves travelling in opposite directions (similar to FFT). This weight is applied to the wave travelling in against-wind direction. Set to zero to obtain simple single waves which are useful for shorelines waves.")]
-        [Predicated(nameof(_Swell), inverted: true)]
-        [@Range(0f, 1f, order = -5)]
+        [@Order("Waves")]
+        [@Disable(nameof(_Swell))]
+        [@Range(0f, 1f)]
         [@GenerateAPI(Getter.Custom)]
         [SerializeField]
         float _ReverseWaveWeight = 0.5f;
@@ -35,20 +39,31 @@ namespace WaveHarmonic.Crest
         // Generation Settings
 
         [Tooltip("How many wave components to generate in each octave.")]
-        [@Delayed(order = -5)]
+        [@Order("Generation Settings")]
+        [@Delayed]
         [@GenerateAPI]
         [SerializeField]
         int _ComponentsPerOctave = 8;
 
-        [Tooltip("Change to get a different set of waves.")]
+        [Tooltip("Whether to randomize amplitudes and phases.")]
+        [@Order("Generation Settings")]
+        [@DecoratedField]
         [@GenerateAPI]
-        [@DecoratedField(order = -6)]
+        [@SerializeField]
+        bool _Randomize = true;
+
+        [Tooltip("Change to get a different set of waves.")]
+        [@Order("Generation Settings")]
+        [@Enable(nameof(_Randomize))]
+        [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         int _RandomSeed = 0;
 
         [Tooltip("Prevent data arrays from being written to so one can provide their own.")]
+        [@Order("Generation Settings")]
         [@GenerateAPI]
-        [@DecoratedField(order = -7)]
+        [@DecoratedField]
         [SerializeField]
         bool _ManualGeneration;
 
@@ -95,12 +110,7 @@ namespace WaveHarmonic.Crest
         float[] _Amplitudes2;
         float[] _Phases2;
 
-        struct GerstnerCascadeParams
-        {
-            public int _StartIndex;
-        }
-        ComputeBuffer _BufferCascadeParameters;
-        readonly GerstnerCascadeParams[] _CascadeParameters = new GerstnerCascadeParams[k_CascadeCount + 1];
+        readonly int[] _StartIndices = new int[k_CascadeCount];
 
         // Caution - order here impact performance. Rearranging these to match order
         // they're read in the compute shader made it 50% slower..
@@ -113,6 +123,7 @@ namespace WaveHarmonic.Crest
             public Vector4 _Omega;
             public Vector4 _Phase;
             public Vector4 _ChopAmplitude;
+
             // Waves are generated in pairs, these values are for the second in the pair
             public Vector4 _Amplitude2;
             public Vector4 _ChopAmplitude2;
@@ -121,8 +132,7 @@ namespace WaveHarmonic.Crest
         ComputeBuffer _BufferWaveData;
         readonly GerstnerWaveComponent4[] _WaveData = new GerstnerWaveComponent4[k_MaximumWaveComponents / 4];
 
-        ComputeShader _ShaderGerstner;
-        int _KernelGerstner = -1;
+        WaterResources.GerstnerCompute _Shader;
 
         private protected override WaveSpectrum DefaultSpectrum => _Swell ? SwellSpectrum : WindSpectrum;
         static WaveSpectrum s_SwellSpectrum;
@@ -156,7 +166,7 @@ namespace WaveHarmonic.Crest
         {
             public static readonly int s_FirstCascadeIndex = Shader.PropertyToID("_Crest_FirstCascadeIndex");
             public static readonly int s_TextureRes = Shader.PropertyToID("_Crest_TextureRes");
-            public static readonly int s_CascadeParams = Shader.PropertyToID("_Crest_GerstnerCascadeParams");
+            public static readonly int s_StartIndices = Shader.PropertyToID("_Crest_StartIndices");
             public static readonly int s_GerstnerWaveData = Shader.PropertyToID("_Crest_GerstnerWaveData");
         }
 
@@ -170,6 +180,12 @@ namespace WaveHarmonic.Crest
         static void InitStatics()
         {
             s_Instances.Clear();
+            s_SwellSpectrum = null;
+        }
+
+        float TryGetRandomValue(float fallback = 0.5f)
+        {
+            return _Randomize ? Random.value : fallback;
         }
 
         float GetReverseWaveWeight()
@@ -202,14 +218,11 @@ namespace WaveHarmonic.Crest
                 _WaveBuffers.Create();
             }
 
-            _BufferCascadeParameters?.Release();
-            _BufferWaveData?.Release();
+            Helpers.Destroy(ref _BufferWaveData);
 
-            _BufferCascadeParameters = new(k_CascadeCount + 1, UnsafeUtility.SizeOf<GerstnerCascadeParams>());
             _BufferWaveData = new(k_MaximumWaveComponents / 4, UnsafeUtility.SizeOf<GerstnerWaveComponent4>());
 
-            _ShaderGerstner = WaterResources.Instance.Compute._Gerstner;
-            _KernelGerstner = _ShaderGerstner.FindKernel("Gerstner");
+            _Shader = WaterResources.Instance._ComputeLibrary._GerstnerCompute;
         }
 
         private protected override void OnUpdate(WaterRenderer water)
@@ -218,7 +231,7 @@ namespace WaveHarmonic.Crest
 
             base.OnUpdate(water);
 
-            if (_WaveBuffers == null || Resolution != _WaveBuffers.width || _BufferCascadeParameters == null || _BufferWaveData == null)
+            if (_WaveBuffers == null || Resolution != _WaveBuffers.width || _BufferWaveData == null)
             {
                 InitData();
             }
@@ -268,7 +281,7 @@ namespace WaveHarmonic.Crest
             var cascadeIdx = 0;
             var componentIdx = 0;
             var outputIdx = 0;
-            _CascadeParameters[0]._StartIndex = 0;
+            _StartIndices[0] = 0;
 
             if (_ManualGeneration)
             {
@@ -315,12 +328,14 @@ namespace WaveHarmonic.Crest
                         _WaveData[vi]._Omega[ei] = 0f;
                         _WaveData[vi]._Phase[ei] = 0f;
                         _WaveData[vi]._ChopAmplitude[ei] = 0f;
-                        if (!_ManualGeneration)
+
+                        if (!_ManualGeneration && !_Swell)
                         {
                             _WaveData[vi]._Phase2[ei] = 0f;
                             _WaveData[vi]._Amplitude2[ei] = 0f;
                             _WaveData[vi]._ChopAmplitude2[ei] = 0f;
                         }
+
                         ei = (ei + 1) % 4;
                         outputIdx++;
                     }
@@ -328,7 +343,7 @@ namespace WaveHarmonic.Crest
                     if (outputIdx > 0 && _FirstCascade < 0) _FirstCascade = cascadeIdx;
 
                     cascadeIdx++;
-                    _CascadeParameters[cascadeIdx]._StartIndex = outputIdx / 4;
+                    _StartIndices[cascadeIdx] = outputIdx / 4;
                     minWl *= 2f;
 
                     //Debug.Log($"Crest: {cascadeIdx}: start {_cascadeParams[cascadeIdx]._startIndex} minWL {minWl}");
@@ -345,7 +360,7 @@ namespace WaveHarmonic.Crest
                     var chopScale = _ActiveSpectrum._ChopScales[componentIdx / _ComponentsPerOctave];
                     _WaveData[vi]._ChopAmplitude[ei] = -chopScale * _ActiveSpectrum._Chop * _Amplitudes[componentIdx];
 
-                    if (!_ManualGeneration)
+                    if (!_ManualGeneration && !_Swell)
                     {
                         _WaveData[vi]._Amplitude2[ei] = _Amplitudes2[componentIdx];
                         _WaveData[vi]._ChopAmplitude2[ei] = -chopScale * _ActiveSpectrum._Chop * _Amplitudes2[componentIdx];
@@ -387,7 +402,7 @@ namespace WaveHarmonic.Crest
                     _WaveData[vi]._Omega[ei] = k * c;
                     _WaveData[vi]._Phase[ei] = Mathf.Repeat(_Phases[componentIdx], Mathf.PI * 2f);
 
-                    if (!_ManualGeneration)
+                    if (!_ManualGeneration && !_Swell)
                     {
                         _WaveData[vi]._Phase2[ei] = Mathf.Repeat(_Phases2[componentIdx], Mathf.PI * 2f);
                     }
@@ -412,40 +427,46 @@ namespace WaveHarmonic.Crest
                     _WaveData[vi]._Omega[ei] = 0f;
                     _WaveData[vi]._Phase[ei] = 0f;
                     _WaveData[vi]._ChopAmplitude[ei] = 0f;
-                    if (!_ManualGeneration)
+
+                    if (!_ManualGeneration && !_Swell)
                     {
                         _WaveData[vi]._Phase2[ei] = 0f;
                         _WaveData[vi]._Amplitude2[ei] = 0f;
                         _WaveData[vi]._ChopAmplitude2[ei] = 0f;
                     }
+
                     ei = (ei + 1) % 4;
                     outputIdx++;
                 }
             }
 
-            while (cascadeIdx < k_CascadeCount)
+            // Fill the remaining.
+            while (cascadeIdx < k_CascadeCount - 1)
             {
                 cascadeIdx++;
                 minWl *= 2f;
-                _CascadeParameters[cascadeIdx]._StartIndex = outputIdx / 4;
+                _StartIndices[cascadeIdx] = outputIdx / 4;
                 //Debug.Log($"Crest: {cascadeIdx}: start {_cascadeParams[cascadeIdx]._startIndex} minWL {minWl}");
             }
 
-            _BufferCascadeParameters.SetData(_CascadeParameters);
             _BufferWaveData.SetData(_WaveData);
         }
 
-        void UpdateGenerateWaves(CommandBuffer buf)
+        void UpdateGenerateWaves(CommandBuffer buffer)
         {
             // Clear existing waves or they could get copied.
-            CoreUtils.SetRenderTarget(buf, _WaveBuffers, ClearFlag.Color);
-            buf.SetComputeFloatParam(_ShaderGerstner, ShaderIDs.s_TextureRes, _WaveBuffers.width);
-            buf.SetComputeIntParam(_ShaderGerstner, ShaderIDs.s_FirstCascadeIndex, _FirstCascade);
-            buf.SetComputeBufferParam(_ShaderGerstner, _KernelGerstner, ShaderIDs.s_CascadeParams, _BufferCascadeParameters);
-            buf.SetComputeBufferParam(_ShaderGerstner, _KernelGerstner, ShaderIDs.s_GerstnerWaveData, _BufferWaveData);
-            buf.SetComputeTextureParam(_ShaderGerstner, _KernelGerstner, ShapeWaves.ShaderIDs.s_WaveBuffer, _WaveBuffers);
+            CoreUtils.SetRenderTarget(buffer, _WaveBuffers, ClearFlag.Color);
 
-            buf.DispatchCompute(_ShaderGerstner, _KernelGerstner, _WaveBuffers.width / Lod.k_ThreadGroupSizeX, _WaveBuffers.height / Lod.k_ThreadGroupSizeY, _LastCascade - _FirstCascade + 1);
+            var wrapper = new PropertyWrapperCompute(buffer, _Shader._Shader, _Shader._ExecuteKernel);
+
+            wrapper.SetFloat(ShaderIDs.s_TextureRes, _WaveBuffers.width);
+            wrapper.SetInteger(ShaderIDs.s_FirstCascadeIndex, _FirstCascade);
+            wrapper.SetIntegers(ShaderIDs.s_StartIndices, _StartIndices);
+            wrapper.SetBuffer(ShaderIDs.s_GerstnerWaveData, _BufferWaveData);
+            wrapper.SetTexture(ShapeWaves.ShaderIDs.s_WaveBuffer, _WaveBuffers);
+            wrapper.SetKeyword(_Shader._WavePairsKeyword, !_Swell && _ReverseWaveWeight > 0f);
+
+            wrapper.Dispatch(_WaveBuffers.width / Lod.k_ThreadGroupSizeX, _WaveBuffers.height / Lod.k_ThreadGroupSizeY, _LastCascade - _FirstCascade + 1);
         }
 
         /// <summary>
@@ -504,17 +525,17 @@ namespace WaveHarmonic.Crest
             for (var i = 0; i < _Wavelengths.Length; i++)
             {
                 var amp = _ActiveSpectrum.GetAmplitude(_Wavelengths[i], _ComponentsPerOctave, windSpeed, water.Gravity, out _Powers[i]);
-                _Amplitudes[i] = Random.value * amp;
-                _Amplitudes2[i] = Random.value * amp * ReverseWaveWeight;
+                _Amplitudes[i] = TryGetRandomValue() * amp;
+
+                if (!_Swell)
+                {
+                    _Amplitudes2[i] = TryGetRandomValue() * amp * ReverseWaveWeight;
+                }
             }
         }
 
         void InitPhases()
         {
-            // Set random seed to get repeatable results
-            var randomStateBkp = Random.state;
-            Random.InitState(_RandomSeed);
-
             var totalComps = _ComponentsPerOctave * WaveSpectrum.k_NumberOfOctaves;
             _Phases = new float[totalComps];
             _Phases2 = new float[totalComps];
@@ -523,15 +544,16 @@ namespace WaveHarmonic.Crest
                 for (var i = 0; i < _ComponentsPerOctave; i++)
                 {
                     var index = octave * _ComponentsPerOctave + i;
-                    var rnd = (i + Random.value) / _ComponentsPerOctave;
+                    var rnd = (i + TryGetRandomValue()) / _ComponentsPerOctave;
                     _Phases[index] = 2f * Mathf.PI * rnd;
 
-                    var rnd2 = (i + Random.value) / _ComponentsPerOctave;
-                    _Phases2[index] = 2f * Mathf.PI * rnd2;
+                    if (!_Swell)
+                    {
+                        var rnd2 = (i + TryGetRandomValue()) / _ComponentsPerOctave;
+                        _Phases2[index] = 2f * Mathf.PI * rnd2;
+                    }
                 }
             }
-
-            Random.state = randomStateBkp;
         }
 
         private protected override void ReportMaxDisplacement(WaterRenderer water)
@@ -579,22 +601,8 @@ namespace WaveHarmonic.Crest
 
             s_Instances.Remove(this);
 
-            if (_BufferCascadeParameters != null && _BufferCascadeParameters.IsValid())
-            {
-                _BufferCascadeParameters.Dispose();
-                _BufferCascadeParameters = null;
-            }
-            if (_BufferWaveData != null && _BufferWaveData.IsValid())
-            {
-                _BufferWaveData.Dispose();
-                _BufferWaveData = null;
-            }
-
-            if (_WaveBuffers != null)
-            {
-                Helpers.Destroy(_WaveBuffers);
-                _WaveBuffers = null;
-            }
+            Helpers.Destroy(ref _BufferWaveData);
+            Helpers.Destroy(ref _WaveBuffers);
         }
 
 #if UNITY_EDITOR
@@ -622,36 +630,25 @@ namespace WaveHarmonic.Crest
         {
             base.OnDestroy();
 
-            if (s_SwellSpectrum != null)
+            if (--s_InstanceCount <= 0)
             {
-                Helpers.Destroy(s_SwellSpectrum);
+                Helpers.Destroy(ref s_SwellSpectrum);
             }
         }
     }
 
-    partial class ShapeGerstner : ISerializationCallbackReceiver
+    partial class ShapeGerstner
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 2;
-#pragma warning restore 414
+        private protected override int Version => Mathf.Max(base.Version, 2);
 
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        private protected override void OnMigrate()
         {
-            _Version = MigrateV1(_Version);
+            base.OnMigrate();
 
             if (_Version < 2)
             {
                 _Swell = false;
             }
-
-            _Version = MigrateV2(_Version);
-            _Version = MigrateV3(_Version);
-        }
-
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-            // Empty.
         }
     }
 }

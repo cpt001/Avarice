@@ -4,6 +4,7 @@
 #ifndef CREST_WATER_VERT_HELPERS_H
 #define CREST_WATER_VERT_HELPERS_H
 
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Keywords.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Cascade.hlsl"
@@ -73,7 +74,7 @@ void SnapAndTransitionVertLayout(in const float4x4 i_objectMatrix, in const floa
 
 #if SHADER_API_VULKAN
 #if CREST_HDRP
-#if _TRANSPARENT_WRITES_MOTION_VEC
+#if d_Crest_MotionVectors
     // Fixes artifacts where parts of the surface appear to be clipped. It appears to
     // be a precision issue (LOD resolution not power of 2), but only when the MV code
     // path is active - even though it writes to a separate target.
@@ -89,6 +90,22 @@ void SnapAndTransitionVertLayout(in const float4x4 i_objectMatrix, in const floa
 void SnapAndTransitionVertLayout(in const float i_meshScaleAlpha, in const Cascade i_cascadeData0, in const float i_geometryGridSize, inout float3 io_worldPos, out float o_lodAlpha)
 {
     SnapAndTransitionVertLayout(UNITY_MATRIX_M, i_meshScaleAlpha, i_cascadeData0, i_geometryGridSize, io_worldPos, o_lodAlpha);
+}
+
+// Fix precision errors at edges.
+void PatchVerticeLayout(const float2 i_ObjectPosition, const float2 i_CameraPosition, inout float2 io_PositionWS)
+{
+    // Scale up by small "epsilon" to solve numerical issues. Expand slightly about tile center.
+    // :WaterGridPrecisionErrors
+    const float2 center = i_ObjectPosition;
+    const float2 camera = abs(i_CameraPosition);
+    // Scale "epsilon" by distance from zero. Gaps look bad from above surface, and
+    // overlaps look bad from below surface. We want to close gaps without introducing
+    // overlaps. A fixed "epsilon" will either not solve gaps at large distances or
+    // introduce too many overlaps at small distances. Even with scaling, there are
+    // still unsolvable overlaps underwater (especially at large distances). 100,000
+    // (0.00001) is the maximum position before Unity warns the user of precision issues.
+    io_PositionWS = lerp(center, io_PositionWS, lerp(1.0, 1.01, max(camera.x, camera.y) * 0.00001));
 }
 
 m_CrestNameSpaceEnd

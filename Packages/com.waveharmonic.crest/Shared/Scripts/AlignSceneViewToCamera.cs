@@ -5,22 +5,17 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using WaveHarmonic.Crest.Internal.Compatibility;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Examples
 {
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
-    [ExecuteAlways]
+    [@ExecuteDuringEditMode]
     [RequireComponent(typeof(Camera))]
-    sealed class AlignSceneViewToCamera : MonoBehaviour
+    sealed partial class AlignSceneViewToCamera : CustomBehaviour
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
 #if UNITY_EDITOR
         static ulong s_Scene;
         static bool s_SceneChanged;
@@ -42,14 +37,17 @@ namespace WaveHarmonic.Crest.Examples
             s_Scene = a.GetRawSceneHandle();
         }
 
-        void OnEnable()
+        private protected override void OnEnable()
         {
+            base.OnEnable();
+
             EditorApplication.update -= EditorUpdate;
             EditorApplication.update += EditorUpdate;
         }
 
-        void OnDisable()
+        private protected override void OnDisable()
         {
+            base.OnDisable();
             EditorApplication.update -= EditorUpdate;
         }
 

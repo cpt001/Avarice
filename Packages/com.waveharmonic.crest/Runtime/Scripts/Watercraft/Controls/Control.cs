@@ -2,6 +2,7 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Watercraft
 {
@@ -9,7 +10,7 @@ namespace WaveHarmonic.Crest.Watercraft
     /// Controls provide input whether from the player or otherwise. Extend to
     /// implement a control. See derived classes for examples.
     /// </summary>
-    public abstract class Control : MonoBehaviour
+    public abstract class Control : CustomBehaviour
     {
         /// <summary>
         /// Provides input for controllers. XYZ is steer, float and drive respectively.

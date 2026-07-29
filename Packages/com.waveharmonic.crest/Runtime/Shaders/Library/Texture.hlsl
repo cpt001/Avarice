@@ -15,6 +15,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Stochastic.hlsl"
 
 #ifdef SHADER_API_PSSL
 #define m_ConstantReturn const
@@ -61,6 +62,11 @@ struct TiledTexture
     half4 SampleLevel(float2 uv, float lod) m_ConstantReturn
     {
         return SAMPLE_TEXTURE2D_LOD(_texture, _sampler, uv, lod);
+    }
+
+    half4 SampleStochastic(float2 uv) m_ConstantReturn
+    {
+        return Utility::SampleStochastic(_texture, _sampler, uv);
     }
 };
 

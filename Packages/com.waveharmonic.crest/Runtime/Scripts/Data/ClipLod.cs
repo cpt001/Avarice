@@ -3,7 +3,6 @@
 
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
-using UnityEngine.Rendering;
 using WaveHarmonic.Crest.Utility;
 
 namespace WaveHarmonic.Crest
@@ -37,11 +36,6 @@ namespace WaveHarmonic.Crest
         [@DecoratedField, SerializeField]
         internal DefaultClippingState _DefaultClippingState = DefaultClippingState.NothingClipped;
 
-        static new class ShaderIDs
-        {
-            public static readonly int s_ClipByDefault = Shader.PropertyToID("g_Crest_ClipByDefault");
-        }
-
         internal static readonly Color s_GizmoColor = new(0f, 1f, 1f, 0.5f);
 
         internal override string ID => "Clip";
@@ -66,24 +60,6 @@ namespace WaveHarmonic.Crest
             _TextureFormat = GraphicsFormat.R8_UNorm;
         }
 
-        internal override void SetGlobals(bool enable)
-        {
-            base.SetGlobals(enable);
-            Shader.SetGlobalFloat(ShaderIDs.s_ClipByDefault, enable && Enabled ? (float)_DefaultClippingState : (float)DefaultClippingState.NothingClipped);
-        }
-
-        internal override void Disable()
-        {
-            base.Disable();
-            Shader.SetGlobalFloat(ShaderIDs.s_ClipByDefault, (float)DefaultClippingState.NothingClipped);
-        }
-
-        internal override void BuildCommandBuffer(WaterRenderer water, CommandBuffer buffer)
-        {
-            base.BuildCommandBuffer(water, buffer);
-            Shader.SetGlobalFloat(ShaderIDs.s_ClipByDefault, (float)_DefaultClippingState);
-        }
-
         internal static readonly SortedList<int, ILodInput> s_Inputs = new(Helpers.DuplicateComparison);
         private protected override SortedList<int, ILodInput> Inputs => s_Inputs;
 
@@ -99,7 +75,7 @@ namespace WaveHarmonic.Crest
             if (_Water == null || !_Water.isActiveAndEnabled || !Enabled) return;
 
             // Change default clipping state.
-            _TargetsToClear = Mathf.Max(1, _TargetsToClear);
+            _TargetsToClear = true;
         }
 
 #if UNITY_EDITOR

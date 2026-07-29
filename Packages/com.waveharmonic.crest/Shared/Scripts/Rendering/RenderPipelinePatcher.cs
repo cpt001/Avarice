@@ -1,28 +1,30 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
-using UnityEngine;
-using UnityEngine.Rendering;
-
-#if UNITY_EDITOR
-using MonoBehaviour = WaveHarmonic.Crest.Internal.EditorBehaviour;
-#endif
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Editor
 {
-    [ExecuteAlways]
-    abstract class RenderPipelinePatcher : MonoBehaviour
+    [@ExecuteDuringEditMode]
+    abstract partial class RenderPipelinePatcher : CustomBehaviour
     {
 #if UNITY_EDITOR
-        protected virtual void OnEnable()
+        // Causes exceptions if not. RevertPrefabOnRenderPipelineChange seems to be the problem.
+        private protected override bool SkipLifeCycle => false;
+
+        private protected override void OnEnable()
         {
-            RenderPipelineManager.activeRenderPipelineTypeChanged -= OnActiveRenderPipelineTypeChanged;
-            RenderPipelineManager.activeRenderPipelineTypeChanged += OnActiveRenderPipelineTypeChanged;
+            base.OnEnable();
+
+            RenderPipelineHelper.s_ActiveRenderPipelineTypeChanged -= OnActiveRenderPipelineTypeChanged;
+            RenderPipelineHelper.s_ActiveRenderPipelineTypeChanged += OnActiveRenderPipelineTypeChanged;
         }
 
-        protected virtual void OnDisable()
+        private protected override void OnDisable()
         {
-            RenderPipelineManager.activeRenderPipelineTypeChanged -= OnActiveRenderPipelineTypeChanged;
+            base.OnDisable();
+
+            RenderPipelineHelper.s_ActiveRenderPipelineTypeChanged -= OnActiveRenderPipelineTypeChanged;
         }
 
         protected abstract void OnActiveRenderPipelineTypeChanged();

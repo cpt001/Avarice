@@ -2,6 +2,7 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Examples
 {
@@ -11,13 +12,8 @@ namespace WaveHarmonic.Crest.Examples
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
-    sealed class TimedDestroy : MonoBehaviour
+    sealed partial class TimedDestroy : CustomBehaviour
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [SerializeField]
         float _LifeTime = 2.0f;
 
@@ -31,8 +27,10 @@ namespace WaveHarmonic.Crest.Examples
         Vector3 _Scale;
         float _BirthTime;
 
-        void Start()
+        private protected override void OnStart()
         {
+            base.OnStart();
+
             _BirthTime = Time.time;
             _Scale = transform.localScale;
         }
@@ -43,7 +41,7 @@ namespace WaveHarmonic.Crest.Examples
 
             if (age >= _LifeTime)
             {
-                Helpers.Destroy(gameObject);
+                Helpers.DestroyGameObject(this);
             }
             else if (age > _LifeTime - _ScaleToZeroDuration)
             {

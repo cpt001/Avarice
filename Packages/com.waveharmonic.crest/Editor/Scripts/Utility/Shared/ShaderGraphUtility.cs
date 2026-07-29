@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEditor.ShaderGraph;
 using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Editor")]
 
@@ -20,7 +21,7 @@ namespace WaveHarmonic.Crest.Editor
         static Dictionary<string, string> s_Tooltips;
         static readonly GUIContent s_Label = new();
 
-        public static void DrawShaderGraphGUI(MaterialEditor materialEditor, IEnumerable<MaterialProperty> properties, Dictionary<string, string> tooltips)
+        public static void DrawShaderGraphGUI(MaterialEditor materialEditor, IEnumerable<MaterialProperty> properties, Dictionary<string, string> tooltips, List<string> hiddenCategories)
         {
             s_Tooltips = tooltips;
             Material m = materialEditor.target as Material;
@@ -37,7 +38,7 @@ namespace WaveHarmonic.Crest.Editor
             }
 
             if (metadata != null)
-                DrawShaderGraphGUI(materialEditor, properties, metadata.categoryDatas);
+                DrawShaderGraphGUI(materialEditor, properties, metadata.categoryDatas, hiddenCategories);
             else
                 PropertiesDefaultGUI(materialEditor, properties);
         }
@@ -46,7 +47,11 @@ namespace WaveHarmonic.Crest.Editor
         {
             foreach (var property in properties)
             {
+#if UNITY_6000_3_OR_NEWER
+                if ((property.propertyFlags & (ShaderPropertyFlags.HideInInspector | ShaderPropertyFlags.PerRendererData)) != 0)
+#else
                 if ((property.flags & (MaterialProperty.PropFlags.HideInInspector | MaterialProperty.PropFlags.PerRendererData)) != 0)
+#endif
                     continue;
 
                 float h = materialEditor.GetPropertyHeight(property, property.displayName);
@@ -76,10 +81,15 @@ namespace WaveHarmonic.Crest.Editor
             return null;
         }
 
-        public static void DrawShaderGraphGUI(MaterialEditor materialEditor, IEnumerable<MaterialProperty> properties, IEnumerable<MinimalCategoryData> categoryDatas)
+        public static void DrawShaderGraphGUI(MaterialEditor materialEditor, IEnumerable<MaterialProperty> properties, IEnumerable<MinimalCategoryData> categoryDatas, List<string> hiddenCategories)
         {
             foreach (MinimalCategoryData mcd in categoryDatas)
             {
+                if (hiddenCategories.Count > 0 && hiddenCategories.Contains(mcd.categoryName))
+                {
+                    continue;
+                }
+
                 DrawCategory(materialEditor, properties, mcd);
             }
         }

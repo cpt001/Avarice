@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88bb6e05d83b64105a4d8cbd478f5916, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 3
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -55,6 +56,7 @@ MonoBehaviour:
   _Data:
     rid: 5498492892080767520
   _DrawBounds: 0
+  _BicubicSampling: 0
   _Spectrum: {fileID: 0}
   _EvaluateSpectrumAtRunTimeEveryFrame: 0
   _RespectShallowWaterAttenuation: 1
@@ -67,6 +69,7 @@ MonoBehaviour:
   _IncludeInDropDetailHeightBasedOnWaves: 0
   _DrawSlicesInEditor: 0
   _AlphaSource: 0
+  _ApplyAdvancedSpectrumControls: 0
   _OverrideGlobalWindTurbulence: 1
   _WindTurbulence: 0.145
   _WindAlignment: 0
@@ -78,13 +81,13 @@ MonoBehaviour:
   _TimeResolution: 4
   _SmallestWavelengthRequired: 2
   _BakedTimeLoopLength: 32
-  _Version: 3
   references:
     version: 2
     RefIds:
     - rid: 5498492892080767520
       type: {class: ShapeWavesRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 7519625472829840564}
         _Renderer: {fileID: 446232514223694072}
         _DisableRenderer: 1

@@ -105,7 +105,7 @@ namespace WaveHarmonic.Crest
         {
             var camera = context.hdCamera.camera;
 
-            if (!s_Renderer.ShouldRender(camera, UnderwaterRenderer.Pass.Effect))
+            if (!s_Renderer._Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Volume))
             {
                 return;
             }

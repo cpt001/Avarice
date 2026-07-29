@@ -9,7 +9,6 @@ using UnityEditor;
 using UnityEngine;
 using WaveHarmonic.Crest.Editor.Internal;
 using WaveHarmonic.Crest.Internal;
-using WaveHarmonic.Crest.Internal.Compatibility;
 
 namespace WaveHarmonic.Crest.Editor
 {
@@ -19,7 +18,11 @@ namespace WaveHarmonic.Crest.Editor
     [CustomEditor(typeof(EditorBehaviour), editorForChildClasses: true)]
     partial class Inspector : UnityEditor.Editor
     {
-        public const int k_FieldGroupOrder = 1000;
+        public static bool s_SkipDecorators;
+
+        public const int k_FieldGroupOrder = k_FieldHeadingOrder * 100;
+        public const int k_FieldHeadingOrder = k_FieldOrder * 100;
+        public const int k_FieldOrder = 1000;
         const string k_NoPrefabModeSupportWarning = "Prefab mode is not supported. Changes made in prefab mode will not be reflected in the scene view. Save this prefab to see changes.";
 
         internal static Inspector Current { get; private set; }
@@ -28,12 +31,16 @@ namespace WaveHarmonic.Crest.Editor
         readonly Dictionary<Material, MaterialEditor> _MaterialEditors = new();
         readonly Dictionary<string, DecoratedDrawer> _Lists = new();
 
+        internal readonly List<EmbeddedAssetEditor> _EmbeddedEditors = new();
+        internal static readonly List<EmbeddedAssetEditor> s_EmbeddedEditors = new();
+
         public override bool RequiresConstantRepaint() => TexturePreview.s_ActiveInstance?.Open == true;
 
         static readonly IOrderedEnumerable<FieldInfo> s_AttachMaterialEditors = TypeCache
             .GetFieldsWithAttribute<AttachMaterialEditor>()
             .OrderBy(x => x.GetCustomAttribute<AttachMaterialEditor>().Order);
 
+        readonly List<string> _Headings = new();
         readonly Utility.SortedList<int, SerializedProperty> _Properties = new(Helpers.DuplicateComparison);
 
         protected virtual void OnEnable()
@@ -65,7 +72,20 @@ namespace WaveHarmonic.Crest.Editor
             GUI.enabled = (target.hideFlags & HideFlags.NotEditable) == 0;
 
             RenderBeforeInspectorGUI();
-            RenderInspectorGUI();
+
+            try
+            {
+                RenderInspectorGUI();
+            }
+            catch (InvalidOperationException exception)
+            {
+                // Happens when using New with embedded editor and not change the filename.
+                if (exception.Message != "Stack empty.")
+                {
+                    throw exception;
+                }
+            }
+
             RenderValidationMessages();
 
             EditorGUI.BeginDisabledGroup(target is Behaviour component && !component.isActiveAndEnabled);
@@ -85,6 +105,15 @@ namespace WaveHarmonic.Crest.Editor
             {
                 Helpers.Destroy(editor);
             }
+
+            _MaterialEditors.Clear();
+
+            foreach (var embedded in _EmbeddedEditors)
+            {
+                embedded?.OnDisable();
+            }
+
+            s_EmbeddedEditors.Clear();
         }
 
         protected virtual void OnChange()
@@ -107,6 +136,7 @@ namespace WaveHarmonic.Crest.Editor
             var previous = Current;
             Current = this;
 
+            _Headings.Clear();
             _Properties.Clear();
 
             serializedObject.Update();
@@ -126,7 +156,7 @@ namespace WaveHarmonic.Crest.Editor
                     if (iterator.name == "m_Script")
                     {
 #if CREST_DEBUG
-                        _Properties.Add(index++, property);
+                        _Properties.Add(index++ * k_FieldOrder, property);
 #endif
                         continue;
                     }
@@ -143,7 +173,44 @@ namespace WaveHarmonic.Crest.Editor
                     // Null checking but there should always be one DecoratedProperty.
                     var order = field.GetCustomAttribute<Attributes.DecoratedProperty>()?.order ?? 0;
                     group = field.GetCustomAttribute<Group>()?.order * k_FieldGroupOrder ?? group;
-                    _Properties.Add(order + group + index++, property);
+
+                    var headingAttribute = field.GetCustomAttribute<Heading>();
+                    if (headingAttribute != null)
+                    {
+                        _Headings.Add(headingAttribute._Text.text);
+                    }
+
+                    var heading = Mathf.Max(0, _Headings.Count - 1);
+
+                    var orderAttribute = field.GetCustomAttribute<Order>();
+
+                    if (orderAttribute != null)
+                    {
+                        var target = orderAttribute._Target;
+
+                        if (orderAttribute._Placement == Order.Placement.Heading)
+                        {
+                            heading = _Headings.FindIndex(x => x == target);
+                        }
+                    }
+
+                    var key = order + group + heading * k_FieldHeadingOrder + index * k_FieldOrder;
+
+                    // Override.
+                    if (orderAttribute != null)
+                    {
+                        var target = orderAttribute._Target;
+
+                        switch (orderAttribute._Placement)
+                        {
+                            case Order.Placement.Below: key = _Properties.First(x => x.Value.name == target).Key + index; break;
+                            case Order.Placement.Above: key = _Properties.First(x => x.Value.name == target).Key - index; break;
+                        }
+                    }
+
+                    _Properties.Add(key, property);
+
+                    index += 1;
                 }
                 while (iterator.NextVisible(false));
             }
@@ -259,6 +326,16 @@ namespace WaveHarmonic.Crest.Editor
                     editor.OnInspectorGUI();
                 }
             }
+        }
+
+        internal virtual void OnCustomField(Rect position, SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
+        {
+
+        }
+
+        internal virtual GUIContent OnCustomLabel(SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
+        {
+            return label;
         }
     }
 

@@ -62,7 +62,7 @@ namespace WaveHarmonic.Crest
                     texture.name = $"_Crest_{ID}LodTemporaryDefaultTexture";
                     _NullTexture = TextureArrayHelpers.CreateTexture2DArray(texture, k_MaximumSlices);
                     _NullTexture.name = $"_Crest_{ID}LodDefaultTexture";
-                    Helpers.Destroy(texture);
+                    Helpers.Destroy(ref texture);
                 }
 
                 return _NullTexture;
@@ -76,11 +76,11 @@ namespace WaveHarmonic.Crest
             _MaximumQueryCount = 512;
         }
 
-        private protected override IDepthProvider CreateProvider(bool enable)
+        private protected override IDepthProvider CreateProvider(bool onEnable)
         {
             Queryable?.CleanUp();
             // Depth is GPU only, and can only be queried using the compute path.
-            return enable && Enabled && QuerySource == LodQuerySource.GPU
+            return onEnable && Enabled && QuerySource == LodQuerySource.GPU
                 ? IDepthProvider.Create(_Water)
                 : IDepthProvider.None;
         }
@@ -100,6 +100,12 @@ namespace WaveHarmonic.Crest
             if (_Water == null || !_Water.isActiveAndEnabled || !Enabled) return;
 
             ReAllocate();
+        }
+
+        internal override void Destroy()
+        {
+            base.Destroy();
+            Helpers.Destroy(ref _NullTexture);
         }
 
 #if d_Unity_Terrain
@@ -168,6 +174,7 @@ namespace WaveHarmonic.Crest
                     wrapper.SetTexture(Crest.ShaderIDs.s_Texture, data.heightmapTexture);
                     wrapper.Dispatch(threads, threads, slices);
                 }
+                _Terrains.Clear();
             }
         }
 #endif // d_Unity_Terrain

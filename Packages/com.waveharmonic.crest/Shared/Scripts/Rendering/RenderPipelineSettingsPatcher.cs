@@ -13,11 +13,6 @@ namespace WaveHarmonic.Crest.Editor
 #endif
     sealed class RenderPipelineSettingsPatcher : RenderPipelinePatcher
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [@AttachMaterialEditor]
         [@DecoratedField, SerializeField]
         Material _SkyBox;
@@ -30,7 +25,7 @@ namespace WaveHarmonic.Crest.Editor
             base.Reset();
         }
 
-        protected override void OnEnable()
+        private protected override void OnEnable()
         {
             base.OnEnable();
             OnActiveRenderPipelineTypeChanged();

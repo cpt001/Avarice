@@ -36,6 +36,29 @@ m_Blend(float2)
 m_Blend(float3)
 m_Blend(float4)
 
+// Enforces casting hygiene.
+uint ComputeSlice(uint slice, int offset, uint maximum)
+{
+    // We cast to int since offset can be negative.
+    // We must cast all parameters otherwise problems occur.
+    return clamp((int)slice + offset, 0, (int)maximum);
+}
+
+float PositionToSliceNumber
+(
+    const float2 i_PositionXZ,
+    const float i_MinimumSlice,
+    const float i_MaximumSlice,
+    const float i_WaterScale0
+)
+{
+    const float2 offset = abs(i_PositionXZ - g_Crest_WaterCenter.xz);
+    const float taxicab = max(offset.x, offset.y);
+    const float radius0 = i_WaterScale0;
+    const float slice = log2(max(taxicab / radius0, 1.0));
+    return clamp(slice, i_MinimumSlice, i_MaximumSlice);
+}
+
 uint PositionToSliceIndex
 (
     const float2 i_PositionXZ,
@@ -43,50 +66,106 @@ uint PositionToSliceIndex
     const float i_WaterScale0
 )
 {
-    const float2 offsetFromCenter = abs(i_PositionXZ - g_Crest_WaterCenter.xz);
-    const float taxicab = max(offsetFromCenter.x, offsetFromCenter.y);
-    const float radius0 = i_WaterScale0;
-    float sliceNumber = log2(max(taxicab / radius0, 1.0));
     // Don't use last slice - this is a "transition" slice used to cross fade waves
     // between LOD resolutions to avoid pops.
-    sliceNumber = clamp(sliceNumber, i_MinimumSlice, g_Crest_LodCount - 2.0);
-    return floor(sliceNumber);
+    const float slice = PositionToSliceNumber
+    (
+        i_PositionXZ,
+        i_MinimumSlice,
+        g_Crest_LodCount - 2,
+        i_WaterScale0
+    );
+
+    return floor(slice);
 }
 
-void PosToSliceIndices
+void PositionToSliceIndices
 (
-    const float2 worldXZ,
-    const float minSlice,
-    const float maxSlice,
-    const float waterScale0,
-    out uint slice0,
-    out uint slice1,
-    out float lodAlpha
+    const float2 i_PositionXZ,
+    const uint i_MinimumSlice,
+    const uint i_MaximumSlice,
+    const float i_WaterScale0,
+    out uint o_Slice0,
+    out uint o_Slice1,
+    out float o_LodAlpha
 )
 {
-    const float2 offsetFromCenter = abs(worldXZ - g_Crest_WaterCenter.xz);
-    const float taxicab = max(offsetFromCenter.x, offsetFromCenter.y);
-    const float radius0 = waterScale0;
-    float sliceNumber = log2( max( taxicab / radius0, 1.0 ) );
-    sliceNumber = clamp( sliceNumber, minSlice, maxSlice );
+    const float slice = PositionToSliceNumber
+    (
+        i_PositionXZ,
+        i_MinimumSlice,
+        i_MaximumSlice,
+        i_WaterScale0
+    );
 
-    lodAlpha = frac(sliceNumber);
+    o_LodAlpha = frac(slice);
 
     // Fixes artefact with DX12 & Vulkan. Likely a compiler bug.
     // Sampling result appears to be all over the place.
-    slice0 = floor(sliceNumber) + 0.01;
-    slice1 = slice0 + 1;
+    o_Slice0 = floor(slice) + 0.01;
+    o_Slice1 = o_Slice0 + 1;
 
     // lod alpha is remapped to ensure patches weld together properly. patches can vary significantly in shape (with
     // strips added and removed), and this variance depends on the base density of the mesh, as this defines the strip width.
     // using .15 as black and .85 as white should work for base mesh density as low as 16.
     const float BLACK_POINT = 0.15, WHITE_POINT = 0.85;
-    lodAlpha = saturate((lodAlpha - BLACK_POINT) / (WHITE_POINT - BLACK_POINT));
+    o_LodAlpha = saturate((o_LodAlpha - BLACK_POINT) / (WHITE_POINT - BLACK_POINT));
 
-    if (slice0 == 0)
+    if (o_Slice0 == 0)
     {
         // blend out lod0 when viewpoint gains altitude. we're using the global g_Crest_MeshScaleLerp so check for LOD0 is necessary
-        lodAlpha = min(lodAlpha + g_Crest_MeshScaleLerp, 1.0);
+        o_LodAlpha = min(o_LodAlpha + g_Crest_MeshScaleLerp, 1.0);
+    }
+}
+
+// Use this when rendering a quad as the surface.
+void MeshPositionToSliceIndices
+(
+    const float2 i_PositionXZ,
+    const float i_MinimumSlice,
+    const float i_MaximumSlice,
+    const float i_WaterScale0,
+    out uint o_Slice0,
+    out uint o_Slice1,
+    out float o_LodAlpha
+)
+{
+    float slice = PositionToSliceNumber
+    (
+        i_PositionXZ,
+        i_MinimumSlice,
+        i_MaximumSlice + 1,
+        i_WaterScale0
+    );
+
+    o_LodAlpha = frac(slice);
+
+    uint extent = floor(slice);
+
+    slice = min(slice, i_MaximumSlice);
+
+    // Fixes artefact with DX12 & Vulkan. Likely a compiler bug.
+    // Sampling result appears to be all over the place.
+    o_Slice0 = floor(slice) + 0.01;
+    o_Slice1 = o_Slice0 + 1;
+
+    // lod alpha is remapped to ensure patches weld together properly. patches can vary significantly in shape (with
+    // strips added and removed), and this variance depends on the base density of the mesh, as this defines the strip width.
+    // using .15 as black and .85 as white should work for base mesh density as low as 16.
+    const float BLACK_POINT = 0.15, WHITE_POINT = 0.85;
+    o_LodAlpha = saturate((o_LodAlpha - BLACK_POINT) / (WHITE_POINT - BLACK_POINT));
+
+    if (o_Slice0 == 0)
+    {
+        // blend out lod0 when viewpoint gains altitude. we're using the global g_Crest_MeshScaleLerp so check for LOD0 is necessary
+        o_LodAlpha = min(o_LodAlpha + g_Crest_MeshScaleLerp, 1.0);
+    }
+
+    // Matches mesh solution.
+    // Comparing to maxSlice + 1 can make any maxSlice work, but no point.
+    if (extent == g_Crest_LodCount)
+    {
+        o_LodAlpha = 1.0;
     }
 }
 
@@ -115,11 +194,21 @@ bool IsUnderWater(const bool i_FrontFace, const int i_ForceUnderwater)
 
 float FeatherWeightFromUV(const float2 i_uv, const half i_featherWidth)
 {
-    float2 offset = abs(i_uv - 0.5);
-    float r_l1 = max(offset.x, offset.y) - (0.5 - i_featherWidth);
-    if (i_featherWidth > 0.0) r_l1 /= i_featherWidth;
-    float weight = saturate(1.0 - r_l1);
-    return weight;
+    const float2 offset = abs(i_uv - 0.5);
+    const float largest = max(offset.x, offset.y);
+
+    // Early exit (also handles zero feather).
+    if (largest > 0.5)
+    {
+        return 0.0;
+    }
+    else
+    {
+        float r_l1 = max(offset.x, offset.y) - (0.5 - i_featherWidth);
+        if (i_featherWidth > 0.0) r_l1 /= i_featherWidth;
+        float weight = saturate(1.0 - r_l1);
+        return weight;
+    }
 }
 
 bool WithinUV(const float2 i_UV)

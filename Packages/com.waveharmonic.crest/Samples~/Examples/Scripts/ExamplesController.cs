@@ -1,7 +1,7 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
-#if d_Unity_InputSystem && ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM
 #define INPUT_SYSTEM_ENABLED
 #endif
 
@@ -40,12 +40,7 @@ namespace WaveHarmonic.Crest.Examples
         void OnDisable()
         {
             var child = transform.GetChild(0);
-            if (child == null)
-            {
-                return;
-            }
-
-            Destroy(child.gameObject);
+            Helpers.DestroyGameObject(ref child);
         }
 
         void Update()
@@ -79,7 +74,7 @@ namespace WaveHarmonic.Crest.Examples
             var go = transform.GetChild(0).gameObject;
             go.SetActive(false);
 
-            Helpers.Destroy(go);
+            Helpers.Destroy(ref go);
 
             var prefab = Instantiate(_Prefabs[_Index]);
             prefab.transform.SetParent(transform, worldPositionStays: true);

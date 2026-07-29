@@ -1,13 +1,26 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
-#if d_UnityInputSystem && ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM
 #define INPUT_SYSTEM_ENABLED
+#endif
+
+#if ENABLE_VR
+#if UNITY_6000_5_OR_NEWER
+#if d_UnityModuleXR
+#define _XR_ENABLED
+#endif
+#else
+#if d_UnityModuleVR
+#define _XR_ENABLED
+#endif
+#endif
 #endif
 
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.XR;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Examples
 {
@@ -17,13 +30,8 @@ namespace WaveHarmonic.Crest.Examples
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
-    sealed class CameraController : MonoBehaviour
+    sealed partial class CameraController : CustomBehaviour
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [SerializeField]
         float _LinearSpeed = 10f;
 
@@ -63,9 +71,10 @@ namespace WaveHarmonic.Crest.Examples
         Transform _TargetTransform;
         Camera _Camera;
 
-
-        void Awake()
+        private protected override void Awake()
         {
+            base.Awake();
+
             _TargetTransform = transform;
 
             if (!TryGetComponent(out _Camera))
@@ -74,7 +83,7 @@ namespace WaveHarmonic.Crest.Examples
                 return;
             }
 
-#if ENABLE_VR && d_UnityModuleVR
+#if _XR_ENABLED
             if (XRSettings.enabled)
             {
                 // Seems like the best place to put this for now. Most XR debugging happens using this component.
@@ -93,7 +102,7 @@ namespace WaveHarmonic.Crest.Examples
 
             UpdateMovement(dt);
 
-#if ENABLE_VR && d_UnityModuleVR
+#if _XR_ENABLED
             // These aren't useful and can break for XR hardware.
             if (!XRSettings.enabled || XRSettings.loadedDeviceName.Contains("MockHMD"))
 #endif
@@ -102,7 +111,7 @@ namespace WaveHarmonic.Crest.Examples
                 UpdateKillRoll();
             }
 
-#if ENABLE_VR && d_UnityModuleVR
+#if _XR_ENABLED
             if (XRSettings.enabled)
             {
                 // Check if property has changed.

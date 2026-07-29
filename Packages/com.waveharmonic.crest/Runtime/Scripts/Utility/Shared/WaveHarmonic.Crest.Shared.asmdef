@@ -22,9 +22,14 @@
             "define": "d_Unity_Terrain"
         },
         {
-            "name": "com.unity.modules.xr",
+            "name": "com.unity.modules.vr",
             "expression": "",
             "define": "d_UnityModuleVR"
+        },
+        {
+            "name": "com.unity.modules.xr",
+            "expression": "",
+            "define": "d_UnityModuleXR"
         },
         {
             "name": "com.unity.render-pipelines.high-definition",

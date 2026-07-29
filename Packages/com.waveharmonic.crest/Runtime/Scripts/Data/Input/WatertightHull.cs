@@ -30,7 +30,7 @@ namespace WaveHarmonic.Crest
     /// </summary>
     [@ExecuteDuringEditMode]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Watertight Hull")]
-    [@HelpURL("Manual/Clipping.html#watertight-hull")]
+    [@HelpURL("Manual/Basics/Clipping.html#watertight-hull")]
     public sealed partial class WatertightHull : ManagedBehaviour<WaterRenderer>
     {
         [@Label("Convex Hull")]
@@ -52,14 +52,14 @@ namespace WaveHarmonic.Crest
         WatertightHullMode _Mode = WatertightHullMode.Displacement;
 
         [Tooltip("Inverts the effect to remove clipping (ie add water).")]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(WatertightHullMode.Clip), hide: true)]
+        [@Show(nameof(_Mode), nameof(WatertightHullMode.Clip))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _Inverted;
 
         [@Label("Use Clip")]
         [Tooltip("Whether to also to clip the surface when using displacement mode.\n\nDisplacement mode can have a leaky hull by allowing chop top push waves across the hull boundaries slightly. Clipping the surface will remove these interior leaks.")]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(WatertightHullMode.Displacement), hide: true)]
+        [@Show(nameof(_Mode), nameof(WatertightHullMode.Displacement))]
         [@GenerateAPI(Setter.Custom)]
         [@DecoratedField, SerializeField]
         bool _UseClipWithDisplacement = true;
@@ -132,9 +132,9 @@ namespace WaveHarmonic.Crest
         private protected override void OnDisable()
         {
             base.OnDisable();
-            Helpers.Destroy(_ClipMaterial);
+            Helpers.Destroy(ref _ClipMaterial);
             ILodInput.Detach(_ClipInput, ClipLod.s_Inputs);
-            Helpers.Destroy(_AnimatedWavesMaterial);
+            Helpers.Destroy(ref _AnimatedWavesMaterial);
             ILodInput.Detach(_AnimatedWavesInput, AnimatedWavesLod.s_Inputs);
         }
 
@@ -248,28 +248,19 @@ namespace WaveHarmonic.Crest
         }
     }
 
-    partial class WatertightHull : ISerializationCallbackReceiver
+    partial class WatertightHull
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 1;
-#pragma warning restore 414
+        private protected override int Version => Mathf.Max(base.Version, 1);
 
-        /// <inheritdoc/>
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        private protected override void OnMigrate()
         {
+            base.OnMigrate();
+
             if (_Version < 1)
             {
                 // Keep clip for existing.
                 _Mode = WatertightHullMode.Clip;
-                _Version = 1;
             }
-        }
-
-        /// <inheritdoc/>
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-
         }
     }
 }

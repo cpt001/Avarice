@@ -110,7 +110,7 @@ namespace WaveHarmonic.Crest.Editor
 
                 ValidatedHelper.ExecuteValidators(target, ValidatedHelper.DebugLog);
 
-                foreach (var component in FindObjectsByType<EditorBehaviour>(FindObjectsSortMode.None))
+                foreach (var component in Helpers.FindObjectsByType<EditorBehaviour>())
                 {
                     if (component is WaterRenderer) continue;
                     ValidatedHelper.ExecuteValidators(component, ValidatedHelper.DebugLog);
@@ -120,6 +120,17 @@ namespace WaveHarmonic.Crest.Editor
 
                 ManualValidation = false;
             }
+
+#if CREST_DEBUG
+            if (GUILayout.Button("Pause Time"))
+            {
+                var time = Undo.AddComponent<CustomTimeProvider>(target.gameObject);
+                time.Paused = true;
+                time.OverrideTime = true;
+                target._TimeProvider = time;
+                target.TimeProviders.Push(time);
+            }
+#endif
         }
     }
 
@@ -132,12 +143,27 @@ namespace WaveHarmonic.Crest.Editor
             "Fully developed sea with infinite fetch.",
         };
 
-        static readonly GUIContent s_TimeScaleLabel = new("Time Scale");
-
-        System.Type _HostComponentType = null;
-        public void SetTypeOfHostComponent(System.Type hostComponentType)
+        enum WaveModel
         {
-            _HostComponentType = hostComponentType;
+            None,
+            FFT,
+            Gerstner,
+        }
+        WaveModel _WaveModel;
+        object _Host;
+
+        public void SetHostComponent(object host)
+        {
+            _Host = host;
+        }
+
+        public void SetTypeOfHostComponent(System.Type host)
+        {
+            _WaveModel = host == typeof(ShapeGerstner)
+                ? WaveModel.Gerstner
+                : host == typeof(ShapeFFT)
+                ? WaveModel.FFT
+                : WaveModel.None;
         }
 
         protected override void OnEnable()
@@ -168,7 +194,7 @@ namespace WaveHarmonic.Crest.Editor
         {
             // Display a notice if its being edited as a standalone asset (not embedded in a component) because
             // it displays the FFT-interface.
-            if (_HostComponentType == null)
+            if (_WaveModel is WaveModel.None)
             {
                 EditorGUILayout.HelpBox("This editor is displaying the FFT spectrum settings. " +
                     "To edit settings specific to the ShapeGerstner component, assign this asset to a ShapeGerstner component " +
@@ -180,22 +206,16 @@ namespace WaveHarmonic.Crest.Editor
 
             EditorGUI.BeginChangeCheck();
 
-            var beingEditedOnGerstnerComponent = _HostComponentType == typeof(ShapeGerstner);
-
-            var showAdvancedControls = false;
-            if (beingEditedOnGerstnerComponent)
+            if (_WaveModel is WaveModel.Gerstner)
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(WaveSpectrum._GravityScale)));
-
                 EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(WaveSpectrum._WaveDirectionVariance)));
+            }
 
-                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(WaveSpectrum._ShowAdvancedControls)));
-                showAdvancedControls = serializedObject.FindProperty(nameof(WaveSpectrum._ShowAdvancedControls)).boolValue;
-            }
-            else
-            {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(WaveSpectrum._GravityScale)), s_TimeScaleLabel);
-            }
+            EditorGUILayout.Space(10);
+
+            var advancedControls = serializedObject.FindProperty(nameof(WaveSpectrum._ShowAdvancedControls));
+            EditorGUILayout.PropertyField(advancedControls);
+            var showAdvancedControls = advancedControls.boolValue;
 
             var spSpectrumModel = serializedObject.FindProperty(nameof(WaveSpectrum._Model));
             var spectraIndex = serializedObject.FindProperty(nameof(WaveSpectrum._Model)).enumValueIndex;
@@ -226,6 +246,7 @@ namespace WaveHarmonic.Crest.Editor
             var spPower = serializedObject.FindProperty(nameof(WaveSpectrum._PowerLogarithmicScales));
             var spChopScales = serializedObject.FindProperty(nameof(WaveSpectrum._ChopScales));
             var spGravScales = serializedObject.FindProperty(nameof(WaveSpectrum._GravityScales));
+            var spAttenuation = serializedObject.FindProperty(nameof(WaveSpectrum._Attenuation));
 
             // Disable sliders if authoring with model.
             var canEditSpectrum = spectrumModel == WaveSpectrum.SpectrumModel.None;
@@ -251,7 +272,7 @@ namespace WaveHarmonic.Crest.Editor
                     // Disable slider if authoring with model.
                     using (new EditorGUI.DisabledGroupScope(!canEditSpectrum || spDisabled_i.boolValue))
                     {
-                        powerValue = EditorGUILayout.Slider("    Power", powerValue, WaveSpectrum.s_MinimumPowerLog, WaveSpectrum.s_MaximumPowerLog);
+                        powerValue = EditorGUILayout.Slider("      Power", powerValue, WaveSpectrum.s_MinimumPowerLog, WaveSpectrum.s_MaximumPowerLog);
                     }
                 }
                 else
@@ -277,8 +298,10 @@ namespace WaveHarmonic.Crest.Editor
 
                 if (showAdvancedControls)
                 {
-                    EditorGUILayout.Slider(spChopScales.GetArrayElementAtIndex(i), 0f, 4f, "    Chop Scale");
-                    EditorGUILayout.Slider(spGravScales.GetArrayElementAtIndex(i), 0f, 4f, "    Grav Scale");
+                    var timeText = _WaveModel is WaveModel.Gerstner ? "      Gravity Scale" : "      Time Scale";
+                    EditorGUILayout.Slider(spChopScales.GetArrayElementAtIndex(i), 0f, 4f, "      Chop Scale");
+                    EditorGUILayout.Slider(spGravScales.GetArrayElementAtIndex(i), 0f, 4f, timeText);
+                    EditorGUILayout.Slider(spAttenuation.GetArrayElementAtIndex(i), 0f, 1f, "      Attenuation Scale");
                 }
             }
 
@@ -293,6 +316,19 @@ namespace WaveHarmonic.Crest.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(s_ModelDescriptions[(int)spectrumModel], MessageType.Info);
+            if (_Host is not null and ShapeWaves waves)
+            {
+                var windSpeedSource = waves.GetWindSpeedSource();
+
+                if (windSpeedSource != ShapeWaves.WindSpeedSource.None)
+                {
+                    EditorHelpers.RichTextHelpBox
+                    (
+                        GetWindSpeedText(waves, windSpeedSource) + GetWindSpeedFixText(windSpeedSource),
+                        MessageType.Info
+                    );
+                }
+            }
             EditorGUILayout.Space();
 
             if (spectrumModel == WaveSpectrum.SpectrumModel.None)
@@ -329,6 +365,35 @@ namespace WaveHarmonic.Crest.Editor
                 // We need to call this otherwise any property which has HideInInspector won't save.
                 EditorUtility.SetDirty(spec);
             }
+        }
+
+        internal override GUIContent OnCustomLabel(SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
+        {
+            label = base.OnCustomLabel(property, label, drawer);
+
+            var isFFT = _WaveModel is WaveModel.FFT;
+
+            if (isFFT && property.name == "_GravityScale")
+            {
+                label.text = "Time Scale";
+                label.tooltip = "More time means faster waves.";
+            }
+
+            return label;
+        }
+
+        internal static string GetWindSpeedText(ShapeWaves target, ShapeWaves.WindSpeedSource source)
+        {
+            var text = source == ShapeWaves.WindSpeedSource.WaterRenderer ? $"the {nameof(WaterRenderer).Pretty().Italic()}" : "this component";
+            return $"The wave spectrum is currently limited by {nameof(ShapeWaves.WindSpeed).Pretty().Italic()} on {text} to {target.WindSpeedKPH} KPH, and will not be fully developed.";
+        }
+
+        internal static string GetWindSpeedFixText(ShapeWaves.WindSpeedSource source)
+        {
+            var text = source == ShapeWaves.WindSpeedSource.WaterRenderer
+                ? $"either override the {nameof(ShapeWaves.WindSpeed).Pretty().Italic()} on this component or increase the {nameof(WaterRenderer.WindSpeed).Pretty().Italic()} on the {nameof(WaterRenderer).Pretty().Italic()}"
+                : $"then increase the {nameof(ShapeWaves.WindSpeed).Pretty().Italic()} on this component";
+            return $"If you want fully developed waves (ie large waves), {text}.";
         }
     }
 
@@ -370,6 +435,7 @@ namespace WaveHarmonic.Crest.Editor
             var boundsXZ = new Bounds(target._UnexpandedBoundsXZ.center.XNZ(), target._UnexpandedBoundsXZ.size.XNZ());
             EditorGUILayout.BoundsField("Bounds XZ", boundsXZ);
             EditorGUILayout.BoundsField("Expanded Bounds", _Renderer.bounds);
+            EditorGUILayout.IntField("Sibling Index", target._SiblingIndex);
             GUI.enabled = true;
         }
     }
@@ -510,6 +576,33 @@ namespace WaveHarmonic.Crest.Editor
         public override void OnInspectorGUI()
         {
             EditorGUILayout.HelpBox($"Assign this component to the <i>{nameof(WaterRenderer)}</i> component and set the TimeOffsetToServer property of this component (at runtime from C#) to the delta from this client's time to the shared server time.", MessageType.Info);
+        }
+    }
+
+    [CustomEditor(typeof(WaterBody))]
+    sealed class WaterBodyEditor : Inspector
+    {
+        protected override void RenderInspectorGUI()
+        {
+            base.RenderInspectorGUI();
+
+            if (WaterRenderer.Instance != null)
+            {
+                s_SkipDecorators = true;
+
+                EditorGUILayout.Space(10);
+                EditorGUILayout.LabelField("Global Settings", EditorStyles.boldLabel);
+
+                var so = new SerializedObject(WaterRenderer.Instance);
+                EditorGUILayout.PropertyField(so.FindProperty("_DefaultExcludes"));
+
+                using (new EditorGUI.DisabledGroupScope(!WaterRenderer.Instance.ClipLod.Enabled))
+                {
+                    EditorGUILayout.PropertyField(so.FindProperty("_ClipLod._DefaultClippingState"));
+                }
+
+                s_SkipDecorators = false;
+            }
         }
     }
 }

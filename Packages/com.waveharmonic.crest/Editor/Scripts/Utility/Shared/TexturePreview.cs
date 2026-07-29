@@ -1,6 +1,10 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+// Unity 6.4 breaks these previews. It appears they aggresively cache available
+// previews, which means they no longer get added or removed dynamically based on
+// HasPreviewGUI.
+
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -73,6 +77,11 @@ namespace WaveHarmonic.Crest.Editor
             s_ActiveInstance = this;
             Open = true;
 
+#if UNITY_6000_4_OR_NEWER
+            // 6.4 completely breaks previews.
+            Open = Event.current.type == EventType.Repaint && rect.height > 64f;
+#endif
+
             // This check is in original.
             if (Event.current.type == EventType.Repaint)
             {
@@ -140,6 +149,12 @@ namespace WaveHarmonic.Crest.Editor
 #if CREST_DEBUG
         public override void OnInteractivePreviewGUI(Rect rect, GUIStyle background)
         {
+            // 6.4 needs this.
+            if (OriginalTexture == null)
+            {
+                return;
+            }
+
             OnPreviewGUI(rect, background);
 
             if (Texture is Cubemap)

@@ -9,14 +9,9 @@ namespace WaveHarmonic.Crest.Examples
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
-    sealed class LerpCamera : ManagedBehaviour<WaterRenderer>
+    sealed partial class LerpCamera : ManagedBehaviour<WaterRenderer>
     {
 #pragma warning disable IDE0032 // Use auto property
-
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
 
         [SerializeField]
         float _LerpAlpha = 0.1f;

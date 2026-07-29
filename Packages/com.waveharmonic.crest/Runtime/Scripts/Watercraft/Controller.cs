@@ -9,15 +9,10 @@ namespace WaveHarmonic.Crest.Watercraft
     /// <summary>
     /// A simple watercraft controlller.
     /// </summary>
-    [@HelpURL("Manual/FloatingObjects.html#movement-controller")]
+    [@HelpURL("Manual/Basics/FloatingObjects.html#movement-controller")]
     [AddComponentMenu(Constants.k_MenuPrefixPhysics + "Watercraft Controller")]
     public sealed partial class Controller : ManagedBehaviour<WaterRenderer>
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [Tooltip("The accompanied buoyancy script.")]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]

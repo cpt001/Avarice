@@ -31,9 +31,9 @@
             "define": "d_UnityModuleVR"
         },
         {
-            "name": "com.unity.inputsystem",
+            "name": "com.unity.modules.xr",
             "expression": "",
-            "define": "d_UnityInputSystem"
+            "define": "d_UnityModuleXR"
         },
         {
             "name": "com.unity.postprocessing",

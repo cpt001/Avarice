@@ -26,11 +26,12 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Whether to set the shader pass manually.")]
         [@GenerateAPI]
-        [@DecoratedField, SerializeField]
+        [@InlineToggle]
+        [@SerializeField]
         internal bool _OverrideShaderPass;
 
         [Tooltip("The shader pass to execute.\n\nSet to -1 to execute all passes.")]
-        [@Predicated(nameof(_OverrideShaderPass))]
+        [@Enable(nameof(_OverrideShaderPass))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         internal int _ShaderPassIndex;
@@ -46,6 +47,9 @@ namespace WaveHarmonic.Crest
         [@DecoratedField, SerializeField]
         internal bool _CheckShaderPasses = true;
 #pragma warning restore 414
+
+
+        static readonly List<LodInput> s_Inputs = new();
 
 
         // Some renderers require multiple materials like particles with trails.
@@ -80,7 +84,8 @@ namespace WaveHarmonic.Crest
 
                 foreach (var rootGameObject in scene.GetRootGameObjects())
                 {
-                    foreach (var component in rootGameObject.GetComponentsInChildren<LodInput>())
+                    rootGameObject.GetComponentsInChildren(s_Inputs);
+                    foreach (var component in s_Inputs)
                     {
                         if (component == _Input)
                         {
@@ -98,6 +103,8 @@ namespace WaveHarmonic.Crest
                         }
                     }
                 }
+
+                s_Inputs.Clear();
             }
 
             return false;
@@ -129,6 +136,13 @@ namespace WaveHarmonic.Crest
             {
                 _Renderer.forceRenderingOff = false;
             }
+
+            _Materials.Clear();
+        }
+
+        internal override void OnDestroy()
+        {
+            // Empty.
         }
 
         internal override void OnUpdate()

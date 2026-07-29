@@ -1,6 +1,6 @@
 {
     "name": "com.waveharmonic.crest",
-    "version": "5.7.0",
+    "version": "5.9.5",
     "displayName": "Crest",
     "description": "An advanced water system for Unity.",
     "unity": "2022.3",
@@ -36,6 +36,11 @@
             "path": "Samples~/Wakes"
         },
         {
+            "displayName": "Storm",
+            "description": "Demonstrates stormy wave conditions by layering FFT and Gerstner waves.",
+            "path": "Samples~/Storm"
+        },
+        {
             "displayName": "Waterfall",
             "description": "An example of kitbashing a waterfall using various inputs.",
             "path": "Samples~/Waterfall"
@@ -44,6 +49,11 @@
           "displayName": "Boats",
           "description": "Simple examples using boats.",
           "path": "Samples~/Boats"
+        },
+        {
+          "displayName": "Stylized",
+          "description": "A stylized material example.",
+          "path": "Samples~/Stylized"
         }
     ],
     "dependencies": {

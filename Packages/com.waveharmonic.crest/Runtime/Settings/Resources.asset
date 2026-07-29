@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba9588a2660f342409c82a6ff9e95a88, type: 3}
   m_Name: Resources
   m_EditorClassIdentifier: 
+  _Version: 0
   _Shaders:
     _CopyDepthIntoCache: {fileID: 4800000, guid: cdf2728920d024e9fb0e708e1dc364bb,
       type: 3}

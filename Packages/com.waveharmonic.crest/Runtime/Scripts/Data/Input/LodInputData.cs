@@ -4,6 +4,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -24,7 +25,7 @@ namespace WaveHarmonic.Crest
     /// Data storage for an input, pertinent to the associated input mode.
     /// </summary>
     [Serializable]
-    public abstract class LodInputData
+    public abstract partial class LodInputData : Versioned
     {
         [SerializeField, HideInInspector]
         internal LodInput _Input;
@@ -37,6 +38,7 @@ namespace WaveHarmonic.Crest
         internal abstract bool IsEnabled { get; }
         internal abstract void OnEnable();
         internal abstract void OnDisable();
+        internal abstract void OnDestroy();
         internal abstract void Draw(Lod lod, Component component, CommandBuffer buffer, RenderTargetIdentifier target, int slice);
         internal abstract void RecalculateRect();
         internal abstract void RecalculateBounds();

@@ -84,6 +84,7 @@ namespace WaveHarmonic.Crest
                 "_Crest_WaterLine",
                 ref _HeightRT,
                 texel: 0.0125f,
+                maximumResolution: 2048,
                 out _SurfaceDataParameters
             );
 
@@ -135,21 +136,31 @@ namespace WaveHarmonic.Crest
             Graphics.ExecuteCommandBuffer(commands);
         }
 
-        internal void UpdateDisplacedSurfaceData(CommandBuffer commands, Bounds bounds, string name, ref RenderTexture target, float texel, out SurfaceDataParameters parameters)
+        internal void UpdateDisplacedSurfaceData(CommandBuffer commands, Bounds bounds, string name, ref RenderTexture target, float texel, int maximumResolution, out SurfaceDataParameters parameters)
         {
             var size = bounds.size.XZ();
             var position = bounds.center.XZ();
 
             var scale = size;
 
-            // TODO: texel needs to be calculates is clamped
-            // TODO: aspect ratio
             var resolution = new Vector2Int
             (
-                // TODO: Floor, Ceil or Round?
                 Mathf.CeilToInt(size.x / texel),
                 Mathf.CeilToInt(size.y / texel)
             );
+
+            var largest = Mathf.Max(resolution.x, resolution.y);
+
+            if (largest > maximumResolution)
+            {
+                texel = Mathf.Max(size.x, size.y) / maximumResolution;
+
+                resolution = new Vector2Int
+                (
+                    Mathf.CeilToInt(size.x / texel),
+                    Mathf.CeilToInt(size.y / texel)
+                );
+            }
 
             // Snapping for spatial stability. Different results, but could not tell which is
             // more accurate. At higher resolution, appears negligable anyway.
@@ -162,11 +173,6 @@ namespace WaveHarmonic.Crest
                 _Resolution = resolution,
                 _Texel = texel,
             };
-
-            if (resolution.x > 2048 || resolution.y > 2048)
-            {
-                return;
-            }
 
             // FIXME: LOD scale less than two has cut off and fall off at edges.
             var view = WaterRenderer.CalculateViewMatrixFromSnappedPositionRHS(snapped.XNZ());

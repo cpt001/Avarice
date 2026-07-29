@@ -9,14 +9,9 @@ namespace WaveHarmonic.Crest
     /// This time provider fixes the water time at a custom value which is usable for testing/debugging.
     /// </summary>
     [AddComponentMenu(Constants.k_MenuPrefixTime + "Custom Time Provider")]
-    [@HelpURL("Manual/TimeProviders.html#supporting-pause")]
+    [@HelpURL("Manual/Advanced/TimeProviders.html#supporting-pause")]
     public sealed partial class CustomTimeProvider : TimeProvider
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [Tooltip("Freeze progression of time. Only works properly in Play mode.")]
         [@GenerateAPI]
         [SerializeField]
@@ -24,22 +19,24 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Whether to override the water simulation time.")]
         [@GenerateAPI]
-        [SerializeField]
+        [@InlineToggle]
+        [@SerializeField]
         bool _OverrideTime = false;
 
         [Tooltip("The time override value.")]
-        [@Predicated(nameof(_OverrideTime))]
+        [@Enable(nameof(_OverrideTime))]
         [@GenerateAPI(name: "TimeOverride")]
         [@DecoratedField, SerializeField]
         float _Time = 0f;
 
         [Tooltip("Whether to override the water simulation time.\n\nThis in particular affects dynamic elements of the simulation like the foam simulation and the ripple simulation.")]
         [@GenerateAPI]
-        [SerializeField]
+        [@InlineToggle]
+        [@SerializeField]
         bool _OverrideDeltaTime = false;
 
         [Tooltip("The delta time override value.")]
-        [@Predicated(nameof(_OverrideDeltaTime))]
+        [@Enable(nameof(_OverrideDeltaTime))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _DeltaTime = 0f;

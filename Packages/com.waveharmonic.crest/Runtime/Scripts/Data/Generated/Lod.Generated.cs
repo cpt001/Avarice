@@ -58,7 +58,7 @@ namespace WaveHarmonic.Crest
         internal override void Destroy()
         {
             base.Destroy();
-            Helpers.Destroy(_DefaultSettings);
+            Helpers.Destroy(ref _DefaultSettings);
         }
     }
 
@@ -92,7 +92,7 @@ namespace WaveHarmonic.Crest
         internal override void Destroy()
         {
             base.Destroy();
-            Helpers.Destroy(_DefaultSettings);
+            Helpers.Destroy(ref _DefaultSettings);
         }
     }
 

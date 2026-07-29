@@ -19,15 +19,13 @@ namespace WaveHarmonic.Crest
         {
             var water = _Water;
 
-            if (!water._ShadowLod.Enabled)
+            if (!water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Shadows))
             {
                 return;
             }
 
             var camera = context.hdCamera.camera;
 
-            // Custom passes execute for every camera. We only support one camera for now.
-            if (!ReferenceEquals(camera, water.Viewer)) return;
             // TODO: bail when not executing for main light or when no main light exists?
             // if (renderingData.lightData.mainLightIndex == -1) return;
 

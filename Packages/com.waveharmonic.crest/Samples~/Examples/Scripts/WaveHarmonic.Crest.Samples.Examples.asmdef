@@ -19,11 +19,6 @@
     ],
     "versionDefines": [
         {
-            "name": "com.unity.inputsystem",
-            "expression": "",
-            "define": "d_Unity_InputSystem"
-        },
-        {
             "name": "com.waveharmonic.crest",
             "expression": "",
             "define": "d_Crest"

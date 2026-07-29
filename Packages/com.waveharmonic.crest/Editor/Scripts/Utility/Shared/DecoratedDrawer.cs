@@ -37,8 +37,8 @@ namespace WaveHarmonic.Crest.Editor
 
         public float Space { get; private set; }
 
-        UnityEditor.Editor _Editor;
-        Inspector _Inspector;
+        internal UnityEditor.Editor _Editor;
+        internal Inspector _Inspector;
 
         List<object> _Decorators = null;
         List<object> Decorators
@@ -105,6 +105,22 @@ namespace WaveHarmonic.Crest.Editor
                         break;
                     }
                 }
+
+                // Also check all embedded editors.
+                foreach (var editor in Inspector.s_EmbeddedEditors)
+                {
+                    if (editor._Editor == null)
+                    {
+                        continue;
+                    }
+
+                    if (editor._Editor.serializedObject == property.serializedObject)
+                    {
+                        _Editor = editor._Editor;
+                        _Inspector = editor._Editor as Inspector;
+                        break;
+                    }
+                }
             }
 
             // Store the original GUI state so it can be reset later.
@@ -129,7 +145,7 @@ namespace WaveHarmonic.Crest.Editor
             {
                 var attribute = (Decorator)Decorators[index];
                 if (attribute is Space space) Space = space._Height;
-                label = attribute.BuildLabel(label);
+                label = attribute.BuildLabel(property, label, this);
             }
 
             if (!s_HideInInspector && (!s_IsFoldout || s_IsFoldoutOpen))
@@ -153,7 +169,7 @@ namespace WaveHarmonic.Crest.Editor
                 {
                     var attribute = (Decorator)Decorators[index];
                     if (attribute.AlwaysVisible) continue;
-                    label = attribute.BuildLabel(label);
+                    label = attribute.BuildLabel(property, label, this);
                 }
 
                 var skipChange = Field.FieldType == typeof(UnityEvent) || property.isArray;

@@ -13,11 +13,6 @@ namespace WaveHarmonic.Crest.Editor
     [RequireComponent(typeof(Camera))]
     sealed class RenderPipelineCameraPatcher : RenderPipelinePatcher
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
 #if UNITY_EDITOR
         protected override void OnActiveRenderPipelineTypeChanged()
         {

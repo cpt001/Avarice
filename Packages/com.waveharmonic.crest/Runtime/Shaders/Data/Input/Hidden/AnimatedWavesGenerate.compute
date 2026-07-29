@@ -6,10 +6,14 @@
 #pragma kernel CrestTransferWaves
 
 #pragma multi_compile_local __ d_Texture d_TextureBlend
+#pragma multi_compile_local __ d_Bicubic
 
 #if defined(d_TextureBlend)
 #define d_Texture 1
 #endif
+
+#define d_Quantize defined(d_Texture)
+#define d_QuantizeTexture defined(d_Texture)
 
 #include "HLSLSupport.cginc"
 
@@ -21,11 +25,13 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Cascade.hlsl"
 
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Waves.hlsl"
+
 Texture2D _Crest_Texture;
-Texture2DArray _Crest_WaveBuffer;
 RWTexture2DArray<float4> _Crest_Target;
 
 CBUFFER_START(CrestPerMaterial)
+float _Crest_WaveBufferAttenuation[k_Crest_WaveOctaveCount];
 float4 _Crest_WaveBufferParameters[MAX_LOD_COUNT];
 float2 _Crest_AxisX;
 float _Crest_Weight;
@@ -43,6 +49,7 @@ bool _Crest_SeaLevelOnly;
 float2 _Crest_TextureSize;
 float2 _Crest_TexturePosition;
 float2 _Crest_TextureRotation;
+float2 _Crest_Multiplier;
 bool _Crest_NegativeValues;
 int _Crest_Blend;
 #endif
@@ -81,6 +88,8 @@ void TransferWaves(uint3 id)
     half _weight = _Crest_Weight;
     half alpha = 0.0;
 
+    float2 axis = _Crest_AxisX;
+
 #if d_Texture
     float2 uvPainted = (positionWS - _Crest_TexturePosition) / _Crest_TextureSize;
     // Clockwise transform rotation.
@@ -99,10 +108,9 @@ void TransferWaves(uint3 id)
     alpha = _weight;
 
     // Initialize or "use of potentially uninitialized variable" due to early return.
-    float2 axis; float axisLength = 0.0; float t = 0.0;
-    float2 axisX0 = 0.0; float2 axisX1 = 0.0; float2 axisZ0 = 0.0; float2 axisZ1 = 0.0;
+    float axisLength = 1.0; float4 axisXZ0 = 0.0; float4 axisXZ1 = 0.0; float t = 0.0;
     {
-        axis = _Crest_Texture.SampleLevel(LODData_linear_clamp_sampler, uvPainted, 0).xy;
+        axis = _Crest_Texture.SampleLevel(LODData_linear_clamp_sampler, uvPainted, 0).xy * _Crest_Multiplier;
 
         if (!_Crest_NegativeValues)
         {
@@ -147,22 +155,8 @@ void TransferWaves(uint3 id)
         // Add wind (counterclockwise).
         axis = axis.x * _Crest_AxisX + axis.y * float2(-_Crest_AxisX.y, _Crest_AxisX.x);
 
-        // Quantize wave direction.
-        const float axisHeading = atan2(axis.y, axis.x) + 2.0 * 3.141592654;
-        const float dTheta = 0.5 * 0.314159265;
-        const float rem = fmod(axisHeading, dTheta);
-        const float angle0 = axisHeading - rem;
-        const float angle1 = angle0 + dTheta;
-        t = rem / dTheta;
-
-        sincos(angle0, axisX0.y, axisX0.x);
-        sincos(angle1, axisX1.y, axisX1.x);
-        axisZ0.x = -axisX0.y; axisZ0.y = axisX0.x;
-        axisZ1.x = -axisX1.y; axisZ1.y = axisX1.x;
+        QuantizeWaveDirection(axis, axisXZ0, axisXZ1, t);
     }
-#else
-
-    const float2 positionWaves = float2(dot(positionWS, _Crest_AxisX), dot(positionWS, float2(-_Crest_AxisX.y, _Crest_AxisX.x)));
 #endif // d_Texture
 
     const half level = Cascade::MakeLevel(slice0).SampleLevel(positionWS);
@@ -206,8 +200,7 @@ void TransferWaves(uint3 id)
                 weight = lerp(weight, 1.0, saturate(depth / _Crest_MaximumAttenuationDepth));
             }
 
-
-            const float attenuationAmount = _Crest_AttenuationInShallows * _Crest_RespectShallowWaterAttenuation;
+            const float attenuationAmount = _Crest_AttenuationInShallows * _Crest_RespectShallowWaterAttenuation * _Crest_WaveBufferAttenuation[i];
             attenuation = attenuationAmount * weight + (1.0 - attenuationAmount);
         }
 
@@ -217,30 +210,27 @@ void TransferWaves(uint3 id)
         // Sample Wave Buffers.
         if (weight > 0.0)
         {
+            float3 displacement = SampleWaves
+            (
+                // Interpolate waves.
+                positionWS / waveBufferSize,
+                axis,
+#if d_Quantize
+                axisXZ0,
+                axisXZ1,
+                t,
+#endif
+                waveBufferIndex,
+                resolution
+            );
+
 #if d_Texture
-            // Interpolate waves.
-            float2 positionScaledWS = positionWS / waveBufferSize;
-
-            const float2 uv0 = float2(dot(positionScaledWS, axisX0), dot(positionScaledWS, axisZ0));
-            const float2 uv1 = float2(dot(positionScaledWS, axisX1), dot(positionScaledWS, axisZ1));
-
-            // Sample displacement, rotate into frame.
-            const float3 displacement0 = Utility::SampleBicubicRepeat(_Crest_WaveBuffer, uv0, resolution, waveBufferIndex).xyz;
-            const float3 displacement1 = Utility::SampleBicubicRepeat(_Crest_WaveBuffer, uv1, resolution, waveBufferIndex).xyz;
-
-            float3 displacement = lerp(displacement0, displacement1, t);
-            displacement.xz = displacement.x * axis + displacement.z * float2(-axis.y, axis.x);
             displacement.y *= axisLength;
-            _displacement += displacement * weight;
+#endif
 
-#else // !d_Texture
-            // Sample displacement, rotate into frame defined by global wind direction.
-            // Hardware bilinear produces small noise artifacts. Custom bilinear solves that,
-            // but we still get texel artifacts that show up in normals, so use bicubic.
-            float3 displacement = Utility::SampleBicubicRepeat(_Crest_WaveBuffer, positionWaves / waveBufferSize, resolution, waveBufferIndex).xyz;
-            displacement.xz = displacement.x * _Crest_AxisX + displacement.z * float2(-_Crest_AxisX.y, _Crest_AxisX.x);
-            _displacement += displacement * weight;
-#endif // d_Texture
+            displacement *= weight;
+
+            _displacement += displacement;
         }
     }
 

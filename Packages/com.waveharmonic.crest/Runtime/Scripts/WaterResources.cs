@@ -12,7 +12,7 @@ namespace WaveHarmonic.Crest
 #endif
 
     [ExecuteAlways, Utility.FilePath("Packages/com.waveharmonic.crest/Runtime/Settings/Resources.asset")]
-    [@HelpURL("Manual/Scripting.html#resources")]
+    [@HelpURL("Manual/Advanced/Scripting.html#resources")]
     sealed partial class WaterResources : Utility.ScriptableSingleton<WaterResources>
     {
         [Serializable]

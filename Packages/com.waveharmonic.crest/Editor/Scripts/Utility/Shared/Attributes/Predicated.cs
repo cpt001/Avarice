@@ -10,7 +10,7 @@ using WaveHarmonic.Crest.Editor;
 
 namespace WaveHarmonic.Crest
 {
-    sealed class Predicated : Decorator
+    abstract class Predicated : Decorator
     {
         enum Mode
         {
@@ -24,6 +24,7 @@ namespace WaveHarmonic.Crest
 
         readonly bool _Inverted;
         readonly bool _Hide;
+        readonly bool _Implicit;
 
         readonly string _PropertyName;
         readonly object _DisableValue;
@@ -38,16 +39,16 @@ namespace WaveHarmonic.Crest
         /// </summary>
         /// <param name="type">The type to call the method on. Must be either a static type or the type the field is defined on.</param>
         /// <param name="member">Member name. Method must match signature: bool MethodName(Component component). Can be any visibility and static or instance.</param>
-        /// <param name="disableValue"></param>
+        /// <param name="value">Disable/Hide if matches this value.</param>
         /// <param name="inverted">Flip behaviour - for example disable if a bool field is set to true (instead of false).</param>
         /// <param name="hide">Hide this component in the inspector.</param>
-        public Predicated(Type type, string member, object disableValue, bool inverted = false, bool hide = false)
+        public Predicated(Type type, string member, object value, bool inverted = false, bool hide = false)
         {
             _Mode = Mode.Member;
             _Inverted = inverted;
             _Hide = hide;
             _Type = type;
-            _DisableValue = disableValue;
+            _DisableValue = value;
             _Member = _Type.GetMember(member, Helpers.s_AnyMethod)[0];
         }
 
@@ -71,21 +72,30 @@ namespace WaveHarmonic.Crest
             _Type = type;
         }
 
+        public Predicated(string property, bool inverted = false, bool hide = false)
+        {
+            _Mode = Mode.Property;
+            _Inverted = inverted;
+            _Hide = hide;
+            _PropertyName = property;
+            _Implicit = true;
+        }
+
         /// <summary>
         /// The field with this attribute will be drawn enabled/disabled based on another field. For example can be used
         /// to disable a field if a toggle is false.
         /// </summary>
         /// <param name="property">The name of the other property whose value dictates whether this field is enabled or not.</param>
         /// <param name="inverted">Flip behaviour - for example disable if a bool field is set to true (instead of false).</param>
-        /// <param name="disableValue">If the field has this value, disable the GUI (or enable if inverted is true).</param>
+        /// <param name="value">If the field has this value, disable the GUI (or enable if inverted is true).</param>
         /// <param name="hide">Hide this component in the inspector.</param>
-        public Predicated(string property, bool inverted = false, object disableValue = null, bool hide = false)
+        public Predicated(string property, object value, bool inverted = false, bool hide = false)
         {
             _Mode = Mode.Property;
             _Inverted = inverted;
             _Hide = hide;
             _PropertyName = property;
-            _DisableValue = disableValue;
+            _DisableValue = value;
         }
 
         /// <summary>
@@ -106,18 +116,24 @@ namespace WaveHarmonic.Crest
 
         public bool GUIEnabled(SerializedProperty property)
         {
+            if (_Implicit && property.propertyType is not SerializedPropertyType.Boolean and not SerializedPropertyType.ObjectReference and not SerializedPropertyType.ManagedReference)
+            {
+                Debug.Log($"Crest.Predicated: Implicit predicated on {property.name} cannot be used for {property.propertyType}.");
+                return false;
+            }
+
             return _Inverted != property.propertyType switch
             {
                 // Enable GUI if int value of field is not equal to 0, or whatever the disable-value is set to
                 SerializedPropertyType.Integer => property.intValue != ((int?)_DisableValue ?? 0),
                 // Enable GUI if disable-value is 0 and field is true, or disable-value is not 0 and field is false
-                SerializedPropertyType.Boolean => property.boolValue ^ (((int?)_DisableValue ?? 0) != 0),
+                SerializedPropertyType.Boolean => _Implicit ? !property.boolValue : (bool)_DisableValue == property.boolValue,
                 SerializedPropertyType.Float => property.floatValue != ((float?)_DisableValue ?? 0),
                 SerializedPropertyType.String => property.stringValue != ((string)_DisableValue ?? ""),
                 // Must pass nameof enum entry as we are comparing names because index != value.
                 SerializedPropertyType.Enum => property.enumNames[property.enumValueIndex] != ((string)_DisableValue ?? ""),
-                SerializedPropertyType.ObjectReference => property.objectReferenceValue != null,
-                SerializedPropertyType.ManagedReference => property.managedReferenceValue != null,
+                SerializedPropertyType.ObjectReference => _Implicit ? property.objectReferenceValue == null : property.objectReferenceValue != null,
+                SerializedPropertyType.ManagedReference => _Implicit ? property.managedReferenceValue == null : property.managedReferenceValue != null,
                 _ => throw new ArgumentException($"Crest.Predicated: property type on <i>{property.serializedObject.targetObject}</i> not implemented yet: {property.propertyType}."),
             };
         }
@@ -201,12 +217,12 @@ namespace WaveHarmonic.Crest
                 }
 
                 var enabledByTypeCheck = _Type.IsAssignableFrom(type);
-                if (_Inverted) enabledByTypeCheck = !enabledByTypeCheck;
+                if (!_Inverted) enabledByTypeCheck = !enabledByTypeCheck;
                 enabled = enabledByTypeCheck && enabled;
             }
             else if (_Mode == Mode.RenderPipeline)
             {
-                enabled = RenderPipelineHelper.RenderPipeline == _RenderPipeline != _Inverted;
+                enabled = RenderPipelineHelper.RenderPipeline == _RenderPipeline == _Inverted;
             }
 
             // Keep current disabled state.
@@ -214,6 +230,230 @@ namespace WaveHarmonic.Crest
 
             // Keep previous hidden state.
             DecoratedDrawer.s_HideInInspector = DecoratedDrawer.s_HideInInspector || (_Hide && !enabled);
+        }
+    }
+
+    sealed class Show : Predicated
+    {
+        const bool k_Hide = true;
+        const bool k_Inverted = true;
+
+        /// <summary>
+        /// Show this field if member's (method) returned value matches provided.
+        /// </summary>
+        /// <inheritdoc cref="Predicated(Type, string, object, bool, bool)"/>
+        public Show(Type type, string member, object value) : base(type, member, value, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Show this field if member (method) returns true.
+        /// </summary>
+        /// <inheritdoc cref="Predicated(Type, string, bool, bool)"/>
+        public Show(Type type, string member) : this(type, member, value: true)
+        {
+
+        }
+
+        /// <summary>
+        /// Show field if owning class is of type.
+        /// </summary>
+        public Show(Type type) : base(type, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Show if field is null or false if reference or boolean respectively.
+        /// </summary>
+        public Show(string property) : base(property, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Show if field matches value.
+        /// </summary>
+        public Show(string property, object value) : base(property, value, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Show if current render pipeline matches.
+        /// </summary>
+        public Show(RenderPipeline rp) : base(rp, k_Inverted, k_Hide)
+        {
+
+        }
+    }
+
+    sealed class Hide : Predicated
+    {
+        const bool k_Hide = true;
+        const bool k_Inverted = false;
+
+        /// <summary>
+        /// Hide this field if member's (method) returned value matches provided.
+        /// </summary>
+        /// <inheritdoc cref="Predicated(Type, string, object, bool, bool)"/>
+        public Hide(Type type, string member, object value) : base(type, member, value, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Hide this field if member (method) returns true.
+        /// </summary>
+        /// <inheritdoc cref="Predicated(Type, string, bool, bool)"/>
+        public Hide(Type type, string member) : this(type, member, value: true)
+        {
+
+        }
+
+        /// <summary>
+        /// Hide field if owning class is of type.
+        /// </summary>
+        public Hide(Type type) : base(type, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Hide if field is null or false if reference or boolean respectively.
+        /// </summary>
+        public Hide(string property) : base(property, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Hide if field matches value.
+        /// </summary>
+        public Hide(string property, object value) : base(property, value, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Hide if current render pipeline matches.
+        /// </summary>
+        public Hide(RenderPipeline rp) : base(rp, k_Inverted, k_Hide)
+        {
+
+        }
+    }
+
+    sealed class Enable : Predicated
+    {
+        const bool k_Hide = false;
+        const bool k_Inverted = true;
+
+        /// <summary>
+        /// Enable this field if member's (method) returned value matches provided.
+        /// </summary>
+        /// <inheritdoc cref="Predicated(Type, string, object, bool, bool)"/>
+        public Enable(Type type, string member, object value) : base(type, member, value, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Enable this field if member (method) returns true.
+        /// </summary>
+        /// <inheritdoc cref="Predicated(Type, string, bool, bool)"/>
+        public Enable(Type type, string member) : this(type, member, value: true)
+        {
+
+        }
+
+        /// <summary>
+        /// Enable field if owning class is of type.
+        /// </summary>
+        public Enable(Type type) : base(type, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Enable if field is null or false if reference or boolean respectively.
+        /// </summary>
+        public Enable(string property) : base(property, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Enable if field matches value.
+        /// </summary>
+        public Enable(string property, object value) : base(property, value, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Enable if current render pipeline matches.
+        /// </summary>
+        public Enable(RenderPipeline rp) : base(rp, k_Inverted, k_Hide)
+        {
+
+        }
+    }
+
+    sealed class Disable : Predicated
+    {
+        const bool k_Hide = false;
+        const bool k_Inverted = false;
+
+        /// <summary>
+        /// Disable this field if member's (method) returned value matches provided.
+        /// </summary>
+        /// <inheritdoc cref="Predicated(Type, string, object, bool, bool)"/>
+        public Disable(Type type, string member, object value) : base(type, member, value, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Disable this field if member (method) returns true.
+        /// </summary>
+        /// <inheritdoc cref="Predicated(Type, string, bool, bool)"/>
+        public Disable(Type type, string member) : this(type, member, value: true)
+        {
+
+        }
+
+        /// <summary>
+        /// Disable field if owning class is of type.
+        /// </summary>
+        public Disable(Type type) : base(type, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Disable if field is null or false if reference or boolean respectively.
+        /// </summary>
+        public Disable(string property) : base(property, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Disable if field matches value.
+        /// </summary>
+        public Disable(string property, object value) : base(property, value, k_Inverted, k_Hide)
+        {
+
+        }
+
+        /// <summary>
+        /// Disable if current render pipeline matches.
+        /// </summary>
+        public Disable(RenderPipeline rp) : base(rp, k_Inverted, k_Hide)
+        {
+
         }
     }
 }

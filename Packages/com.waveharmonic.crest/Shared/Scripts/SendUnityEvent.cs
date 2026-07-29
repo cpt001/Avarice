@@ -3,20 +3,16 @@
 
 using UnityEngine;
 using UnityEngine.Events;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Examples
 {
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
-    [ExecuteAlways]
-    sealed class SendUnityEvent : MonoBehaviour
+    [@ExecuteDuringEditMode]
+    sealed partial class SendUnityEvent : CustomBehaviour
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [SerializeField]
         float _ExecuteUpdateEvery;
 
@@ -44,8 +40,10 @@ namespace WaveHarmonic.Crest.Examples
         float _TimeSinceEnabled;
         float _LastUpdateTime;
 
-        void OnEnable()
+        private protected override void OnEnable()
         {
+            base.OnEnable();
+
             _TimeSinceEnabled = 0f;
             _OnEnable.Invoke();
 
@@ -63,8 +61,10 @@ namespace WaveHarmonic.Crest.Examples
             }
         }
 
-        void OnDisable()
+        private protected override void OnDisable()
         {
+            base.OnDisable();
+
             _OnDisable.Invoke();
         }
 

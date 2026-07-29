@@ -2,6 +2,7 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Examples
 {
@@ -11,13 +12,8 @@ namespace WaveHarmonic.Crest.Examples
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
-    sealed class SimpleMotion : MonoBehaviour
+    sealed partial class SimpleMotion : CustomBehaviour
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [SerializeField]
         bool _ResetOnDisable;
 
@@ -35,14 +31,18 @@ namespace WaveHarmonic.Crest.Examples
         Vector3 _OldPosition;
         Quaternion _OldRotation;
 
-        void OnEnable()
+        private protected override void OnEnable()
         {
+            base.OnEnable();
+
             _OldPosition = transform.position;
             _OldRotation = transform.rotation;
         }
 
-        void OnDisable()
+        private protected override void OnDisable()
         {
+            base.OnDisable();
+
             if (_ResetOnDisable)
             {
                 transform.SetPositionAndRotation(_OldPosition, _OldRotation);

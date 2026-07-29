@@ -14,13 +14,8 @@ namespace WaveHarmonic.Crest.Editor
 #endif
     [RequireComponent(typeof(Light))]
     [DefaultExecutionOrder(10)]
-    sealed class RenderPipelineLightPatcher : RenderPipelinePatcher
+    sealed partial class RenderPipelineLightPatcher : RenderPipelinePatcher
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
 #if d_UnityHDRP
         // For 2023.3 onwards, HDAdditionalLightData.intensity is obsolete and returns Light.intensity.
         // It still serializes the old value so grab it via reflection.
@@ -37,8 +32,6 @@ namespace WaveHarmonic.Crest.Editor
 
         protected override void OnActiveRenderPipelineTypeChanged()
         {
-            EditorApplication.update -= OnActiveRenderPipelineTypeChanged;
-
             if (PrefabStageUtility.GetCurrentPrefabStage() != null)
             {
                 return;
@@ -68,8 +61,7 @@ namespace WaveHarmonic.Crest.Editor
                     light.intensity = intensity;
 
                     // Execute next frame as revert prefab interferes despite executing afterwards.
-                    EditorApplication.update -= OnActiveRenderPipelineTypeChanged;
-                    EditorApplication.update += OnActiveRenderPipelineTypeChanged;
+                    EditorApplication.delayCall += OnActiveRenderPipelineTypeChanged;
                 }
             }
 #endif

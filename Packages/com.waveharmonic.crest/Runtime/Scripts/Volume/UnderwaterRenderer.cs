@@ -57,7 +57,7 @@ namespace WaveHarmonic.Crest
 #if d_UnitySRP
         [@Label("Volume")]
         [Tooltip("This profile will be weighed in the deeper underwater the camera goes.")]
-        [@Predicated(RenderPipeline.HighDefinition, hide: true)]
+        [@Show(RenderPipeline.HighDefinition)]
         [@DecoratedField, SerializeField]
         VolumeProfile _EnvironmentalLightingVolumeProfile = null;
 
@@ -78,13 +78,23 @@ namespace WaveHarmonic.Crest
         [@DecoratedField, SerializeField]
         bool _CopyWaterMaterialParametersEachFrame = true;
 
+#if !d_Crest_LegacyUnderwater
+        [@HideInInspector]
+#endif
         [Tooltip("Adjusts the far plane for horizon line calculation. Helps with horizon line issue.")]
         [@Range(0f, 1f)]
         [@GenerateAPI]
         [SerializeField]
         float _FarPlaneMultiplier = 0.68f;
 
+        [Tooltip("Whether to enable culling of water chunks when below water.")]
+        [@GenerateAPI]
+        [@InlineToggle]
+        [@SerializeField]
+        bool _EnableChunkCulling = true;
+
         [Tooltip("Proportion of visibility below which the water surface will be culled when underwater.\n\nThe larger the number, the closer to the camera the water tiles will be culled.")]
+        [@Enable(nameof(_EnableChunkCulling))]
         [@Range(k_CullLimitMinimum, k_CullLimitMaximum)]
         [@GenerateAPI]
         [SerializeField]
@@ -101,6 +111,9 @@ namespace WaveHarmonic.Crest
             [SerializeField]
             internal bool _VisualizeMask;
 
+#if !d_Crest_LegacyUnderwater
+            [@HideInInspector]
+#endif
             [SerializeField]
             internal bool _DisableMask;
 
@@ -110,6 +123,9 @@ namespace WaveHarmonic.Crest
             [SerializeField]
             internal bool _DisableHeightAboveWaterOptimization;
 
+#if !d_Crest_LegacyUnderwater
+            [@HideInInspector]
+#endif
             [SerializeField]
             internal bool _DisableArtifactCorrection;
 
@@ -138,25 +154,35 @@ namespace WaveHarmonic.Crest
         // BUG: NonSerialized as Unity shows a serialization depth warning even though field is internal.
         [System.NonSerialized]
         internal Portals.PortalRenderer _Portals;
-        internal bool Portaled => _Portals.Active;
-#else
-        bool Portaled => false;
 #endif
+        bool Portaled => _Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Portal);
+
 
         int _MaterialLastUpdatedFrame = -1;
 
+
+        //
+        // Camera Loop Flags
+        //
+
         internal bool UseStencilBuffer { get; set; }
 
-        internal enum Pass
-        {
-            Culling,
-            Mask,
-            Effect,
-        }
+        // Force the full-screen mask for Portals that need it.
+        internal bool RequiresFullScreenMask { get; set; }
+
+        // Requested the temporary color texture.
+        internal bool NeedsColorTexture { get; set; }
+
 
         // These are the materials we actually use, overridable by Water Body.
         Material _SurfaceMaterial;
         Material _VolumeMaterial;
+
+        WaterBody _CurrentWaterBody;
+        bool _WaterBodyCulled;
+
+        float _MinimumFogDensity;
+        Vector3 _Extinction;
 
         readonly SampleCollisionHelper _SamplingHeightHelper = new();
         float _ViewerWaterHeight;
@@ -205,24 +231,10 @@ namespace WaveHarmonic.Crest
             }
 
             EnableEnvironmentalLighting();
-
-            RenderPipelineManager.activeRenderPipelineTypeChanged -= OnActiveRenderPipelineTypeChanged;
-            RenderPipelineManager.activeRenderPipelineTypeChanged += OnActiveRenderPipelineTypeChanged;
-        }
-
-        void OnActiveRenderPipelineTypeChanged()
-        {
-            // Disable is handled by another handler so we need to run enabled.
-            if (_Water.isActiveAndEnabled)
-            {
-                OnEnable();
-            }
         }
 
         internal void OnDisable()
         {
-            RenderPipelineManager.activeRenderPipelineTypeChanged -= OnActiveRenderPipelineTypeChanged;
-
             OnDisableMask();
 
 #if d_UnityURP
@@ -233,8 +245,6 @@ namespace WaveHarmonic.Crest
             UnderwaterEffectPassHDRP.Disable();
 #endif
 
-            OnDisableLegacy();
-
             DisableEnvironmentalLighting();
 
             _ArtifactsShader = null;
@@ -242,26 +252,20 @@ namespace WaveHarmonic.Crest
 
         internal void OnDestroy()
         {
-            Helpers.Destroy(_MaskMaterial);
-            Helpers.Destroy(_HorizonMaskMaterial);
-            // Without will cause exception in editor in play mode if disable Write Motion Vectors.
-            _MaskMaterial = null;
-            _HorizonMaskMaterial = null;
+            Helpers.Destroy(ref _EffectCommandBuffer);
+            Helpers.Destroy(ref _MaskMaterial);
+            Helpers.Destroy(ref _HorizonMaskMaterial);
         }
 
         internal bool ShouldRender(Camera camera)
         {
-            return ShouldRender(camera, Pass.Effect);
-        }
+            // Clear state.
+            // NOTE: Danger! Nested cameras can clear! Only used by portals!
+            UseStencilBuffer = false;
+            NeedsColorTexture = false;
+            RequiresFullScreenMask = true;
 
-        internal bool ShouldRender(Camera camera, Pass pass)
-        {
             if (!_Enabled || _Material == null)
-            {
-                return false;
-            }
-
-            if (_Water == null)
             {
                 return false;
             }
@@ -271,32 +275,10 @@ namespace WaveHarmonic.Crest
                 return false;
             }
 
-            // Skip entire mask pass if possible.
-            if (pass == Pass.Mask && !_Water.Surface.ShouldRender(camera))
-            {
-                return false;
-            }
-
-#if UNITY_EDITOR
-            if (GL.wireframe)
-            {
-                return false;
-            }
-
-            // Skip camera if fog is disabled. Do not skip if mask pass and a portal or volume as we want it to still
-            // mask the water surface.
-            if ((pass != Pass.Mask || !Portaled) && !IsFogEnabledForEditorCamera(camera))
-            {
-                return false;
-            }
-#endif
-
             if (_Debug._OnlyReflectionCameras && camera.cameraType != CameraType.Reflection)
             {
                 return false;
             }
-
-            var isPlanarReflectionCamera = camera == _Water.Reflections.ReflectionCamera;
 
             // Option to exclude cameras that is not the view camera or our reflection camera.
             // Otherwise, filtering depends on the camera's culling mask which is not always
@@ -307,7 +289,9 @@ namespace WaveHarmonic.Crest
                 return false;
             }
 
-            if (!_Debug._DisableHeightAboveWaterOptimization && !Portaled && _Water.Surface.ShouldRender(camera))
+            var flags = _Water._ActiveModules;
+
+            if (!_Debug._DisableHeightAboveWaterOptimization && !Portaled && flags.HasFlag(WaterRenderer.ActiveModules.Surface))
             {
                 _Water.UpdatePerCameraHeight(camera);
                 _ViewerWaterHeight = _Water._ViewerHeightAboveWaterPerCamera;
@@ -318,27 +302,64 @@ namespace WaveHarmonic.Crest
                 }
             }
 
-            return true;
-        }
+            var viewpoint = camera.transform.position;
+            var culling = !flags.HasFlag(WaterRenderer.ActiveModules.Portal);
+            var culled = culling && _Water.DefaultExcludes.HasFlag(WaterBodyAffects.Volume);
 
-        void RevertCulling()
-        {
-            foreach (var tile in _Water.Surface.Chunks)
+            // Reflections will have the same Water Body, as they share an XZ position.
+            if (camera == _Water.Reflections.ReflectionCamera)
             {
-                if (tile.Rend == null || tile._Culled)
+                return !culled || _WaterBodyCulled;
+            }
+
+            _CurrentWaterBody = null;
+
+            WaterBody wbExclusion = null;
+            WaterBody wbOverride = null;
+
+            // We are grabbing the water body that contains the camera.
+            // Grab material from a water body if camera is within its XZ bounds.
+            foreach (var wb in WaterBody.WaterBodies)
+            {
+                if (!wb.Affects.HasFlag(WaterBodyAffects.Volume))
                 {
                     continue;
                 }
 
-                tile.Rend.enabled = true;
+                var hasMaterial = wb.OverrideMaterials;
+                var hasExclusion = culling && wb.Exclusion != WaterBodyExclusion.None;
+
+                if (!hasMaterial && !hasExclusion)
+                {
+                    continue;
+                }
+
+                if (!wb.Contains(viewpoint))
+                {
+                    continue;
+                }
+
+                if (hasExclusion && WaterBody.IsBetterMatch(wb, wbExclusion))
+                {
+                    culled = wb.Exclusion == WaterBodyExclusion.Exclude;
+                    wbExclusion = wb;
+                }
+
+                if (hasMaterial && WaterBody.IsBetterMatch(wb, wbOverride))
+                {
+                    _CurrentWaterBody = wb;
+                    wbOverride = wb;
+                }
             }
+
+            _WaterBodyCulled = culled;
+
+            return !culled;
         }
 
         // Called by WaterRenderer. Camera must have water layer.
         internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
         {
-            OnBeginCameraRendering(camera);
-
 #if UNITY_EDITOR
             if (_VolumeMaterial == null)
             {
@@ -351,6 +372,13 @@ namespace WaveHarmonic.Crest
                 return;
             }
 #endif
+
+            if (_EnvironmentalInitialized)
+            {
+                _Water.UpdatePerCameraHeight(camera);
+                _ViewerWaterHeight = _Water._ViewerHeightAboveWaterPerCamera;
+                UpdateEnvironmentalLighting(camera, _Extinction, _ViewerWaterHeight);
+            }
 
 #pragma warning disable format
 #if d_UnityURP
@@ -375,45 +403,17 @@ namespace WaveHarmonic.Crest
 #pragma warning restore format
         }
 
-        internal void OnBeginCameraRendering(Camera camera)
+        // Used for culling and other things. TIRs can reuse calculations. Camera dependent.
+        internal void UpdateRenderingParameters()
         {
-            if (!ShouldRender(camera, Pass.Culling))
-            {
-                return;
-            }
-
-#if d_UnityHDRP
-            if (RenderPipelineHelper.IsHighDefinition)
-            {
-                _Water.UpdateHighDefinitionLighting(camera);
-            }
-#endif
-
             _SurfaceMaterial = _Water.Surface.AboveOrBelowSurfaceMaterial;
             _VolumeMaterial = _Material;
 
-            var viewpoint = camera.transform.position;
-
-            // Grab material from a water body if camera is within its XZ bounds.
-            foreach (var body in WaterBody.WaterBodies)
+            if (_CurrentWaterBody != null)
             {
-                if (body.AboveOrBelowSurfaceMaterial == null && body._VolumeMaterial == null)
-                {
-                    continue;
-                }
-
-                var bounds = body.AABB;
-                var contained =
-                    viewpoint.x >= bounds.min.x && viewpoint.x <= bounds.max.x &&
-                    viewpoint.z >= bounds.min.z && viewpoint.z <= bounds.max.z;
-
-                if (contained)
-                {
-                    if (body.AboveOrBelowSurfaceMaterial != null) _SurfaceMaterial = body.AboveOrBelowSurfaceMaterial;
-                    if (body.VolumeMaterial != null) _VolumeMaterial = body.VolumeMaterial;
-                    // Water bodies should not overlap so grab the first one.
-                    break;
-                }
+                var body = _CurrentWaterBody;
+                if (body.AboveOrBelowSurfaceMaterial != null) _SurfaceMaterial = body.AboveOrBelowSurfaceMaterial;
+                if (body.VolumeMaterial != null) _VolumeMaterial = body.VolumeMaterial;
             }
 
 #if UNITY_EDITOR
@@ -423,8 +423,8 @@ namespace WaveHarmonic.Crest
             }
 #endif
 
-            var extinction = Vector3.zero;
-            float minimumFogDensity = 0;
+            _Extinction = Vector3.zero;
+            _MinimumFogDensity = 0f;
 
             // Calculate extinction.
             if (_SurfaceMaterial != null)
@@ -434,8 +434,8 @@ namespace WaveHarmonic.Crest
                 // Get absorption from current material.
                 if (_SurfaceMaterial.HasVector(WaterRenderer.ShaderIDs.s_Absorption))
                 {
-                    extinction = _SurfaceMaterial.GetVector(WaterRenderer.ShaderIDs.s_Absorption);
-                    Shader.SetGlobalVector(WaterRenderer.ShaderIDs.s_Absorption, extinction);
+                    _Extinction = _SurfaceMaterial.GetVector(WaterRenderer.ShaderIDs.s_Absorption);
+                    Shader.SetGlobalVector(WaterRenderer.ShaderIDs.s_Absorption, _Extinction);
                 }
 
                 // Do not use for culling because:
@@ -443,57 +443,53 @@ namespace WaveHarmonic.Crest
                 // - Also need to take sun light into account
                 if (_SurfaceMaterial.HasProperty(WaterRenderer.ShaderIDs.s_Scattering))
                 {
-                    var volumeExtinction = extinction + _SurfaceMaterial.GetVector(WaterRenderer.ShaderIDs.s_Scattering).XYZ();
+                    var volumeExtinction = _Extinction + _SurfaceMaterial.GetVector(WaterRenderer.ShaderIDs.s_Scattering).XYZ();
                     volumeExtinction *= densityFactor;
-                    minimumFogDensity = Mathf.Min(Mathf.Min(volumeExtinction.x, volumeExtinction.y), volumeExtinction.z);
-                    Shader.SetGlobalFloat(WaterRenderer.ShaderIDs.s_VolumeExtinctionLength, -Mathf.Log(k_CullLimitMinimum) / minimumFogDensity);
+                    _MinimumFogDensity = Mathf.Min(Mathf.Min(volumeExtinction.x, volumeExtinction.y), volumeExtinction.z);
+                    Shader.SetGlobalFloat(WaterRenderer.ShaderIDs.s_VolumeExtinctionLength, -Mathf.Log(k_CullLimitMinimum) / _MinimumFogDensity);
                 }
 
-                extinction *= densityFactor;
-                minimumFogDensity = Mathf.Min(Mathf.Min(extinction.x, extinction.y), extinction.z);
+                _Extinction *= densityFactor;
+                _MinimumFogDensity = Mathf.Min(Mathf.Min(_Extinction.x, _Extinction.y), _Extinction.z);
                 // Prevent divide by zero.
-                minimumFogDensity = Mathf.Max(minimumFogDensity, 0.0001f);
+                _MinimumFogDensity = Mathf.Max(_MinimumFogDensity, 0.0001f);
             }
+        }
 
-            if (_EnvironmentalInitialized)
+        internal void UpdateChunkCulling(Camera camera)
+        {
+            if (!_EnableChunkCulling)
             {
-                _Water.UpdatePerCameraHeight(camera);
-                _ViewerWaterHeight = _Water._ViewerHeightAboveWaterPerCamera;
-                UpdateEnvironmentalLighting(camera, extinction, _ViewerWaterHeight);
+                return;
             }
 
             // Only relevant to cameras rendering the surface from here.
-            if (!_Water.Surface.ShouldRender(camera))
+            if (!_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Surface))
             {
                 return;
             }
 
-            // Redo culling. Culling is per camera. But chunks are shared.
             if (Portaled || _ViewerWaterHeight > -5f)
             {
-                RevertCulling();
                 return;
             }
 
-            var extinctionLength = -Mathf.Log(_CullLimit) / minimumFogDensity;
+            var extinctionLength = -Mathf.Log(_CullLimit) / _MinimumFogDensity;
+            var viewpoint = camera.transform.position;
 
             foreach (var tile in _Water.Surface.Chunks)
             {
+                tile._CulledByVolume = false;
+
                 if (tile.Rend == null || tile._Culled)
                 {
                     continue;
                 }
 
                 // Cull tiles the viewer cannot see through the underwater fog.
-                // Only run optimisation in play mode due to shared height above water.
                 if ((viewpoint - tile.Rend.bounds.ClosestPoint(viewpoint)).magnitude >= extinctionLength)
                 {
-                    tile.Rend.enabled = false;
-                }
-                else
-                {
-                    // Previous camera might have culled in underwater pass.
-                    tile.Rend.enabled = true;
+                    tile.Rend.forceRenderingOff = tile._CulledByVolume = true;
                 }
             }
         }
@@ -501,8 +497,16 @@ namespace WaveHarmonic.Crest
         internal void OnEndCameraRendering(Camera camera)
         {
             RestoreEnvironmentalLighting();
-            RevertCulling();
-            _DoneMaskRead = false;
+
+            // Will only be set if surface is active, which prevents reflection camera from
+            // interferring. This ensures the value is valid which is most robust.
+            if (_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Surface))
+            {
+                foreach (var tile in _Water.Surface.Chunks)
+                {
+                    tile._CulledByVolume = false;
+                }
+            }
 
             if (RenderPipelineHelper.IsLegacy)
             {
@@ -517,14 +521,12 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-#if d_CrestPortals
-            if (Portaled && !_Water.Portals.RequiresFullScreenMask)
+            if (!RequiresFullScreenMask)
             {
                 return;
             }
-#endif
 
-            if (!ShouldRender(camera, Pass.Mask))
+            if (!_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Surface))
             {
                 return;
             }
@@ -564,13 +566,8 @@ namespace WaveHarmonic.Crest
     }
 
     // Obsolete / Migration
-    partial class UnderwaterRenderer
+    partial class UnderwaterRenderer : Versioned
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         // No migration as default value for new control is far more effective than this toggle.
         [System.Obsolete("Please use Camera Exclusion instead.")]
         [Tooltip("Whether to execute for all cameras.\n\nIf disabled, then additionally ignore any camera that is not the view camera or our reflection camera. It will require managing culling masks of all cameras.")]

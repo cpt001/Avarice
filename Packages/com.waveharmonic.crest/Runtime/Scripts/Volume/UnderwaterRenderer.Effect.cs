@@ -68,9 +68,6 @@ namespace WaveHarmonic.Crest
             -1
         );
 
-        // Requested the temporary color texture.
-        internal bool _NeedsColorTexture;
-
         sealed class UnderwaterSphericalHarmonicsData
         {
             internal Color[] _AmbientLighting = new Color[1];
@@ -118,7 +115,7 @@ namespace WaveHarmonic.Crest
 
             _EffectCommandBuffer.Clear();
 
-            if (!RenderBeforeTransparency || _NeedsColorTexture)
+            if (!RenderBeforeTransparency || NeedsColorTexture)
             {
                 // No need to clear as Blit will overwrite everything.
                 _EffectCommandBuffer.GetTemporaryRT(ShaderIDs.s_CameraColorTexture, descriptor);
@@ -176,7 +173,7 @@ namespace WaveHarmonic.Crest
 
             ExecuteEffect(camera, _EffectCommandBuffer, _CopyColor, _SetRenderTargetToBackBuffers);
 
-            if (!RenderBeforeTransparency || _NeedsColorTexture)
+            if (!RenderBeforeTransparency || NeedsColorTexture)
             {
                 _EffectCommandBuffer.ReleaseTemporaryRT(ShaderIDs.s_CameraColorTexture);
             }
@@ -192,7 +189,7 @@ namespace WaveHarmonic.Crest
             var isFullScreenRequired = true;
 
 #if d_CrestPortals
-            if (_Portals.Active)
+            if (_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Portal))
             {
                 isFullScreenRequired = _Portals.RenderEffect(camera, buffer, _VolumeMaterial, copyColor, resetRenderTargets, properties);
             }
@@ -273,6 +270,9 @@ namespace WaveHarmonic.Crest
             {
                 // Skip work if camera is far enough below the surface.
                 var forceFullShader = !_MaskRead || (_Water._PerCameraHeightReady && _Water._ViewerHeightAboveWaterPerCamera < -8f && !Portaled);
+                // Fix case where surface is culled, but we are within 2m range, resulting in
+                // volume rendering everywhere above surface.
+                if (_Water.Surface.Enabled && _Water._ViewerHeightAboveWaterPerCamera is > -8f and < 2f) forceFullShader = false;
                 _VolumeMaterial.SetKeyword("d_Crest_NoMaskColor", forceFullShader);
                 _VolumeMaterial.SetKeyword("d_Crest_NoMaskDepth", !_MaskRead || RenderBeforeTransparency);
             }

@@ -119,6 +119,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 247a7260095bc49429a7f7cb2a4851d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 0
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -128,13 +129,13 @@ MonoBehaviour:
   _Data:
     rid: 323759375422586995
   _DrawBounds: 0
-  _Version: 0
   references:
     version: 2
     RefIds:
     - rid: 323759375422586995
       type: {class: AbsorptionRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 6879009723071428106}
         _Renderer: {fileID: 5220331307787431442}
         _DisableRenderer: 1
@@ -238,6 +239,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c85179d3b43c5467da99463c8a2199ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 0
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -247,13 +249,13 @@ MonoBehaviour:
   _Data:
     rid: 323759375422586998
   _DrawBounds: 0
-  _Version: 0
   references:
     version: 2
     RefIds:
     - rid: 323759375422586998
       type: {class: ScatteringRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 7347029058404462362}
         _Renderer: {fileID: 7308856809087349850}
         _DisableRenderer: 1

@@ -119,8 +119,6 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            UpdateChunkVisibility(camera);
-
             foreach (var chunk in Chunks)
             {
                 var renderer = chunk.Rend;
@@ -170,8 +168,12 @@ namespace WaveHarmonic.Crest
 
         void LegacyOnDisable()
         {
-            _ShadowMatrixBuffer?.Dispose();
-            _ShadowMatrixBuffer = null;
+            Helpers.Destroy(ref _ShadowMatrixBuffer);
+            Helpers.Destroy(ref _DrawWaterSurfaceBuffer);
+            Helpers.Destroy(ref _DeferredShadowMapBuffer);
+            Helpers.Destroy(ref _ScreenSpaceShadowMapBuffer);
+            Helpers.Destroy(ref _CaptureShadowMatrices);
+            Helpers.Destroy(ref _ForceShadowsMaterial);
         }
 
         void SetUpShadows(Camera camera)

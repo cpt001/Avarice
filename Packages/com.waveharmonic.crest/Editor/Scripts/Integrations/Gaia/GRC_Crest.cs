@@ -6,20 +6,23 @@
 using Gaia;
 using UnityEditor;
 using UnityEngine;
-using WaveHarmonic.Crest.ShallowWater;
 
 namespace WaveHarmonic.Crest
 {
     sealed class GRC_Crest : GaiaRuntimeComponent
     {
+#pragma warning disable CS0414
         [SerializeField]
         bool _Wind = true;
+#pragma warning restore CS0414
 
         [SerializeField]
         bool _Swell = true;
 
+#pragma warning disable CS0414
         [SerializeField]
         bool _ShallowWater = true;
+#pragma warning restore CS0414
 
         GUIContent _HelpLink;
         GUIContent _PanelLabel;
@@ -67,8 +70,10 @@ namespace WaveHarmonic.Crest
                 _Swell = EditorGUILayout.Toggle("Swell Waves", _Swell);
                 DisplayHelp("Whether to add swell waves to the scene. Swell waves will come from conditions far away from the scene. Modify the component after creation to customize.");
 
+#if d_UnityModuleWind
                 _Wind = EditorGUILayout.Toggle("Wind Waves", _Wind);
                 DisplayHelp("Whether to add wind waves to the scene. These waves are based on local wind conditions. Requires Gaia's Wind Zone (note that the defaul wind value will produce no waves). Modify the component after creation to customize.");
+#endif
 
 #if d_WaveHarmonic_Crest_ShallowWater
                 _ShallowWater = EditorGUILayout.Toggle("Shoreline Simulation", _ShallowWater);
@@ -94,7 +99,7 @@ namespace WaveHarmonic.Crest
         public override void AddToScene()
         {
             // Re-initialize to keep user's changes.
-            var water = FindFirstObjectByType<WaterRenderer>(FindObjectsInactive.Include);
+            var water = FindAnyObjectByType<WaterRenderer>(FindObjectsInactive.Include);
 
             if (water == null)
             {
@@ -115,21 +120,23 @@ namespace WaveHarmonic.Crest
 
             managed.SetParent(water.transform, worldPositionStays: false);
 
+#if d_UnityModuleWind
             // Wind
             if (_Wind)
             {
-                var wind = FindFirstObjectByType<WindManager>();
+                var wind = FindAnyObjectByType<WindManager>();
 
                 if (wind != null)
                 {
                     water.WindZone = wind.GetComponent<WindZone>();
                 }
             }
+#endif
 
             // Depth
             water.DepthLod.IncludeTerrainHeight = false;
 
-            foreach (var terrain in FindObjectsByType<Terrain>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (var terrain in Helpers.FindObjectsByType<Terrain>(FindObjectsInactive.Include))
             {
                 var dp = terrain.GetComponentInChildren<DepthProbe>(includeInactive: true);
 
@@ -152,12 +159,14 @@ namespace WaveHarmonic.Crest
                 dp.Populate();
             }
 
+#if d_UnityModuleWind
             // Wind Waves
             if (_Wind && water.WindZone != null)
             {
                 GetOrAddComponentToScene<ShapeFFT>(managed, "WaterWindWaves", out _);
             }
             else
+#endif
             {
                 RemoveComponentFromScene<ShapeFFT>(managed);
             }
@@ -193,7 +202,7 @@ namespace WaveHarmonic.Crest
             {
                 water.FlowLod.Enabled = true;
 
-                if (GetOrAddComponentToScene<ShallowWaterSimulation>(managed, "ShorelineSimulation", out var sws))
+                if (GetOrAddComponentToScene<ShallowWater.ShallowWaterSimulation>(managed, "ShorelineSimulation", out var sws))
                 {
                     water.Surface.Material = AssetDatabase.LoadAssetAtPath<Material>("Packages/com.waveharmonic.crest/Runtime/Materials/Water (Flow).mat");
                     sws.Width = 256;
@@ -206,13 +215,13 @@ namespace WaveHarmonic.Crest
 
                 dp.GenerateSignedDistanceField = false;
 
-                sws.Preset = ShallowWaterSimulationPreset.Shoreline;
+                sws.Preset = ShallowWater.ShallowWaterSimulationPreset.Shoreline;
                 sws.Placement = Placement.Viewpoint;
                 sws.DynamicSeabed = true;
             }
             else
             {
-                RemoveComponentFromScene<ShallowWaterSimulation>(managed);
+                RemoveComponentFromScene<ShallowWater.ShallowWaterSimulation>(managed);
             }
 #endif
         }
@@ -246,10 +255,10 @@ namespace WaveHarmonic.Crest
         /// <inheritdoc/>
         public override void RemoveFromScene()
         {
-            var water = FindFirstObjectByType<WaterRenderer>(FindObjectsInactive.Include);
+            var water = FindAnyObjectByType<WaterRenderer>(FindObjectsInactive.Include);
             if (water != null) DestroyImmediate(water.gameObject);
 
-            foreach (var terrain in FindObjectsByType<Terrain>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (var terrain in Helpers.FindObjectsByType<Terrain>(FindObjectsInactive.Include))
             {
                 var depthCache = terrain.GetComponentInChildren<DepthProbe>(includeInactive: true);
                 if (depthCache != null) DestroyImmediate(depthCache.gameObject);

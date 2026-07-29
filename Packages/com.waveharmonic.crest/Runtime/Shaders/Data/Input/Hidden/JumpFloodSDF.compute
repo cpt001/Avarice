@@ -64,7 +64,7 @@ void Initialize(const uint3 id)
 #ifndef d_Crest_Standalone
     // Add height offset.
     uint slice0; uint slice1; float alpha;
-    PosToSliceIndices(position, 0, g_Crest_LodCount - 1, g_Crest_WaterScale, slice0, slice1, alpha);
+    PositionToSliceIndices(position, 0, g_Crest_LodCount - 1, g_Crest_WaterScale, slice0, slice1, alpha);
     depth += lerp(Cascade::MakeLevel(slice0).SampleLevel(position), Cascade::MakeLevel(slice1).SampleLevel(position), alpha);
 #endif
 
@@ -127,7 +127,7 @@ void Apply(const uint3 id)
 #ifndef d_Crest_Standalone
     // Get depth including height offset.
     uint slice0; uint slice1; float alpha;
-    PosToSliceIndices(position, 0, g_Crest_LodCount - 1, g_Crest_WaterScale, slice0, slice1, alpha);
+    PositionToSliceIndices(position, 0, g_Crest_LodCount - 1, g_Crest_WaterScale, slice0, slice1, alpha);
     depth += lerp(Cascade::MakeLevel(slice0).SampleLevel(position), Cascade::MakeLevel(slice1).SampleLevel(position), alpha);
 #endif
 

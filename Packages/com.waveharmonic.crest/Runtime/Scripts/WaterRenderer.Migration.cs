@@ -5,19 +5,17 @@ using UnityEngine;
 
 namespace WaveHarmonic.Crest
 {
-    partial class WaterRenderer : ISerializationCallbackReceiver
+    partial class WaterRenderer
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 2;
-#pragma warning restore 414
+        private protected override int Version => Mathf.Max(base.Version, 2);
 
-        /// <inheritdoc/>
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
+#pragma warning disable CS0618 // Type or member is obsolete
+        private protected override void OnMigrate()
         {
+            base.OnMigrate();
+
             if (_Version < 1)
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 Surface._Layer = _Layer;
                 Surface._Material = _Material;
                 Surface._VolumeMaterial = _VolumeMaterial;
@@ -27,27 +25,15 @@ namespace WaveHarmonic.Crest
                 Surface._TimeSliceBoundsUpdateFrameCount = _TimeSliceBoundsUpdateFrameCount;
                 Surface._AllowRenderQueueSorting = _AllowRenderQueueSorting;
                 Surface._SurfaceSelfIntersectionFixMode = _SurfaceSelfIntersectionFixMode;
-#pragma warning restore CS0618 // Type or member is obsolete
 
                 _DepthLod._IncludeTerrainHeight = false;
-
-                _Version = 1;
             }
 
             if (_Version < 2)
             {
-#pragma warning disable CS0618 // Type or member is obsolete
                 AnimatedWavesLod.QuerySource = (LodQuerySource)Mathf.Max(0, (int)AnimatedWavesLod.CollisionSource - 1);
-#pragma warning restore CS0618 // Type or member is obsolete
-
-                _Version = 2;
             }
         }
-
-        /// <inheritdoc/>
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-
-        }
+#pragma warning restore CS0618 // Type or member is obsolete
     }
 }

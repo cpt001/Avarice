@@ -18,14 +18,9 @@ namespace WaveHarmonic.Crest
     /// static objects, use a <see cref="DepthProbe"/>
     /// </para>
     /// </remarks>
-    [@HelpURL("Manual/ShallowsAndShorelines.html#sea-floor-depth")]
+    [@HelpURL("Manual/Simulation/ShallowsAndShorelines.html#depth-simulation")]
     public sealed partial class DepthLodInput : LodInput
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [@Space(10)]
 
         [@Label("Relative Height")]

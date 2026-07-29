@@ -50,25 +50,7 @@ namespace WaveHarmonic.Crest
 
             internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
             {
-                if (!WaterRenderer.ShouldRender(camera, Instance._Water.Surface.Layer))
-                {
-                    return;
-                }
-
-                // Our reflections do not need them.
-                if (camera == _Water.Reflections.ReflectionCamera)
-                {
-                    return;
-                }
-
-                var material = _Water.Surface.Material;
-
-                if (material == null)
-                {
-                    return;
-                }
-
-                if (!IsTransparent(Instance._Water.Surface.Material))
+                if (!IsTransparent(_Water.Surface.Material))
                 {
                     return;
                 }

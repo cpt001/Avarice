@@ -157,6 +157,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4edd034314af4679ba066d79580dc1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 1
   _Mode: 3
   _Weight: 1
   _Queue: 20
@@ -168,13 +169,13 @@ MonoBehaviour:
   _DrawBounds: 0
   _OverrideHeight: 0
   _HeightRange: {x: -100, y: 100}
-  _Version: 1
   references:
     version: 2
     RefIds:
     - rid: 2117146443697881088
       type: {class: LevelRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 191777397795315479}
         _Renderer: {fileID: 4477874448197848730}
         _DisableRenderer: 1
@@ -278,6 +279,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 002f2642204d348f3a2fab18595c44cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 3
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -287,6 +289,7 @@ MonoBehaviour:
   _Data:
     rid: 1613819547554152512
   _DrawBounds: 0
+  _BicubicSampling: 0
   _Spectrum: {fileID: 11400000, guid: 7cb0688d6e33547ffbd4ca60c5957d87, type: 2}
   _EvaluateSpectrumAtRunTimeEveryFrame: 0
   _RespectShallowWaterAttenuation: 1
@@ -302,15 +305,16 @@ MonoBehaviour:
   _Swell: 1
   _ReverseWaveWeight: 0.5
   _ComponentsPerOctave: 8
+  _Randomize: 1
   _RandomSeed: 0
   _ManualGeneration: 0
-  _Version: 3
   references:
     version: 2
     RefIds:
     - rid: 1613819547554152512
       type: {class: ShapeWavesRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 5876181749474261199}
         _Renderer: {fileID: 2899061627673433862}
         _DisableRenderer: 1
@@ -362,6 +366,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4edd034314af4679ba066d79580dc1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 1
   _Mode: 7
   _Weight: 1
   _Queue: 10
@@ -373,13 +378,13 @@ MonoBehaviour:
   _DrawBounds: 0
   _OverrideHeight: 0
   _HeightRange: {x: -100, y: 100}
-  _Version: 1
   references:
     version: 2
     RefIds:
     - rid: 2117146427251490818
       type: {class: LevelGeometryLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 5993156162723736142}
         _Geometry: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &7958292229098436895
@@ -478,6 +483,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a0cdc7659b2c244dbbb625ccd8ae65ae, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 0
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -487,13 +493,13 @@ MonoBehaviour:
   _Data:
     rid: 2117146424074305538
   _DrawBounds: 0
-  _Version: 0
   references:
     version: 2
     RefIds:
     - rid: 2117146424074305538
       type: {class: FlowRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 3620820364525833372}
         _Renderer: {fileID: 8838000136446182423}
         _DisableRenderer: 1
@@ -597,6 +603,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67bc7f0b9724d44ab9f0ddf0b1b5a773, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 0
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -606,13 +613,13 @@ MonoBehaviour:
   _Data:
     rid: 1613819574912811009
   _DrawBounds: 0
-  _Version: 0
   references:
     version: 2
     RefIds:
     - rid: 1613819574912811009
       type: {class: FoamRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 1443687986539177302}
         _Renderer: {fileID: 2148735341880686178}
         _DisableRenderer: 1

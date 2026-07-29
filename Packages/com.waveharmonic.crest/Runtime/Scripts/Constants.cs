@@ -24,8 +24,10 @@ namespace WaveHarmonic.Crest
 
 #if UNITY_EDITOR
         public const int k_FieldGroupOrder = Editor.Inspector.k_FieldGroupOrder;
+        public const int k_FieldHeadingOrder = Editor.Inspector.k_FieldHeadingOrder;
 #else
         public const int k_FieldGroupOrder = 0;
+        public const int k_FieldHeadingOrder = 0;
 #endif
 
         // Unity only supports textures up to a size of 16384, even if maxTextureSize returns a larger size.

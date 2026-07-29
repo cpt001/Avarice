@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26623fd0e291a478a9f8b68a3df7e8a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 0
   _Mode: 4
   _Weight: 1
   _Queue: 1
@@ -55,7 +56,6 @@ MonoBehaviour:
   _Data:
     rid: -2
   _DrawBounds: 0
-  _Version: 0
   _Primitive: 3
   _Inverted: 1
   _WaterHeightDistanceCulling: 0
@@ -129,6 +129,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26623fd0e291a478a9f8b68a3df7e8a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 0
   _Mode: 4
   _Weight: 1
   _Queue: 0
@@ -138,7 +139,6 @@ MonoBehaviour:
   _Data:
     rid: -2
   _DrawBounds: 0
-  _Version: 0
   _Primitive: 0
   _Inverted: 0
   _WaterHeightDistanceCulling: 0

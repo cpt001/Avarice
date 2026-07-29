@@ -9,15 +9,9 @@ namespace WaveHarmonic.Crest
     /// Settings for fine tuning the <see cref="FoamLod"/>.
     /// </summary>
     [CreateAssetMenu(fileName = "FoamSettings", menuName = "Crest/Simulation Settings/Foam")]
-    [@HelpURL("Manual/WaterAppearance.html#foam-settings")]
+    [@HelpURL("Manual/Appearance/Foam.html#simulation-settings")]
     public sealed partial class FoamLodSettings : LodSettings
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
-
         [Header("General settings")]
 
         [Tooltip("Foam will not exceed this value in the simulation which can be used to prevent foam from accumulating too much.")]

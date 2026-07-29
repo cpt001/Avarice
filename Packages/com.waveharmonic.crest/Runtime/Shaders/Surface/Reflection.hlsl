@@ -4,6 +4,7 @@
 #ifndef CREST_WATER_REFLECTION_H
 #define CREST_WATER_REFLECTION_H
 
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Keywords.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Utility.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Helpers.hlsl"
@@ -15,7 +16,13 @@ float4x4 _Crest_ReflectionMatrixV[2];
 Texture2DArray _Crest_ReflectionColorTexture;
 SamplerState sampler_Crest_ReflectionColorTexture;
 Texture2DArray _Crest_ReflectionDepthTexture;
-SamplerState sampler_Crest_ReflectionDepthTexture;
+
+// Try and use already defined samplers.
+#if defined(CREST_HDRP) && defined(SHADERCONFIG_CS_HLSL) && defined(UNITY_SHADER_VARIABLES_INCLUDED)
+#define sampler_Crest_point_clamp s_point_clamp_sampler
+#else
+SamplerState sampler_Crest_point_clamp;
+#endif
 
 m_CrestNameSpace
 
@@ -26,7 +33,6 @@ half4 PlanarReflection
     const half i_Intensity,
     const half i_Smoothness,
     const half i_Roughness,
-    const half i_MinimumReflectionDirectionY,
     const float i_SurfaceDepth,
     const half3 i_NormalWS,
     const half i_NormalStrength,
@@ -40,12 +46,6 @@ half4 PlanarReflection
     half3 planeNormal = half3(0.0, i_Underwater ? -1.0 : 1.0, 0.0);
     half3 reflected = reflect(-i_ViewDirectionWS, lerp(planeNormal, i_NormalWS, i_NormalStrength));
     reflected.y = -reflected.y;
-
-    // Limit how close to horizontal reflection ray can get, useful to avoid unsightly below-horizon reflections.
-    if (!i_Underwater)
-    {
-        reflected = ApplyMinimumReflectionDirectionY(i_MinimumReflectionDirectionY, i_ViewDirectionWS, reflected);
-    }
 
     float4 positionCS = mul(UNITY_MATRIX_VP, half4(reflected, 0.0));
 #if UNITY_UV_STARTS_AT_TOP
@@ -61,10 +61,11 @@ half4 PlanarReflection
 
     // Cancel out distortion if out of bounds. We could make this nicer by doing an edge fade but the improvement is
     // barely noticeable. Edge fade requires recalculating the above a second time.
-    if (i_Underwater)
+    const float4 positionAndNormal = _Crest_ReflectionPositionNormal[slice];
+
+    if (dot(positionNDC - positionAndNormal.xy, positionAndNormal.zw) < 0.0)
     {
-        const float4 positionAndNormal = _Crest_ReflectionPositionNormal[slice];
-        if (dot(positionNDC - positionAndNormal.xy, positionAndNormal.zw) < 0.0)
+        if (i_Underwater)
         {
             float2 ndc = i_PositionNDC;
             ndc.xy -= 0.5;
@@ -73,10 +74,21 @@ half4 PlanarReflection
 
             positionNDC = lerp(ndc, positionNDC, 0.25);
         }
+        else
+        {
+            // Below horizon sample!
+            // There are still some bad samples, but they are very minor.
+            const half2 hypotenuse = positionAndNormal.xy - positionNDC;
+            const half angle = acos(saturate(dot(positionAndNormal.zw, normalize(hypotenuse))));
+            const half adjacentLength = (cos(angle) * length(hypotenuse));
+
+            positionNDC += (positionAndNormal.zw * adjacentLength) / _Crest_ReflectionOverscan;
+        }
     }
 
     half4 reflection;
 
+#if d_Crest_PlanarReflectionsApplySmoothness
     if (_Crest_PlanarReflectionsApplySmoothness)
     {
         const half roughness = PerceptualSmoothnessToPerceptualRoughness(i_Smoothness);
@@ -84,6 +96,7 @@ half4 PlanarReflection
         reflection = i_ReflectionsTexture.SampleLevel(sampler_Crest_ReflectionColorTexture, float3(positionNDC, i_Underwater), level);
     }
     else
+#endif
     {
         reflection = i_ReflectionsTexture.SampleLevel(sampler_Crest_point_clamp, float3(positionNDC, i_Underwater), 0.0);
     }
@@ -99,7 +112,7 @@ half4 PlanarReflection
         // TODO: calculate linear depth from device depth directly. First attempt failed.
         // Most effective when surface is smooth due to mip-maps. Surprisingly effective
         // even when rough.
-        const float rRawDepth = _Crest_ReflectionDepthTexture.SampleLevel(sampler_Crest_ReflectionDepthTexture, float3(positionNDC, i_Underwater), 0).r;
+        const float rRawDepth = _Crest_ReflectionDepthTexture.SampleLevel(sampler_Crest_point_clamp, float3(positionNDC, i_Underwater), 0).r;
         const float3 rPositionWS = Utility::SafeComputeWorldSpacePosition(positionNDC, rRawDepth, _Crest_ReflectionMatrixIVP[slice]);
         const float rDepth = LinearEyeDepth(rPositionWS, _Crest_ReflectionMatrixV[slice]);
 

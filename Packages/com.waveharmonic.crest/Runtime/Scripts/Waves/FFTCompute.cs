@@ -28,7 +28,8 @@ namespace WaveHarmonic.Crest
         /// <summary>
         /// Generated 'raw', uncombined, wave data. Input for putting into AnimWaves data before combine pass.
         /// </summary>
-        public RenderTexture WaveBuffers { get; private set; }
+        RenderTexture _WaveBuffers;
+        public RenderTexture WaveBuffers => _WaveBuffers;
 
         bool _SpectrumInitialized = false;
 
@@ -37,6 +38,8 @@ namespace WaveHarmonic.Crest
 
         int _KernelSpectrumInitial;
         int _KernelSpectrumUpdate;
+
+        LocalKeyword _AdvancedKeyword;
 
         Parameters _Parameters;
 
@@ -59,6 +62,8 @@ namespace WaveHarmonic.Crest
             public static readonly int s_ResultInit = Shader.PropertyToID("_Crest_ResultInit");
             public static readonly int s_Time = Shader.PropertyToID("_Crest_Time");
             public static readonly int s_Chop = Shader.PropertyToID("_Crest_Chop");
+            public static readonly int s_ChopScales = Shader.PropertyToID("_Crest_ChopScales");
+            public static readonly int s_GravityScales = Shader.PropertyToID("_Crest_GravityScales");
             public static readonly int s_Init0 = Shader.PropertyToID("_Crest_Init0");
             public static readonly int s_ResultHeight = Shader.PropertyToID("_Crest_ResultHeight");
             public static readonly int s_ResultDisplaceX = Shader.PropertyToID("_Crest_ResultDisplaceX");
@@ -87,8 +92,9 @@ namespace WaveHarmonic.Crest
             public readonly float _WindTurbulence;
             public readonly float _WindAlignment;
             public readonly float _Gravity;
+            public readonly bool _Advanced;
 
-            public Parameters(WaveSpectrum spectrum, int resolution, float period, float speed, float direction, float turbulence, float alignment, float gravity)
+            public Parameters(WaveSpectrum spectrum, int resolution, float period, float speed, float direction, float turbulence, float alignment, float gravity, bool advanced)
             {
                 _Spectrum = spectrum;
                 _Resolution = resolution;
@@ -98,17 +104,28 @@ namespace WaveHarmonic.Crest
                 _WindTurbulence = turbulence;
                 _WindAlignment = alignment;
                 _Gravity = gravity;
+                _Advanced = advanced;
             }
 
             // Implement custom or incur allocations.
             public override int GetHashCode()
             {
-                return System.HashCode.Combine(_Spectrum, _LoopPeriod, _WindSpeed, _WindDirectionRadians, _WindTurbulence, _WindAlignment, _Gravity, _Resolution);
+                return GetHashCode(_Resolution);
             }
 
             public int GetHashCode(int resolution)
             {
-                return System.HashCode.Combine(_Spectrum, _LoopPeriod, _WindSpeed, _WindDirectionRadians, _WindTurbulence, _WindAlignment, _Gravity, resolution);
+                var hash = new System.HashCode();
+                hash.Add(_Spectrum);
+                hash.Add(_LoopPeriod);
+                hash.Add(_WindSpeed);
+                hash.Add(_WindDirectionRadians);
+                hash.Add(_WindTurbulence);
+                hash.Add(_WindAlignment);
+                hash.Add(_Gravity);
+                hash.Add(resolution);
+                hash.Add(_Advanced);
+                return hash.ToHashCode();
             }
         }
 
@@ -120,18 +137,8 @@ namespace WaveHarmonic.Crest
 
         public void Release()
         {
-            if (_SpectrumInitial != null)
-            {
-                _SpectrumInitial.Release();
-            }
-
-            if (WaveBuffers != null)
-            {
-                WaveBuffers.Release();
-            }
-
-            Helpers.Destroy(_SpectrumInitial);
-            Helpers.Destroy(WaveBuffers);
+            Helpers.Destroy(ref _SpectrumInitial);
+            Helpers.Destroy(ref _WaveBuffers);
 
             _SpectrumInitialized = false;
             _Initialized = false;
@@ -202,6 +209,8 @@ namespace WaveHarmonic.Crest
                 _KernelSpectrumUpdate = _ShaderSpectrum.FindKernel("SpectrumUpdate");
                 _ShaderFFT = WaterResources.Instance.Compute._FFT;
 
+                _AdvancedKeyword = _ShaderSpectrum.keywordSpace.FindKeyword("d_AdvancedControls");
+
                 var rtd = new RenderTextureDescriptor(0, 0);
                 rtd.width = rtd.height = resolution;
                 rtd.dimension = TextureDimension.Tex2DArray;
@@ -216,7 +225,7 @@ namespace WaveHarmonic.Crest
                 _SpectrumInitial.Create();
 
                 // Raw wave data buffer
-                WaveBuffers = new(resolution, resolution, 0, Helpers.GetCompatibleTextureFormat(GraphicsFormat.R16G16B16A16_SFloat, randomWrite: true))
+                _WaveBuffers = new(resolution, resolution, 0, Helpers.GetCompatibleTextureFormat(GraphicsFormat.R16G16B16A16_SFloat, randomWrite: true))
                 {
                     wrapMode = TextureWrapMode.Repeat,
                     antiAliasing = 1,
@@ -298,19 +307,18 @@ namespace WaveHarmonic.Crest
                 var wrapper = new PropertyWrapperCompute(buffer, _ShaderSpectrum, _KernelSpectrumUpdate);
 
                 var descriptor = _SpectrumInitial.descriptor;
-
-                if (s_SupportsRandomWriteRGFloat)
-                {
-                    descriptor.graphicsFormat = GraphicsFormat.R32G32_SFloat;
-                }
+                descriptor.graphicsFormat = Helpers.GetCompatibleTextureFormat(GraphicsFormat.R32G32_SFloat, Helpers.s_DataGraphicsFormatUsage, "FFT", randomWrite: true);
 
                 // No need to clear as overwritten.
                 buffer.GetTemporaryRT(ShaderIDs.s_TemporaryFFT1, descriptor);
                 buffer.GetTemporaryRT(ShaderIDs.s_TemporaryFFT2, descriptor);
                 buffer.GetTemporaryRT(ShaderIDs.s_TemporaryFFT3, descriptor);
 
+                wrapper.SetKeyword(_AdvancedKeyword, _Parameters._Advanced);
                 wrapper.SetInteger(ShaderIDs.s_Size, resolution);
                 wrapper.SetFloat(ShaderIDs.s_Time, time * _Parameters._Spectrum._GravityScale);
+                wrapper.SetFloatArray(ShaderIDs.s_ChopScales, _Parameters._Spectrum._ChopScales);
+                wrapper.SetFloatArray(ShaderIDs.s_GravityScales, _Parameters._Spectrum._GravityScales);
                 wrapper.SetFloat(ShaderIDs.s_Chop, _Parameters._Spectrum._Chop);
                 wrapper.SetFloat(ShaderIDs.s_Period, period < Mathf.Infinity ? period : -1);
                 wrapper.SetTexture(ShaderIDs.s_Init0, _SpectrumInitial);

@@ -62,18 +62,7 @@ namespace WaveHarmonic.Crest
                 var hdCamera = context.hdCamera;
                 var camera = hdCamera.camera;
 
-                if (!WaterRenderer.ShouldRender(camera, _Water.Surface.Layer))
-                {
-                    return;
-                }
-
-                // Our reflections do not need them.
-                if (camera == _Water.Reflections.ReflectionCamera)
-                {
-                    return;
-                }
-
-                if (_Water.Surface.Material == null)
+                if (!_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Surface))
                 {
                     return;
                 }

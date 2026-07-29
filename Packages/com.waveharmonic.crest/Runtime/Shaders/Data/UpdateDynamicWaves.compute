@@ -7,8 +7,15 @@
 
 #pragma kernel CrestUpdateDynamicWaves
 
+#pragma multi_compile _ CREST_FLOW_ON_INTERNAL
+
 #include "HLSLSupport.cginc"
 
+// Cascade macros expect this to be available.
+#define g_Crest_CascadeDynamicWavesSource _Crest_Source
+Texture2DArray _Crest_Source;
+
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Keywords.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Constants.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
@@ -40,12 +47,12 @@ float ComputeWaveSpeed(float wavelength, float g)
 void UpdateDynamicWaves(uint3 id)
 {
     // Slice to sample previous frames data from. LOD change takes into account shifting of the cascades in scale.
-    const float sliceIndexSource = id.z + _Crest_LodChange;
+    const uint sliceIndexSource = id.z + _Crest_LodChange;
     const Cascade cascadeSource = Cascade::MakeDynamicWavesSource(sliceIndexSource);
 
     // Off either end of the cascade. Not useful to sample anything from previous
     // frame, as we do not produce any new data from sources of waves.
-    if (sliceIndexSource < 0.0 || sliceIndexSource >= cascadeSource._Count)
+    if (sliceIndexSource < 0 || sliceIndexSource >= g_Crest_LodCount)
     {
         // Always initialise with 0 values.
         _Crest_Target[id] = 0.0;
@@ -79,8 +86,13 @@ void UpdateDynamicWaves(uint3 id)
         return;
     }
 
+    float2 worldPosXZFlowed = worldPosXZ;
+
+#if d_Crest_FlowLod
     const half2 velocity = Cascade::MakeFlow(sliceIndex).SampleFlow(worldPosXZ);
-    const float2 worldPosXZFlowed = worldPosXZ - dt * velocity;
+    worldPosXZFlowed -= velocity * dt;
+#endif
+
     const float3 uv_source = cascadeSource.WorldToUV(worldPosXZFlowed);
 
     // weighting for source position - weight 0 for off texture accesses to stop streaky artifacts

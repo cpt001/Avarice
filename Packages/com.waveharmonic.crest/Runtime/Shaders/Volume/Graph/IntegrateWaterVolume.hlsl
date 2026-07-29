@@ -28,6 +28,11 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Depth.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/UnderwaterShared.hlsl"
 
+#if !d_Crest_WaterSurface
+#define CREST_INTEGRATE_COLOR_AFTER_FOG(color)
+#define CREST_INTEGRATE_COLOR_FINAL(color)
+#endif
+
 m_CrestNameSpace
 
 static bool s_IsUnderWater;
@@ -134,6 +139,7 @@ m_CrestNameSpaceEnd
 #endif
 
 #if CREST_BIRP
+// Color is RGBA.
 #ifdef UNITY_PASS_FORWARDADD
 #define m_Unity_FogColor fixed4(0, 0, 0, 0)
 #else
@@ -150,27 +156,70 @@ if (m_Crest::s_IsUnderWater) \
 else \
 { \
     UNITY_APPLY_FOG_COLOR(coord, color, m_Unity_FogColor); \
-}
+    CREST_INTEGRATE_COLOR_AFTER_FOG(color.rgb) \
+} \
+CREST_INTEGRATE_COLOR_FINAL(color.rgb)
 #else
 #define UNITY_APPLY_FOG(coord, color) \
 UNITY_APPLY_FOG_COLOR(coord, color, m_Unity_FogColor); \
-color.rgb = m_Crest::ApplyFog(color.rgb);
+color.rgb = m_Crest::ApplyFog(color.rgb); \
+if (!m_Crest::s_IsUnderWater) \
+{ \
+    CREST_INTEGRATE_COLOR_AFTER_FOG(color.rgb) \
+} \
+CREST_INTEGRATE_COLOR_FINAL(color.rgb)
 #endif // CREST_DISCARD_ATMOSPHERIC_SCATTERING
 #endif // CREST_BIRP
 
 #if CREST_HDRP
+// Color is RGBA.
 #if (CREST_DISCARD_ATMOSPHERIC_SCATTERING != 0)
-#define EvaluateAtmosphericScattering(i, V, color) m_Crest::s_IsUnderWater ? float4(m_Crest::ApplyFog(color.rgb), color.a) : EvaluateAtmosphericScattering(i, V, color)
+#define EvaluateAtmosphericScattering(i, V, color) color; \
+if (m_Crest::s_IsUnderWater) \
+{ \
+    color.rgb = m_Crest::ApplyFog(color.rgb); \
+} \
+else \
+{ \
+    color = EvaluateAtmosphericScattering(i, V, color); \
+    CREST_INTEGRATE_COLOR_AFTER_FOG(color.rgb) \
+} \
+CREST_INTEGRATE_COLOR_FINAL(color.rgb)
 #else
-#define EvaluateAtmosphericScattering(i, V, color) EvaluateAtmosphericScattering(i, V, color); color.rgb = m_Crest::ApplyFog(color.rgb)
+#define EvaluateAtmosphericScattering(i, V, color) color; \
+color = EvaluateAtmosphericScattering(i, V, color); \
+color.rgb = m_Crest::ApplyFog(color.rgb); \
+if (!m_Crest::s_IsUnderWater) \
+{ \
+    CREST_INTEGRATE_COLOR_AFTER_FOG(color.rgb); \
+} \
+CREST_INTEGRATE_COLOR_FINAL(color.rgb)
 #endif
 #endif
 
 #if CREST_URP
+// Color is RGB.
 #if (CREST_DISCARD_ATMOSPHERIC_SCATTERING != 0)
-#define MixFog(color, coord) m_Crest::s_IsUnderWater ? m_Crest::ApplyFog(color) : MixFog(color, coord)
+#define MixFog(color, coord) color; \
+if (m_Crest::s_IsUnderWater) \
+{ \
+    color = m_Crest::ApplyFog(color); \
+} \
+else \
+{ \
+    color = MixFog(color, coord); \
+    CREST_INTEGRATE_COLOR_AFTER_FOG(color) \
+} \
+CREST_INTEGRATE_COLOR_FINAL(color)
 #else
-#define MixFog(color, coord) MixFog(color, coord); color.rgb = m_Crest::ApplyFog(color.rgb)
+#define MixFog(color, coord) color; \
+color = MixFog(color, coord); \
+color = m_Crest::ApplyFog(color); \
+if (!m_Crest::s_IsUnderWater) \
+{ \
+    CREST_INTEGRATE_COLOR_AFTER_FOG(color); \
+} \
+CREST_INTEGRATE_COLOR_FINAL(color)
 #endif
 #endif
 

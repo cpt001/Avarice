@@ -17,7 +17,7 @@ namespace WaveHarmonic.Crest
 
         internal static IDepthProvider Create(WaterRenderer water)
         {
-            return water.MultipleViewpoints ? new DepthQueryPerCamera(water) : new DepthQuery(water);
+            return water.IsMultipleViewpointMode ? new DepthQueryPerCamera(water) : new DepthQuery(water);
         }
 
         internal sealed class NoneProvider : IDepthProvider

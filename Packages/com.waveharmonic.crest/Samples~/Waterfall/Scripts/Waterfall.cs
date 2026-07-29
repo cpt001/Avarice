@@ -2,18 +2,14 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Examples
 {
     [AddComponentMenu(Constants.k_MenuPrefixSample + "Waterfall (Sample)")]
-    [ExecuteAlways]
-    sealed class Waterfall : MonoBehaviour
+    [@ExecuteDuringEditMode]
+    sealed class Waterfall : CustomBehaviour
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         public Transform _Crest;
         public float _CrestRadius = 1f;
 
@@ -38,8 +34,9 @@ namespace WaveHarmonic.Crest.Examples
             ? WaterRenderer.Instance.SeaLevel
             : 0f);
 
-        void OnEnable()
+        private protected override void OnEnable()
         {
+            base.OnEnable();
             Update();
         }
 
@@ -116,7 +113,7 @@ namespace WaveHarmonic.Crest.Examples
 
             if (_Waves.TryGetComponent<Renderer>(out var renderer) && renderer.sharedMaterial != null && renderer.sharedMaterial.IsKeywordEnabled("d_Feather"))
             {
-                feather = renderer.sharedMaterial.GetFloat(Shader.PropertyToID("_Crest_FeatherWidth"));
+                feather = renderer.sharedMaterial.GetFloat(ShaderIDs.s_FeatherWidth);
             }
 
             var position = waves.localPosition;

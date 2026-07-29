@@ -156,8 +156,9 @@ namespace WaveHarmonic.Crest
                 // queries are often made from FixedUpdate(), and at high framerates this may not be called, which would mean
                 // the query would get lost and this leads to stuttering and other artifacts.
                 {
-                    _Segments[_SegmentAcquire]._QueryCount = 0;
-                    _Segments[_SegmentAcquire]._Segments.Clear();
+                    var registrar = _Segments[_SegmentAcquire];
+                    registrar._QueryCount = 0;
+                    registrar._Segments.Clear();
 
                     foreach (var segment in _Segments[lastIndex]._Segments)
                     {
@@ -169,11 +170,10 @@ namespace WaveHarmonic.Crest
                             // Compute a new segment range - we may have removed some segments that were too old, so this ensures
                             // we have a nice compact array of queries each frame rather than accumulating persistent air bubbles
                             var newSegment = segment.Value;
-                            newSegment.x = _Segments[_SegmentAcquire]._QueryCount;
+                            newSegment.x = registrar._QueryCount;
                             newSegment.y = newSegment.x + (segment.Value.y - segment.Value.x);
-                            _Segments[_SegmentAcquire]._QueryCount = newSegment.y + 1;
-
-                            _Segments[_SegmentAcquire]._Segments.Add(segment.Key, newSegment);
+                            registrar._QueryCount = newSegment.y + 1;
+                            registrar._Segments.Add(segment.Key, newSegment);
                         }
                     }
                 }
@@ -299,7 +299,9 @@ namespace WaveHarmonic.Crest
         /// </summary>
         protected bool UpdateQueryPoints(int ownerHash, float minSpatialLength, Vector3[] queryPoints, Vector3[] queryNormals)
         {
-            if (queryPoints.Length + _SegmentRegistrarRingBuffer.Current._QueryCount > _MaximumQueryCount)
+            var registrar = _SegmentRegistrarRingBuffer.Current;
+
+            if (queryPoints.Length + registrar._QueryCount > _MaximumQueryCount)
             {
                 LogMaximumQueryCountExceededError();
                 return false;
@@ -312,20 +314,20 @@ namespace WaveHarmonic.Crest
             var countNorms = queryNormals != null ? queryNormals.Length : 0;
             var countTotal = countPts + countNorms * k_NormalAdditionalQueryCount;
 
-            if (_SegmentRegistrarRingBuffer.Current._Segments.TryGetValue(ownerHash, out var segment))
+            if (registrar._Segments.TryGetValue(ownerHash, out var segment))
             {
                 var segmentSize = segment.y - segment.x + 1;
                 if (segmentSize == countTotal)
                 {
                     // Update frame count
                     segment.z = Time.frameCount;
-                    _SegmentRegistrarRingBuffer.Current._Segments[ownerHash] = segment;
+                    registrar._Segments[ownerHash] = segment;
 
                     segmentRetrieved = true;
                 }
                 else
                 {
-                    _SegmentRegistrarRingBuffer.Current._Segments.Remove(ownerHash);
+                    registrar._Segments.Remove(ownerHash);
                 }
             }
 
@@ -337,18 +339,18 @@ namespace WaveHarmonic.Crest
 
             if (!segmentRetrieved)
             {
-                if (_SegmentRegistrarRingBuffer.Current._Segments.Count >= k_MaximumGuids)
+                if (registrar._Segments.Count >= k_MaximumGuids)
                 {
                     Debug.LogError("Crest: Too many guids registered with CollProviderCompute. Increase s_maxGuids.");
                     return false;
                 }
 
-                segment.x = _SegmentRegistrarRingBuffer.Current._QueryCount;
+                segment.x = registrar._QueryCount;
                 segment.y = segment.x + countTotal - 1;
                 segment.z = Time.frameCount;
-                _SegmentRegistrarRingBuffer.Current._Segments.Add(ownerHash, segment);
+                registrar._Segments.Add(ownerHash, segment);
 
-                _SegmentRegistrarRingBuffer.Current._QueryCount += countTotal;
+                registrar._QueryCount += countTotal;
 
                 //Debug.Log("Crest: Added points for " + guid);
             }
@@ -358,6 +360,11 @@ namespace WaveHarmonic.Crest
             var minWavelength = minSpatialLength / 2f;
             var samplesPerWave = 2f;
             var minGridSize = minWavelength / samplesPerWave;
+
+            // Displacements should not utilize the last slice which is used for transitioning
+            // waves between sampling resolutions. While it might be ok to use the last slice
+            // for other targets, we avoid using it to be consistent with displacements.
+            var minimumSlice = Mathf.Clamp(Mathf.FloorToInt(Mathf.Log(Mathf.Max(minGridSize / _Lod.Texel, 1f), 2f)), 0, _Water.LodLevels - 2);
 
             if (countPts + segment.x > _QueryPositionXZ_MinimumGridSize.Length)
             {
@@ -369,7 +376,7 @@ namespace WaveHarmonic.Crest
             {
                 _QueryPositionXZ_MinimumGridSize[pointi + segment.x].x = queryPoints[pointi].x;
                 _QueryPositionXZ_MinimumGridSize[pointi + segment.x].y = queryPoints[pointi].z;
-                _QueryPositionXZ_MinimumGridSize[pointi + segment.x].z = minGridSize;
+                _QueryPositionXZ_MinimumGridSize[pointi + segment.x].z = minimumSlice;
             }
 
             // To compute each normal, post 2 query points (reuse point above)
@@ -379,13 +386,13 @@ namespace WaveHarmonic.Crest
 
                 _QueryPositionXZ_MinimumGridSize[arrIdx].x = queryNormals[normi].x + k_FiniteDifferenceDx;
                 _QueryPositionXZ_MinimumGridSize[arrIdx].y = queryNormals[normi].z;
-                _QueryPositionXZ_MinimumGridSize[arrIdx].z = minGridSize;
+                _QueryPositionXZ_MinimumGridSize[arrIdx].z = minimumSlice;
 
                 arrIdx += 1;
 
                 _QueryPositionXZ_MinimumGridSize[arrIdx].x = queryNormals[normi].x;
                 _QueryPositionXZ_MinimumGridSize[arrIdx].y = queryNormals[normi].z + k_FiniteDifferenceDx;
-                _QueryPositionXZ_MinimumGridSize[arrIdx].z = minGridSize;
+                _QueryPositionXZ_MinimumGridSize[arrIdx].z = minimumSlice;
             }
 
             return true;
@@ -547,7 +554,9 @@ namespace WaveHarmonic.Crest
                 }
 
                 ReadbackRequest request;
-                request._DataTimestamp = Time.time - Time.deltaTime;
+                // Previously, subtracted delta time which it introduced jitters. Smooth delta time
+                // helps, but I am not convinced it is needed.
+                request._DataTimestamp = Time.time;
                 request._Request = AsyncGPUReadback.Request(_ComputeBufferResults, _DataArrivedAction);
                 request._Segments = _SegmentRegistrarRingBuffer.Current._Segments;
                 _Requests.Add(request);
@@ -595,6 +604,13 @@ namespace WaveHarmonic.Crest
                 --lastDoneIndex;
             }
 
+            // Multiple readbacks can complete in one frame. On subsequent calls, this will be
+            // negative since all completed readbacks have been processed by the first call.
+            if (lastDoneIndex < 0)
+            {
+                return;
+            }
+
             // If there is a completed request, process it
             if (lastDoneIndex >= 0)
             {
@@ -603,10 +619,11 @@ namespace WaveHarmonic.Crest
                 _QueryResultsTimeLast = _QueryResultsTime;
                 _ResultSegmentsLast = _ResultSegments;
 
-                var data = _Requests[lastDoneIndex]._Request.GetData<Vector3>();
+                var last = _Requests[lastDoneIndex];
+                var data = last._Request.GetData<Vector3>();
                 data.CopyTo(_QueryResults);
-                _QueryResultsTime = _Requests[lastDoneIndex]._DataTimestamp;
-                _ResultSegments = _Requests[lastDoneIndex]._Segments;
+                _QueryResultsTime = last._DataTimestamp;
+                _ResultSegments = last._Segments;
             }
 
             // Remove all the requests up to the last completed one
@@ -779,7 +796,7 @@ namespace WaveHarmonic.Crest
 
         public int Query(int id, float length, Vector3[] queries, Vector3[] results, Vector3? center = null)
         {
-            if (_Water._InCameraLoop)
+            if (_Water.IsSeparateViewpointCameraLoop)
             {
                 return _Providers[_Water.CurrentCamera].Query(id, length, queries, results, center);
             }

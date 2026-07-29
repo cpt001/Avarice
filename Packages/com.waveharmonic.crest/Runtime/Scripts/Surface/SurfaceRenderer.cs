@@ -22,13 +22,8 @@ namespace WaveHarmonic.Crest
     /// Renders the water surface.
     /// </summary>
     [System.Serializable]
-    public sealed partial class SurfaceRenderer
+    public sealed partial class SurfaceRenderer : Versioned
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [@Space(10)]
 
         [Tooltip("Whether the underwater effect is enabled.\n\nAllocates/releases resources if state has changed.")]
@@ -36,17 +31,32 @@ namespace WaveHarmonic.Crest
         [@DecoratedField, SerializeField]
         internal bool _Enabled = true;
 
+        [Tooltip("The water chunk renderers will have this layer.")]
+        [@Layer]
+        [@GenerateAPI]
+        [SerializeField]
+        internal int _Layer = 4; // Water
+
+        [@Space(10)]
+
         [@Label("Mesh")]
         [Tooltip("The meshing solution for the water surface.")]
         [@DecoratedField]
         [@SerializeField]
         WaterMeshType _MeshType;
 
-        [Tooltip("The water chunk renderers will have this layer.")]
-        [@Layer]
-        [@GenerateAPI]
+        [Tooltip("Template for water chunks as a prefab.\n\nThe only requirements are that the prefab must contain a MeshRenderer at the root and not a MeshFilter or WaterChunkRenderer. MR values will be overwritten where necessary and the prefabs are linked in edit mode.")]
+        [@PrefabField(title: "Create Chunk Prefab", name: "Water Chunk")]
         [SerializeField]
-        internal int _Layer = 4; // Water
+        internal GameObject _ChunkTemplate;
+
+        [Tooltip("Whether to support using the surface material with other renderers.\n\nAlso requires enabling Custom Mesh on the material.")]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [@SerializeField]
+        bool _SupportCustomRenderers = true;
+
+        [@Space(10)]
 
         [Tooltip("Material to use for the water surface.")]
         [@AttachMaterialEditor(order: 0)]
@@ -62,11 +72,6 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         internal Material _VolumeMaterial = null;
 
-        [Tooltip("Template for water chunks as a prefab.\n\nThe only requirements are that the prefab must contain a MeshRenderer at the root and not a MeshFilter or WaterChunkRenderer. MR values will be overwritten where necessary and the prefabs are linked in edit mode.")]
-        [@PrefabField(title: "Create Chunk Prefab", name: "Water Chunk")]
-        [SerializeField]
-        internal GameObject _ChunkTemplate;
-
         [@Space(10)]
 
         [Tooltip("Have the water surface cast shadows for albedo (both foam and custom).")]
@@ -75,11 +80,6 @@ namespace WaveHarmonic.Crest
         internal bool _CastShadows;
 
         [@Heading("Culling")]
-
-        [Tooltip("Whether 'Water Body' components will cull the water tiles.\n\nDisable if you want to use the 'Material Override' feature and still have an ocean.")]
-        [@GenerateAPI]
-        [@DecoratedField, SerializeField]
-        internal bool _WaterBodyCulling = true;
 
         [Tooltip("How many frames to distribute the chunk bounds calculation.\n\nThe chunk bounds are calculated per frame to ensure culling is correct when using inputs that affect displacement. Some performance can be saved by distributing the load over several frames. The higher the frames, the longer it will take - lowest being instant.")]
         [@Range(1, 30, Range.Clamp.Minimum)]
@@ -100,7 +100,7 @@ namespace WaveHarmonic.Crest
         internal SurfaceSelfIntersectionFixMode _SurfaceSelfIntersectionFixMode = SurfaceSelfIntersectionFixMode.Automatic;
 
         [Tooltip("Whether to allow sorting using the render queue.\n\nIf you need to change the minor part of the render queue (eg +100), then enable this option. As a side effect, it will also disable the front-to-back rendering optimization for Crest. This option does not affect changing the major part of the render queue (eg AlphaTest, Transparent), as that is always allowed.\n\nRender queue sorting is required for some third-party integrations.")]
-        [@Predicated(RenderPipeline.HighDefinition, inverted: true, hide: true)]
+        [@Hide(RenderPipeline.HighDefinition)]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         internal bool _AllowRenderQueueSorting;
@@ -129,14 +129,23 @@ namespace WaveHarmonic.Crest
             [Tooltip("Disable generating a wide strip of triangles at the outer edge to extend water to edge of view frustum.")]
             [@DecoratedField, SerializeField]
             public bool _DisableSkirt;
+
+#if !CREST_DEBUG
+            [HideInInspector]
+#endif
+            [Tooltip("Toggle the Draw Renderer Bounds on each chunk.")]
+            [@DecoratedField, SerializeField]
+            public bool _DrawRendererBounds;
         }
 
         const string k_DrawWaterSurface = "Surface";
 
         internal WaterRenderer _Water;
-        internal Transform Root { get; private set; }
+        Transform _Root;
+        internal Transform Root => _Root;
         internal List<WaterChunkRenderer> Chunks { get; } = new();
         internal bool _Rebuild;
+        Renderer _RendererTemplate;
 
 
         //
@@ -155,9 +164,7 @@ namespace WaveHarmonic.Crest
         // Culling
         //
 
-        internal readonly Plane[] _CameraFrustumPlanes = new Plane[6];
         bool _CanSkipCulling;
-        internal bool _DoneChunkVisibility;
 
 
         //
@@ -223,6 +230,12 @@ namespace WaveHarmonic.Crest
             public static readonly int s_ChunkFarNormalsWeight = Shader.PropertyToID("_Crest_ChunkFarNormalsWeight");
             public static readonly int s_ChunkNormalScrollSpeed = Shader.PropertyToID("_Crest_ChunkNormalScrollSpeed");
             public static readonly int s_NormalMapParameters = Shader.PropertyToID("_Crest_NormalMapParameters");
+
+            // Visualizer
+            public static readonly int s_DataType = Shader.PropertyToID("_Crest_DataType");
+            public static readonly int s_Exposure = Shader.PropertyToID("_Crest_Exposure");
+            public static readonly int s_Range = Shader.PropertyToID("_Crest_Range");
+            public static readonly int s_Saturate = Shader.PropertyToID("_Crest_Saturate");
         }
 
         bool _ForceRenderingOff;
@@ -234,16 +247,40 @@ namespace WaveHarmonic.Crest
             {
                 _ForceRenderingOff = value;
 
-                if (_Enabled)
+                if (_Enabled && !IsQuadMesh)
                 {
-                    Root.gameObject.SetActive(!_ForceRenderingOff && !IsQuadMesh);
+                    foreach (var chunk in Chunks)
+                    {
+                        // Do not override WB culled.
+                        if (chunk._Culled) continue;
+                        chunk.Rend.forceRenderingOff = _ForceRenderingOff;
+                    }
                 }
+            }
+        }
+
+        Material _VisualizeDataMaterial;
+        internal Material VisualizeDataMaterial
+        {
+            get
+            {
+                if (_VisualizeDataMaterial == null)
+                {
+                    _VisualizeDataMaterial = new(Shader.Find("Hidden/Crest/Debug/Visualize Data"));
+                }
+
+                return _VisualizeDataMaterial;
             }
         }
 
         internal void Initialize()
         {
-            Root = Builder.GenerateMesh(_Water, this, Chunks, _Water.LodResolution, _Water._GeometryDownSampleFactor, _Water.LodLevels);
+            _Root = Builder.GenerateMesh(_Water, this, Chunks, _Water.LodResolution, _Water._GeometryDownSampleFactor, _Water.LodLevels);
+
+            if (_ChunkTemplate != null)
+            {
+                _RendererTemplate = _ChunkTemplate.GetComponent<Renderer>();
+            }
 
             Root.position = _Water.Position;
             Root.localScale = new(_Water.Scale, 1f, _Water.Scale);
@@ -251,6 +288,8 @@ namespace WaveHarmonic.Crest
             // Populate MPBs with defaults. Protects against null exceptions etc.
             PerCascadeMPB = _PerCascadeMPB;
             NormalMapParameters = _NormalMapParameters;
+            _PreviousObjectToWorld = new Matrix4x4[Chunks.Count];
+            PreviousObjectToWorld = _PreviousObjectToWorld;
             InitializeProperties();
 
             // Resolution is 4 tiles across.
@@ -287,18 +326,21 @@ namespace WaveHarmonic.Crest
             // Not every mesh is assigned to a chunk thus we should destroy all of them here.
             for (var i = 0; i < _Meshes?.Length; i++)
             {
-                Helpers.Destroy(_Meshes[i]);
+                Helpers.Destroy(ref _Meshes[i]);
             }
 
             Chunks.Clear();
-            CoreUtils.Destroy(_MotionVectorMaterial);
-            CoreUtils.Destroy(_DisplacedMaterial);
+            Helpers.Destroy(ref _MotionVectorMaterial);
+            Helpers.Destroy(ref _DisplacedMaterial);
 
-            if (Root != null)
-            {
-                CoreUtils.Destroy(Root.gameObject);
-                Root = null;
-            }
+            Helpers.Destroy(ref _BeforeRenderingCommands);
+
+            // Clear camera data.
+            _PerCameraPerCascadeMPB.Clear();
+            _PerCameraNormalMapParameters.Clear();
+            _PerCameraPreviousObjectToWorld.Clear();
+
+            Helpers.DestroyGameObject(ref _Root);
 
             if (RenderPipelineHelper.IsLegacy)
             {
@@ -314,33 +356,34 @@ namespace WaveHarmonic.Crest
             }
         }
 
-        // Chunk Visibility.
-        // check if needed here
-        // complicated. cos we would have to either check everything that may need it
-        // or have a loop going over an abstraction
         internal void UpdateChunkVisibility(Camera camera)
         {
-            if (_DoneChunkVisibility)
-            {
-                return;
-            }
-
             if (IsQuadMesh)
             {
                 return;
             }
 
-            GeometryUtility.CalculateFrustumPlanes(camera, _CameraFrustumPlanes);
-
             foreach (var chunk in Chunks)
             {
+                // Legacy Underwater only checks visible, so we need to set it always.
+                // Water Level for painting does too, but should be fine.
+#if !d_Crest_LegacyUnderwater
+                if (chunk._Culled) continue;
+#endif
                 var renderer = chunk.Rend;
                 // Can happen in edit mode.
                 if (renderer == null) continue;
-                chunk._Visible = GeometryUtility.TestPlanesAABB(_CameraFrustumPlanes, renderer.bounds);
+                chunk._Visible = Helpers.TestPlanesAndPointsAABB(_Water._CameraFrustumPlanes, _Water._CameraFrustumPoints, renderer.bounds);
+                chunk.Rend.forceRenderingOff = chunk._Culled || !chunk._Visible;
             }
+        }
 
-            _DoneChunkVisibility = true;
+        internal void RestoreCulling()
+        {
+            foreach (var chunk in Chunks)
+            {
+                chunk.Rend.forceRenderingOff = chunk._Culled || !chunk._Visible || chunk._CulledByVolume;
+            }
         }
 
         internal void UpdateMaterial(Material material, ref Material motion)
@@ -375,17 +418,11 @@ namespace WaveHarmonic.Crest
 
         void Rebuild()
         {
+            if (!_Water._Initialized) return;
             OnDestroy();
+            if (!Enabled) return;
             Initialize();
             _Rebuild = false;
-        }
-
-        internal void DisableChunks()
-        {
-            foreach (var chunk in Chunks)
-            {
-                if (chunk.Rend != null) chunk.Rend.enabled = false;
-            }
         }
 
         internal bool ShouldRender(Camera camera)
@@ -414,20 +451,24 @@ namespace WaveHarmonic.Crest
             return true;
         }
 
-        internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
+        internal bool ShouldCull()
         {
-            if (!ShouldRender(camera))
+            foreach (var chunk in Chunks)
             {
-                return;
+                if (chunk.Rend == null) continue;
+                if (!chunk.Rend.forceRenderingOff) return false;
             }
 
+            return true;
+        }
+
+        internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
+        {
             WritePerCameraMaterialParameters(camera);
 
             // Motion Vectors.
             if (ShouldRenderMotionVectors(camera) && QueueMotionVectors)
             {
-                UpdateChunkVisibility(camera);
-
                 foreach (var chunk in Chunks)
                 {
                     chunk.RenderMotionVectors(this, camera);
@@ -455,25 +496,6 @@ namespace WaveHarmonic.Crest
 
         internal void OnEndCameraRendering(Camera camera)
         {
-            _DoneChunkVisibility = false;
-
-            // Restore in case exclusion culling ran.
-            foreach (var chunk in Chunks)
-            {
-                if (chunk.Rend != null && !chunk._Culled) chunk.Rend.enabled = true;
-            }
-
-            if (!WaterRenderer.ShouldRender(camera, Layer))
-            {
-                return;
-            }
-
-            // Our planar reflection camera must never render the surface.
-            if (camera == _Water.Reflections.ReflectionCamera)
-            {
-                return;
-            }
-
             if (RenderPipelineHelper.IsLegacy)
             {
                 OnEndCameraRenderingLegacy(camera);
@@ -492,6 +514,11 @@ namespace WaveHarmonic.Crest
                 block.SetFloat(ShaderIDs.s_ChunkFarNormalsWeight, 1f);
                 PerCascadeMPB[index] = block;
             }
+
+            foreach (var chunk in Chunks)
+            {
+                PreviousObjectToWorld[chunk._SiblingIndex] = chunk.transform.localToWorldMatrix;
+            }
         }
 
         void WritePerCameraMaterialParameters(Camera camera)
@@ -502,7 +529,7 @@ namespace WaveHarmonic.Crest
             }
 
             // If no underwater, then no need for underwater surface.
-            if (!_Water.Underwater.Enabled)
+            if (!_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Volume) && _SurfaceSelfIntersectionFixMode == SurfaceSelfIntersectionFixMode.Automatic)
             {
                 Shader.SetGlobalInteger(ShaderIDs.s_ForceUnderwater, (int)ForceFacing.AboveWater);
                 return;
@@ -520,7 +547,7 @@ namespace WaveHarmonic.Crest
             var value = _SurfaceSelfIntersectionFixMode switch
             {
                 SurfaceSelfIntersectionFixMode.On =>
-                      !_Water._PerCameraHeightReady
+                    !_Water._PerCameraHeightReady
                     ? ForceFacing.None
                     : height < -2f
                     ? ForceFacing.BelowWater
@@ -529,7 +556,7 @@ namespace WaveHarmonic.Crest
                     : ForceFacing.None,
                 // Skip for portals as it is possible to see both sides of the surface at any position.
                 SurfaceSelfIntersectionFixMode.Automatic =>
-                      _Water.Portaled || !_Water._PerCameraHeightReady
+                    _Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Portal) || !_Water._PerCameraHeightReady
                     ? ForceFacing.None
                     : height < -2f
                     ? ForceFacing.BelowWater
@@ -562,9 +589,38 @@ namespace WaveHarmonic.Crest
             Root.localScale = new(_Water.Scale, 1f, _Water.Scale);
 
             Root.gameObject.SetActive(!IsQuadMesh);
-            Material.SetKeyword(new(Material.shader, "_CREST_CUSTOM_MESH"), IsQuadMesh);
+
+#if CREST_DEBUG
+            if (_Water._Debug._VisualizeData)
+            {
+                var material = _Water.Surface.VisualizeDataMaterial;
+                material.SetInteger(ShaderIDs.s_DataType, (int)_Water._Debug._VisualizeDataType);
+                material.SetBoolean(ShaderIDs.s_Saturate, _Water._Debug._VisualizeDataSaturate);
+                material.SetFloat(ShaderIDs.s_Exposure, _Water._Debug._VisualizeDataExposure);
+                material.SetFloat(ShaderIDs.s_Range, _Water._Debug._VisualizeDataRange);
+            }
+#endif
+
+            if (Material != null)
+            {
+                // FindKeyword allocates, and:
+                // Cannot cache or receive the following on shader recompilation:
+                // Local keyword … comes from a different shader.
+                var keyword = new LocalKeyword(Material.shader, "_CREST_CUSTOM_MESH");
+
+                if (keyword.isValid)
+                {
+                    Material.SetKeyword(keyword, IsQuadMesh);
+                }
+            }
 
             WritePerCascadeInstanceData();
+
+            if (IsQuadMesh || _SupportCustomRenderers)
+            {
+                // For simple and custom meshes.
+                Shader.SetGlobalVectorArray(ShaderIDs.s_NormalMapParameters, NormalMapParameters);
+            }
 
             if (IsQuadMesh)
             {
@@ -585,9 +641,9 @@ namespace WaveHarmonic.Crest
 
             foreach (var body in WaterBody.WaterBodies)
             {
-                if (body._Material != null)
+                if (body.AboveSurfaceMaterial != null)
                 {
-                    UpdateMaterial(body._Material, ref body._MotionVectorMaterial);
+                    UpdateMaterial(body.AboveSurfaceMaterial, ref body._MotionVectorMaterial);
                 }
             }
 
@@ -648,7 +704,10 @@ namespace WaveHarmonic.Crest
 
         void ApplyWaterBodyCulling()
         {
-            var canSkipCulling = WaterBody.WaterBodies.Count == 0 && _CanSkipCulling;
+            var hasWaterBodies = WaterBody.WaterBodies.Count > 0;
+            var canSkipCulling = !hasWaterBodies && _CanSkipCulling;
+            var defaultExclusion = _Water.DefaultExcludes.HasFlag(WaterBodyAffects.Surface)
+                ? WaterBodyExclusion.Exclude : WaterBodyExclusion.None;
 
             // Chunk bounds needs to be up-to-date at this point.
             foreach (var tile in Chunks)
@@ -658,78 +717,121 @@ namespace WaveHarmonic.Crest
                     continue;
                 }
 
+                // No need to skip based on visibility, as this happens before.
+
                 tile._Culled = false;
                 tile.MaterialOverridden = false;
 
-                // If there are local bodies of water, this will do overlap tests between the water tiles
-                // and the water bodies and turn off any that don't overlap.
-                if (!canSkipCulling)
+                var oldExclusion = defaultExclusion;
+
+                if (canSkipCulling)
                 {
-                    var chunkBounds = tile.Rend.bounds;
-                    var chunkUndisplacedBoundsXZ = tile.UnexpandedBoundsXZ;
-
-                    var largestOverlap = 0f;
-                    var overlappingOne = false;
-                    foreach (var body in WaterBody.WaterBodies)
-                    {
-                        // If tile has already been excluded from culling, then skip this iteration. But finish this
-                        // iteration if the water body has a material override to work out most influential water body.
-                        if (overlappingOne && body.AboveSurfaceMaterial == null)
-                        {
-                            continue;
-                        }
-
-                        var bounds = body.AABB;
-
-                        var overlapping =
-                            bounds.max.x > chunkBounds.min.x && bounds.min.x < chunkBounds.max.x &&
-                            bounds.max.z > chunkBounds.min.z && bounds.min.z < chunkBounds.max.z;
-                        if (overlapping)
-                        {
-                            overlappingOne = true;
-
-                            if (body.AboveSurfaceMaterial != null)
-                            {
-                                var overlap = 0f;
-                                {
-                                    // Use the unexpanded bounds to prevent leaking as generally this feature will be
-                                    // for an inland body of water where hopefully there is attenuation between it and
-                                    // the water to handle the water's displacement. The inland water body will unlikely
-                                    // have large displacement but can be mitigated with a decent buffer zone.
-                                    var xMin = Mathf.Max(bounds.min.x, chunkUndisplacedBoundsXZ.min.x);
-                                    var xMax = Mathf.Min(bounds.max.x, chunkUndisplacedBoundsXZ.max.x);
-                                    var zMin = Mathf.Max(bounds.min.z, chunkUndisplacedBoundsXZ.min.y);
-                                    var zMax = Mathf.Min(bounds.max.z, chunkUndisplacedBoundsXZ.max.y);
-                                    if (xMin < xMax && zMin < zMax)
-                                    {
-                                        overlap = (xMax - xMin) * (zMax - zMin);
-                                    }
-                                }
-
-                                // If this water body has the most overlap, then the chunk will get its material.
-                                if (overlap > largestOverlap)
-                                {
-                                    tile.MaterialOverridden = true;
-                                    tile.Rend.sharedMaterial = body.AboveSurfaceMaterial;
-                                    tile._MotionVectorMaterial = body._MotionVectorMaterial;
-                                    largestOverlap = overlap;
-                                }
-                            }
-                            else
-                            {
-                                tile.MaterialOverridden = false;
-                            }
-                        }
-                    }
-
-                    tile._Culled = _WaterBodyCulling && !overlappingOne && WaterBody.WaterBodies.Count > 0;
+                    tile.Rend.forceRenderingOff = tile._Culled = oldExclusion == WaterBodyExclusion.Exclude;
+                    continue;
                 }
 
-                tile.Rend.enabled = !tile._Culled;
+                // If there are local bodies of water, this will do overlap tests between the water tiles
+                // and the water bodies and turn off any that don't overlap.
+
+                var chunkBounds = tile.Rend.bounds;
+                var chunkUndisplacedBoundsXZ = tile.UnexpandedBoundsXZ;
+
+                var largestOverlap = 0f;
+
+                foreach (var body in WaterBody.WaterBodies)
+                {
+                    // Nothing to do!
+                    if (!body.Affects.HasFlag(WaterBodyAffects.Surface))
+                    {
+                        continue;
+                    }
+
+                    // No point overriding the material if excluding.
+                    var hasMaterial = body.OverrideMaterials && body.Exclusion != WaterBodyExclusion.Exclude;
+                    var hasExclusion = body.Exclusion != WaterBodyExclusion.None;
+
+                    // Prioritize conservative.
+                    // This is used for performance culling. Do not proceed further.
+                    if (body.Conservative && body.Exclusion == WaterBodyExclusion.Exclude)
+                    {
+                        if (body.AABB.ContainsXZ(chunkBounds))
+                        {
+                            oldExclusion = WaterBodyExclusion.Exclude;
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    // Nothing to do!
+                    if (!hasExclusion && !hasMaterial)
+                    {
+                        continue;
+                    }
+
+                    // If chunk has already been excluded from culling, then skip this iteration. But
+                    // finish this iteration if the water body has a material override to work out most
+                    // influential water body. Even if the chunk is marked for exclusion, as it may
+                    // still be included further into the loop.
+                    if (oldExclusion == WaterBodyExclusion.Include && !hasMaterial)
+                    {
+                        continue;
+                    }
+
+                    var bounds = body.AABB;
+
+                    if (bounds.IntersectsXZ(chunkBounds))
+                    {
+                        // Inclusion always wins. Precise will refine it further.
+                        if (hasExclusion && oldExclusion != WaterBodyExclusion.Include)
+                        {
+                            oldExclusion = body.Exclusion;
+                        }
+
+                        // No point overridding a material if excluding. Do not check old, as it could be
+                        // included later.
+                        if (hasMaterial)
+                        {
+                            var overlap = 0f;
+                            {
+                                // Use the unexpanded bounds to prevent leaking as generally this feature will be
+                                // for an inland body of water where hopefully there is attenuation between it and
+                                // the water to handle the water's displacement. The inland water body will unlikely
+                                // have large displacement but can be mitigated with a decent buffer zone.
+                                var xMin = Mathf.Max(bounds.min.x, chunkUndisplacedBoundsXZ.min.x);
+                                var xMax = Mathf.Min(bounds.max.x, chunkUndisplacedBoundsXZ.max.x);
+                                var zMin = Mathf.Max(bounds.min.z, chunkUndisplacedBoundsXZ.min.y);
+                                var zMax = Mathf.Min(bounds.max.z, chunkUndisplacedBoundsXZ.max.y);
+                                if (xMin < xMax && zMin < zMax)
+                                {
+                                    overlap = (xMax - xMin) * (zMax - zMin);
+                                }
+                            }
+
+                            // If this water body has the most overlap, then the chunk will get its material.
+                            if (overlap > largestOverlap)
+                            {
+                                tile.MaterialOverridden = body.AboveSurfaceMaterial != null;
+                                if (tile.MaterialOverridden)
+                                {
+                                    tile.Rend.sharedMaterial = body.AboveSurfaceMaterial;
+                                    tile._MotionVectorMaterial = body._MotionVectorMaterial;
+                                }
+                                largestOverlap = overlap;
+                            }
+                        }
+                        else
+                        {
+                            tile.MaterialOverridden = false;
+                        }
+                    }
+                }
+
+                tile.Rend.forceRenderingOff = tile._Culled = oldExclusion == WaterBodyExclusion.Exclude;
             }
 
             // Can skip culling next time around if water body count stays at 0
-            _CanSkipCulling = WaterBody.WaterBodies.Count == 0;
+            _CanSkipCulling = !hasWaterBodies;
         }
 
         internal void Render(Camera camera, CommandBuffer buffer, Material material = null, int pass = 0, bool culled = false, MaterialPropertyBlock mpb = null)
@@ -746,8 +848,6 @@ namespace WaveHarmonic.Crest
                 buffer.DrawMesh(Helpers.QuadMesh, Matrix4x4.TRS(Root.position, Quaternion.Euler(90f, 0, 0), new(10000, 10000, 1)), noMaterial ? Material : material, 0, shaderPass: pass, mpb);
                 return;
             }
-
-            UpdateChunkVisibility(camera);
 
             // Spends approx 0.2-0.3ms here on 2018 Dell XPS 15.
             foreach (var chunk in Chunks)
@@ -840,8 +940,11 @@ namespace WaveHarmonic.Crest
     // Motion Vectors
     partial class SurfaceRenderer
     {
+        // Mostly to update the motion vector material only once.
         bool _QueueMotionVectors;
         bool QueueMotionVectors => _QueueMotionVectors && !IsQuadMesh;
+        Matrix4x4[] _PreviousObjectToWorld;
+        internal Matrix4x4[] PreviousObjectToWorld { get; private set; }
 
         bool ShouldRenderMotionVectors(Camera camera)
         {
@@ -889,7 +992,10 @@ namespace WaveHarmonic.Crest
             {
                 var camera = cameras[i];
 
-                if (!WaterRenderer.ShouldRender(camera, _Layer))
+                // Clear the array before we return it.
+                cameras[i] = null;
+
+                if (!ShouldRender(camera))
                 {
                     continue;
                 }
@@ -914,7 +1020,7 @@ namespace WaveHarmonic.Crest
 
             if (motion == null || motion.shader != surface.shader)
             {
-                CoreUtils.Destroy(motion);
+                Helpers.Destroy(ref motion);
                 motion = CoreUtils.CreateEngineMaterial(surface.shader);
 
                 // BIRP
@@ -950,10 +1056,11 @@ namespace WaveHarmonic.Crest
     {
         internal Dictionary<Camera, MaterialPropertyBlock[]> _PerCameraPerCascadeMPB = new();
         internal Dictionary<Camera, Vector4[]> _PerCameraNormalMapParameters = new();
+        internal Dictionary<Camera, Matrix4x4[]> _PerCameraPreviousObjectToWorld = new();
 
         void LoadCameraData(Camera camera)
         {
-            if (!_Water.SeparateViewpoint)
+            if (_Water.IsSingleViewpointMode)
             {
                 return;
             }
@@ -964,12 +1071,15 @@ namespace WaveHarmonic.Crest
                 _PerCameraPerCascadeMPB.Add(camera, PerCascadeMPB);
                 NormalMapParameters = new Vector4[Lod.k_MaximumSlices];
                 _PerCameraNormalMapParameters.Add(camera, NormalMapParameters);
+                PreviousObjectToWorld = new Matrix4x4[Chunks.Count];
+                _PerCameraPreviousObjectToWorld.Add(camera, PreviousObjectToWorld);
                 InitializeProperties();
             }
             else
             {
                 PerCascadeMPB = _PerCameraPerCascadeMPB[camera];
                 NormalMapParameters = _PerCameraNormalMapParameters[camera];
+                PreviousObjectToWorld = _PerCameraPreviousObjectToWorld[camera];
             }
         }
 
@@ -979,11 +1089,8 @@ namespace WaveHarmonic.Crest
             {
                 _PerCameraPerCascadeMPB.Remove(camera);
                 _PerCameraNormalMapParameters.Remove(camera);
+                _PerCameraPreviousObjectToWorld.Remove(camera);
             }
-
-#if UNITY_EDITOR
-            RemoveCameraDataLDT(camera);
-#endif
         }
     }
 
@@ -995,8 +1102,6 @@ namespace WaveHarmonic.Crest
 
         void LateUpdateQuadMesh()
         {
-            Shader.SetGlobalVectorArray(ShaderIDs.s_NormalMapParameters, NormalMapParameters);
-
             var scale = new Vector3(10000 * _Water.Scale, 10000 * _Water.Scale, 1);
             var bounds = Helpers.QuadMesh.bounds;
             bounds.Expand(scale);
@@ -1011,7 +1116,9 @@ namespace WaveHarmonic.Crest
                     shadowCastingMode = CastShadows ? ShadowCastingMode.On : ShadowCastingMode.Off,
                     lightProbeUsage = LightProbeUsage.Off,
                     reflectionProbeUsage = ReflectionProbeUsage.BlendProbesAndSkybox,
-                    renderingLayerMask = (uint)Layer,
+                    renderingLayerMask = _RendererTemplate != null ? _RendererTemplate.renderingLayerMask : 1,
+                    // Not required for BIRP but required for SRPs.
+                    camera = _Water.IsMultipleViewpointMode ? _Water.CurrentCamera : null,
                 },
                 Helpers.QuadMesh,
                 submeshIndex: 0,
@@ -1020,5 +1127,17 @@ namespace WaveHarmonic.Crest
 
             UpdateMaterial(_Material, ref _MotionVectorMaterial);
         }
+    }
+
+    // Obsolete
+    partial class SurfaceRenderer
+    {
+        [@HideInInspector]
+        [System.Obsolete("This setting no longer has any effect. Please use WaterRenderer.ExcludeEverythingByDefault instead.")]
+        [@Label("Water Body Cull By Default")]
+        [Tooltip("Whether 'Water Body' components will cull the water tiles.\n\nDisable if you want to use the 'Material Override' feature and still have an ocean.")]
+        [@GenerateAPI]
+        [@DecoratedField, SerializeField]
+        internal bool _WaterBodyCulling = true;
     }
 }

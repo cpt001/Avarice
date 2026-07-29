@@ -5,8 +5,10 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Editor")]
+[assembly: InternalsVisibleTo("WaveHarmonic.Crest.Integration.Gaia")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Shared.Editor")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Samples")]
+[assembly: InternalsVisibleTo("WaveHarmonic.Crest.Samples.Boats")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Samples.Editor")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Samples.Examples")]
 [assembly: InternalsVisibleTo("WaveHarmonic.Crest.Samples.Ripples")]

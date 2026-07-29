@@ -44,15 +44,10 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// Physics including buoyancy and drag.
     /// </summary>
-    [@HelpURL("Manual/FloatingObjects.html#physics")]
+    [@HelpURL("Manual/Basics/FloatingObjects.html#physics")]
     [AddComponentMenu(Constants.k_MenuPrefixPhysics + "Floating Object")]
     public sealed partial class FloatingObject : ManagedBehaviour<WaterRenderer>
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
 
         [Tooltip("The rigid body to affect.\n\nIt will automatically get the sibling rigid body if not set.")]
         [@GenerateAPI]
@@ -80,7 +75,7 @@ namespace WaveHarmonic.Crest
 
         [@Label("Torque Strength")]
         [Tooltip("Strength of torque applied to match boat orientation to water normal.")]
-        [@Predicated(nameof(_Model), inverted: true, nameof(FloatingObjectModel.AlignNormal), hide: true)]
+        [@Show(nameof(_Model), nameof(FloatingObjectModel.AlignNormal))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _BuoyancyTorqueStrength = 8f;
@@ -93,13 +88,13 @@ namespace WaveHarmonic.Crest
 
         [@Label("Height Offset")]
         [Tooltip("Height offset from transform center to bottom of boat (if any).\n\nDefault value is for a default sphere. Having this value be an accurate measurement from center to bottom is not necessary.")]
-        [@Predicated(nameof(_Model), true, nameof(FloatingObjectModel.AlignNormal), hide: true)]
+        [@Show(nameof(_Model), nameof(FloatingObjectModel.AlignNormal))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _CenterToBottomOffset = -1f;
 
         [Tooltip("Approximate hydrodynamics of 'surfing' down waves.")]
-        [@Predicated(nameof(_Model), true, nameof(FloatingObjectModel.AlignNormal))]
+        [@Show(nameof(_Model), nameof(FloatingObjectModel.AlignNormal))]
         [@Range(0, 1)]
         [@GenerateAPI]
         [SerializeField]
@@ -108,7 +103,7 @@ namespace WaveHarmonic.Crest
         [UnityEngine.Space(10)]
 
         [Tooltip("Query points for buoyancy.\n\nOnly applicable to Probes model.")]
-        [@Predicated(nameof(_Model), true, nameof(FloatingObjectModel.Probes), hide: true)]
+        [@Show(nameof(_Model), nameof(FloatingObjectModel.Probes))]
         [@GenerateAPI]
         [@DecoratedField]
         [SerializeField]
@@ -141,14 +136,14 @@ namespace WaveHarmonic.Crest
         float _ObjectWidth = 3f;
 
         [Tooltip("Computes a separate normal based on boat length to get more accurate orientations.\n\nRequires the cost of an extra collision sample.")]
-        [@Predicated(nameof(_Model), true, nameof(FloatingObjectModel.AlignNormal), hide: true)]
+        [@Show(nameof(_Model), nameof(FloatingObjectModel.AlignNormal))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _UseObjectLength;
 
         [Tooltip("Length dimension of boat.\n\nOnly used if Use Boat Length is enabled.")]
-        [@Predicated(nameof(_Model), true, nameof(FloatingObjectModel.AlignNormal), hide: true)]
-        [@Predicated(nameof(_UseObjectLength))]
+        [@Show(nameof(_Model), nameof(FloatingObjectModel.AlignNormal))]
+        [@Enable(nameof(_UseObjectLength))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _ObjectLength = 3f;
@@ -210,6 +205,12 @@ namespace WaveHarmonic.Crest
         private protected override System.Action<WaterRenderer> OnFixedUpdateMethod => OnFixedUpdate;
         void OnFixedUpdate(WaterRenderer water)
         {
+            if (!water.HasWater(transform.position))
+            {
+                InWater = false;
+                return;
+            }
+
             s_FixedUpdateMarker.Begin(this);
 
             var points = Advanced ? _Probes : _Probe;
@@ -220,15 +221,17 @@ namespace WaveHarmonic.Crest
 
                 _TotalWeight = 0;
 
+                var com = new Vector3(0, _RigidBody.centerOfMass.y, 0);
+
                 // Update query points.
                 for (var i = 0; i < points.Length; i++)
                 {
                     var point = points[i];
                     _TotalWeight += point._Weight;
-                    _QueryPoints[i] = transform.TransformPoint(point._Position + new Vector3(0, _RigidBody.centerOfMass.y, 0));
+                    _QueryPoints[i] = transform.TransformPoint(point._Position + com);
                 }
 
-                _QueryPoints[^1] = transform.position + new Vector3(0, _RigidBody.centerOfMass.y, 0);
+                _QueryPoints[^1] = transform.position + com;
 
                 collisions.Query(GetHashCode(), _ObjectWidth, _QueryPoints, _QueryResultDisplacements, _QueryResultNormal, _QueryResultVelocities, _Layer);
 

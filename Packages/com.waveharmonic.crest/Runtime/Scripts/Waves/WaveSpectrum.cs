@@ -2,6 +2,7 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -9,14 +10,9 @@ namespace WaveHarmonic.Crest
     /// Water shape representation - power values for each octave of wave components.
     /// </summary>
     [CreateAssetMenu(fileName = "Waves", menuName = "Crest/Wave Spectrum", order = 10000)]
-    [@HelpURL("Manual/Waves.html#wave-conditions")]
-    public sealed partial class WaveSpectrum : ScriptableObject
+    [@HelpURL("Manual/Simulation/Waves.html#wave-conditions")]
+    public sealed partial class WaveSpectrum : CustomScriptableObject
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         // These must match corresponding constants in FFTSpectrum.compute
         internal const int k_NumberOfOctaves = 14;
         internal const float k_SmallestWavelengthPower2 = -4f;
@@ -24,20 +20,28 @@ namespace WaveHarmonic.Crest
         internal static readonly float s_MinimumPowerLog = -8f;
         internal static readonly float s_MaximumPowerLog = 5f;
 
-        [Tooltip("Variance of wave directions, in degrees.")]
-        [@Range(0f, 180f)]
-        [SerializeField, HideInInspector]
-        internal float _WaveDirectionVariance = 90f;
-
-        [Tooltip("More gravity means faster waves.")]
-        [@Range(0f, 25f)]
-        [SerializeField, HideInInspector]
-        internal float _GravityScale = 1f;
 
         [Tooltip("Multiplier which scales waves")]
         [@Range(0f, 10f)]
         [SerializeField]
         internal float _Multiplier = 1f;
+
+        [Tooltip("Scales horizontal displacement")]
+        [@Range(0f, 2f)]
+        [SerializeField]
+        internal float _Chop = 1.6f;
+
+        [Tooltip("More gravity means faster waves.")]
+        [@CustomLabel]
+        [@Range(0f, 25f)]
+        [SerializeField]
+        internal float _GravityScale = 1f;
+
+        [Tooltip("Variance of wave directions, in degrees.")]
+        [@Range(0f, 180f)]
+        [SerializeField, HideInInspector]
+        internal float _WaveDirectionVariance = 90f;
+
 
         [SerializeField, HideInInspector]
         internal float[] _PowerLogarithmicScales = new float[k_NumberOfOctaves] { -7.10794f, -6.42794f, -5.93794f, -5.27794f, -4.67794f, -3.71794f, -3.17794f, -2.60794f, -1.93794f, -1.11794f, -0.85794f, -0.36794f, 0.04206f, -8f };
@@ -51,10 +55,8 @@ namespace WaveHarmonic.Crest
         [SerializeField, HideInInspector]
         internal float[] _GravityScales = new float[k_NumberOfOctaves] { 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f };
 
-        [Tooltip("Scales horizontal displacement")]
-        [@Range(0f, 2f)]
-        [SerializeField]
-        internal float _Chop = 1.6f;
+        [SerializeField, HideInInspector]
+        internal float[] _Attenuation = new float[k_NumberOfOctaves] { 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f };
 
 #pragma warning disable 414
         [SerializeField, HideInInspector]
@@ -149,6 +151,9 @@ namespace WaveHarmonic.Crest
 
             // Zero gravity will cause NaNs, and they have always been flat.
             if (gravity <= 0f) return 0f;
+
+            // Guard against zero wind speed.
+            if (windSpeed <= 0f) return 0f;
 
             var b = 1.291f;
             var wm = 0.87f * gravity / windSpeed;
@@ -273,7 +278,7 @@ namespace WaveHarmonic.Crest
 
         void OnDestroy()
         {
-            Helpers.Destroy(_ControlsTexture);
+            Helpers.Destroy(ref _ControlsTexture);
         }
 
         internal void InitializeHandControls()

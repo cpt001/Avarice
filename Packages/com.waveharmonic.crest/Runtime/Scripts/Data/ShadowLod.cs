@@ -29,13 +29,13 @@ namespace WaveHarmonic.Crest
         bool _DynamicSoftShadows = true;
 
         [Tooltip("Factor control for dynamic soft jitter.")]
-        [@Predicated(nameof(_DynamicSoftShadows), hide: true)]
+        [@Show(nameof(_DynamicSoftShadows))]
         [@Range(0f, 1f, Range.Clamp.Minimum)]
         [SerializeField]
         float _SoftJitterExtinctionFactor = 0.75f;
 
         [Tooltip("Jitter diameter for soft shadows, controls softness of this shadowing component.")]
-        [@Predicated(nameof(_DynamicSoftShadows), hide: true, inverted: true)]
+        [@Hide(nameof(_DynamicSoftShadows))]
         [@Range(0f, k_MaximumJitter)]
         [@GenerateAPI]
         [SerializeField]
@@ -107,9 +107,7 @@ namespace WaveHarmonic.Crest
         };
 
         Light _Light;
-
-        // SRP version needs access to this externally, hence internal get.
-        internal CommandBuffer CopyShadowMapBuffer { get; private set; }
+        CommandBuffer _CopyShadowMapBuffer;
         PropertyWrapperMaterial[] _RenderMaterial;
 
         enum Error
@@ -219,9 +217,15 @@ namespace WaveHarmonic.Crest
         {
             base.Destroy();
 
+            if (_RenderMaterial == null)
+            {
+                return;
+            }
+
             for (var index = 0; index < _RenderMaterial.Length; index++)
             {
                 Helpers.Destroy(_RenderMaterial[index].Material);
+                _RenderMaterial[index] = default;
             }
         }
 
@@ -337,7 +341,8 @@ namespace WaveHarmonic.Crest
         {
             if (_Light != _Water.PrimaryLight)
             {
-                _Targets.RunLambda(buffer => Clear(buffer));
+                Clear(DataTexture);
+                Clear(_PersistentDataTexture);
                 CleanUpShadowCommandBuffers();
                 _Light = null;
             }
@@ -350,8 +355,7 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            CopyShadowMapBuffer?.Release();
-            CopyShadowMapBuffer = null;
+            Helpers.Destroy(ref _CopyShadowMapBuffer);
         }
 
         void Update(CommandBuffer buffer)
@@ -370,32 +374,19 @@ namespace WaveHarmonic.Crest
 
             if (!s_ProcessData || !_Valid || !hasShadowCastingLight)
             {
-                if (CopyShadowMapBuffer != null)
+                if (_CopyShadowMapBuffer != null)
                 {
                     // If we have a command buffer, then there is likely shadow data so we need to clear it.
-                    _Targets.RunLambda(buffer => Clear(buffer));
+                    Clear(DataTexture);
+                    Clear(_PersistentDataTexture);
                     CleanUpShadowCommandBuffers();
                 }
 
                 return;
             }
 
-            CopyShadowMapBuffer ??= new() { name = WaterRenderer.k_DrawLodData };
-            CopyShadowMapBuffer.Clear();
-
-            FlipBuffers(buffer);
-
-            // clear the shadow collection. it will be overwritten with shadow values IF the shadows render,
-            // which only happens if there are (nontransparent) shadow receivers around. this is only reliable
-            // in play mode, so don't do it in edit mode.
-#if UNITY_EDITOR
-            if (Application.isPlaying)
-#endif
-            {
-                buffer.BeginSample(ID);
-                CoreUtils.SetRenderTarget(buffer, DataTexture, ClearFlag.Color, ClearColor);
-                buffer.EndSample(ID);
-            }
+            _CopyShadowMapBuffer ??= new() { name = WaterRenderer.k_DrawLodData };
+            _CopyShadowMapBuffer.Clear();
         }
 
         internal override void BuildCommandBuffer(WaterRenderer water, CommandBuffer buffer)
@@ -414,9 +405,20 @@ namespace WaveHarmonic.Crest
                     // buffer was executed. There will a 1-frame delay.
                     skip = Helpers.GetGlobalBoolean(ShaderIDs.s_ShadowPassExecuteLastFrame);
                     Helpers.SetGlobalBoolean(ShaderIDs.s_ShadowPassExecuteLastFrame, false);
+                    Update(buffer);
                 }
 
-                Update(buffer);
+                // clear the shadow collection. it will be overwritten with shadow values IF the shadows render,
+                // which only happens if there are (nontransparent) shadow receivers around. this is only reliable
+                // in play mode, so don't do it in edit mode.
+#if UNITY_EDITOR
+                if (Application.isPlaying)
+#endif
+                {
+                    buffer.BeginSample(ID);
+                    CoreUtils.SetRenderTarget(buffer, DataTexture, ClearFlag.Color, ClearColor);
+                    buffer.EndSample(ID);
+                }
 
                 // Only do a partial update when called by WaterRenderer as we want to execute
                 // with the camera's command buffer (in frame).
@@ -440,12 +442,6 @@ namespace WaveHarmonic.Crest
             {
                 buffer.SetGlobalBoolean(ShaderIDs.s_ShadowPassExecuteLastFrame, true);
             }
-        }
-
-        private protected override void GetSubstepData(float timeToSimulate, out int substeps, out float delta)
-        {
-            substeps = Mathf.FloorToInt(timeToSimulate * _SimulationFrequency);
-            delta = substeps > 0 ? (1f / _SimulationFrequency) : 0f;
         }
 
         private protected override void SetAdditionalSimulationParameters(PropertyWrapperCompute properties)
@@ -516,6 +512,7 @@ namespace WaveHarmonic.Crest
         static void OnLoad()
         {
             s_Inputs.Clear();
+            s_ProcessData = true;
         }
     }
 }

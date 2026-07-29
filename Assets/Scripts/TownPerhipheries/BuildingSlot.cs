@@ -22,4 +22,17 @@ public class BuildingSlot : MonoBehaviour
             }
         }
     }
+
+    public void CheckBeachViability()
+    {
+        if (transform.localPosition.y < 95.0f)
+        {
+            //Debug.Log("Failed due to Y: " + transform.position.y);
+            slotStatus = SlotFillEnum.Unavailable;
+        }
+        else if (transform.localPosition.y > 150.0f)
+        {
+            slotStatus = SlotFillEnum.Unavailable;
+        }
+    }
 }

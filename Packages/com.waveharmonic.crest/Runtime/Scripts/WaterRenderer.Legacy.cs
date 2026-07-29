@@ -105,25 +105,7 @@ namespace WaveHarmonic.Crest
         [System.Diagnostics.Conditional(Constants.Symbols.k_Refraction)]
         void OnLegacyCopyPass(Camera camera)
         {
-            if (!ShouldRender(camera, Surface.Layer))
-            {
-                return;
-            }
-
-            var material = Surface.Material;
-
-            if (material == null)
-            {
-                return;
-            }
-
-            if (!SurfaceRenderer.IsTransparent(material))
-            {
-                return;
-            }
-
-            // Our reflections do not need them.
-            if (camera == _Reflections.ReflectionCamera)
+            if (!SurfaceRenderer.IsTransparent(Surface.Material))
             {
                 return;
             }
@@ -171,6 +153,50 @@ namespace WaveHarmonic.Crest
             {
                 camera.AddCommandBuffer(RenderBeforeTransparency ? CameraEvent.BeforeForwardAlpha : CameraEvent.AfterForwardAlpha, buffer);
             }
+        }
+    }
+
+    // Render Loop Adapter.
+    partial class WaterRenderer
+    {
+        // Because we cannot pass null when using built-in render pipeline.
+        // Being a struct, there should not be any side effects.
+        ScriptableRenderContext _Context = new();
+
+        void OnBeginCameraRendering(Camera camera)
+        {
+#if CREST_DEBUG
+            if (_Debug._SimulatePaused)
+            {
+                return;
+            }
+#endif
+
+            if (_SetUpFor != RenderPipelineHelper.RenderPipeline)
+            {
+                return;
+            }
+
+            if (!_Initialized)
+            {
+                return;
+            }
+
+            Utility.RTHandles.OnBeginCameraRendering(camera);
+
+            OnBeginCameraRendering(_Context, camera);
+        }
+
+        void OnEndCameraRendering(Camera camera)
+        {
+#if CREST_DEBUG
+            if (_Debug._SimulatePaused)
+            {
+                return;
+            }
+#endif
+
+            OnEndCameraRendering(_Context, camera);
         }
     }
 
@@ -240,6 +266,14 @@ namespace WaveHarmonic.Crest
             {
                 camera.RemoveCommandBuffer(CameraEvent.BeforeForwardAlpha, _CameraOpaqueTextureCommands);
             }
+        }
+
+        void OnLegacyDestroy()
+        {
+            Rendering.Destroy(ref _CameraOpaqueTexture);
+            Helpers.Destroy(ref _CameraOpaqueTextureCommands);
+            Helpers.Destroy(ref _ScreenSpaceShadowMapBuffer);
+            Helpers.Destroy(ref _UpdateColorDepthTexturesBuffer);
         }
     }
 }

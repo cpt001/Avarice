@@ -27,20 +27,11 @@ namespace WaveHarmonic.Crest
             All = PrefabStage | BuildPipeline,
         }
 
-        [Flags]
-        public enum Options
-        {
-            None,
-            Singleton,
-        }
-
         public Include _Including;
-        public Options _Options;
 
-        public ExecuteDuringEditMode(Include including = Include.PrefabStage, Options options = Options.None)
+        public ExecuteDuringEditMode(Include including = Include.PrefabStage)
         {
             _Including = including;
-            _Options = options;
         }
     }
 
@@ -100,6 +91,13 @@ namespace WaveHarmonic.Crest
     abstract class Decorator : PropertyAttribute { }
 
     [Conditional(Symbols.k_UnityEditor)]
+    sealed class Order : Decorator
+    {
+        public enum Placement { Heading, Below, Above }
+        public Order(string target, Placement placement = Placement.Heading) { }
+    }
+
+    [Conditional(Symbols.k_UnityEditor)]
     sealed class Layer : Decorator { }
 
     [Conditional(Symbols.k_UnityEditor)]
@@ -120,6 +118,12 @@ namespace WaveHarmonic.Crest
 
     [Conditional(Symbols.k_UnityEditor)]
     sealed class PlatformTabs : Attribute { }
+
+    [Conditional(Symbols.k_UnityEditor)]
+    sealed class CustomField : Attribute { }
+
+    [Conditional(Symbols.k_UnityEditor)]
+    sealed class CustomLabel : Attribute { }
 
     [Conditional(Symbols.k_UnityEditor)]
     sealed class AttachMaterialEditor : Attribute
@@ -217,12 +221,47 @@ namespace WaveHarmonic.Crest
     }
 
     [Conditional(Symbols.k_UnityEditor)]
-    sealed class Predicated : Decorator
+    sealed class Show : Decorator
     {
-        public Predicated(Type type, string member, bool inverted = false, bool hide = false) { }
-        public Predicated(Type type, bool inverted = false, bool hide = false) { }
-        public Predicated(string property, bool inverted = false, object disableValue = null, bool hide = false) { }
-        public Predicated(RenderPipeline rp, bool inverted = false, bool hide = false) { }
+        public Show(Type type, string member, object value) { }
+        public Show(Type type, string member) { }
+        public Show(Type type) { }
+        public Show(string property) { }
+        public Show(string property, object value) { }
+        public Show(RenderPipeline rp) { }
+    }
+
+    [Conditional(Symbols.k_UnityEditor)]
+    sealed class Hide : Decorator
+    {
+        public Hide(Type type, string member, object value) { }
+        public Hide(Type type, string member) { }
+        public Hide(Type type) { }
+        public Hide(string property) { }
+        public Hide(string property, object value) { }
+        public Hide(RenderPipeline rp) { }
+    }
+
+    [Conditional(Symbols.k_UnityEditor)]
+    sealed class Enable : Decorator
+    {
+        public Enable(Type type, string member, object value) { }
+        public Enable(Type type, string member) { }
+        public Enable(Type type) { }
+        public Enable(string property) { }
+        public Enable(string property, object value) { }
+        public Enable(RenderPipeline rp) { }
+    }
+
+    [Conditional(Symbols.k_UnityEditor)]
+    sealed class Disable : Decorator
+    {
+        public Disable(Type type, string member, object value) { }
+        public Disable(Type type, string member) { }
+        public Disable(Type type) { }
+        public Disable(string property) { }
+        public Disable(string property, object value) { }
+        public Disable(RenderPipeline rp) { }
     }
 
     [Conditional(Symbols.k_UnityEditor)]

@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: Waterfall_Spectrum
   m_EditorClassIdentifier: 
   _Version: 0
-  _WaveDirectionVariance: 56.71233
-  _GravityScale: 1
   _Multiplier: 3
+  _Chop: 2
+  _GravityScale: 1
+  _WaveDirectionVariance: 56.71233
   _PowerLogarithmicScales:
   - -7.10794
   - -6.42794
@@ -62,6 +63,20 @@ MonoBehaviour:
   - 1
   - 1
   - 1
-  _Chop: 2
+  _Attenuation:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
   _ShowAdvancedControls: 0
   _Model: 0

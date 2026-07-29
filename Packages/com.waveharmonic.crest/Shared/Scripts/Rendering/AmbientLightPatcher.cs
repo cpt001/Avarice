@@ -9,19 +9,21 @@ namespace WaveHarmonic.Crest.Editor
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
-    [ExecuteAlways]
-    sealed class AmbientLightPatcher : MonoBehaviour
+    [@ExecuteDuringEditMode]
+    sealed partial class AmbientLightPatcher : RenderPipelinePatcher
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
 #if UNITY_EDITOR
-        void OnEnable() => InitializeAmbientLighting();
+
+        private protected override void OnEnable()
+        {
+            base.OnEnable();
+            InitializeAmbientLighting();
+        }
+
         void Update() => InitializeAmbientLighting();
 
         bool _Baked;
+        bool _Force;
 
         void InitializeAmbientLighting()
         {
@@ -32,6 +34,7 @@ namespace WaveHarmonic.Crest.Editor
 
             if (UnityEditor.Lightmapping.isRunning)
             {
+                Log("Lightmapping.isRunning");
                 return;
             }
 
@@ -43,55 +46,78 @@ namespace WaveHarmonic.Crest.Editor
             // Throws a warning.
             if (UnityEditor.ShaderUtil.anythingCompiling)
             {
+                Log("ShaderUtil.anythingCompiling");
                 return;
             }
 
             // Only do skyboxes for now.
             if (RenderSettings.ambientMode != AmbientMode.Skybox)
             {
+                Log("NotSkybox");
                 return;
             }
 
-            // NOTE: Cannot use as API introduced in 6000.0.22f1 which cannot be targeted by defines.
-            // if (UnityEditor.Lightmapping.bakeOnSceneLoad == UnityEditor.Lightmapping.BakeOnSceneLoadMode.IfMissingLightingData)
-            // {
-            //     return;
-            // }
+            if (UnityEditor.Lightmapping.isRunning)
+            {
+                Log("Lightmapping.isRunning");
+                return;
+            }
+
+#if UNITY_6000_3_OR_NEWER
+            // NOTE: API introduced in 6.2 and backported to 6000.0.22f1.
+            if (!_Force && UnityEditor.Lightmapping.bakeOnSceneLoad == UnityEditor.Lightmapping.BakeOnSceneLoadMode.IfMissingLightingData)
+            {
+                return;
+            }
+#endif
 
             var bake = true;
             var probe = RenderSettings.ambientProbe;
 
             // Check if the ambient probe is effectively empty.
-            for (var i = 0; i < 9; i++)
+            if (!_Force)
             {
-                if (probe[0, i] != 0 || probe[1, i] != 0 || probe[2, i] != 0)
+                for (var i = 0; i < 9; i++)
                 {
-                    bake = false;
-                    break;
+                    if (probe[0, i] != 0 || probe[1, i] != 0 || probe[2, i] != 0)
+                    {
+                        bake = false;
+                        break;
+                    }
                 }
             }
 
-            if (bake)
+            if (!bake)
             {
+                return;
+            }
+
 #if !UNITY_6000_0_OR_NEWER
-                var oldWorkflow = UnityEditor.Lightmapping.giWorkflowMode;
-                UnityEditor.Lightmapping.giWorkflowMode = UnityEditor.Lightmapping.GIWorkflowMode.OnDemand;
+            var oldWorkflow = UnityEditor.Lightmapping.giWorkflowMode;
+            UnityEditor.Lightmapping.giWorkflowMode = UnityEditor.Lightmapping.GIWorkflowMode.OnDemand;
 #endif
-                // Only attempt to bake once per scene load.
-                _Baked = UnityEditor.Lightmapping.BakeAsync();
+            // Only attempt to bake once per scene load.
+            _Baked = UnityEditor.Lightmapping.BakeAsync();
 #if !UNITY_6000_0_OR_NEWER
-                UnityEditor.Lightmapping.giWorkflowMode = oldWorkflow;
+            UnityEditor.Lightmapping.giWorkflowMode = oldWorkflow;
 #endif
 
 #if CREST_DEBUG
-                Debug.Log($"Crest: Baked scene lighting!");
+            Debug.Log($"Crest: Baked scene lighting!");
 #endif
 
-                if (!_Baked)
-                {
-                    Debug.LogWarning($"Crest: Could not generate scene lighting. Lighting will look incorrect.");
-                }
+            if (!_Baked)
+            {
+                Debug.LogWarning($"Crest: Could not generate scene lighting. Lighting will look incorrect.");
             }
+
+            _Force = false;
+        }
+
+        protected override void OnActiveRenderPipelineTypeChanged()
+        {
+            _Baked = false;
+            _Force = true;
         }
 #endif
     }

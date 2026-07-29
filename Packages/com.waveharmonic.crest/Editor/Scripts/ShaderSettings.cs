@@ -10,6 +10,9 @@ using WaveHarmonic.Crest.Editor.Settings;
 
 namespace WaveHarmonic.Crest.Editor
 {
+    [System.AttributeUsage(System.AttributeTargets.Class)]
+    sealed class GenerateShaderSettings : System.Attribute { }
+
     static class ShaderSettingsGenerator
     {
         [DidReloadScripts]
@@ -51,7 +54,7 @@ namespace WaveHarmonic.Crest.Editor
 
         sealed class AssetPostProcessor : AssetPostprocessor
         {
-            const string k_SettingsPath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings.Crest.hlsl";
+            const string k_SettingsPath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/";
 
             static async void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] movedTo, string[] movedFrom, bool domainReload)
             {
@@ -61,7 +64,7 @@ namespace WaveHarmonic.Crest.Editor
                 if (EditorApplication.isCompiling)
                 {
 #if CREST_DEBUG
-                    if (imported.Contains(k_SettingsPath))
+                    if (imported.Count(x => x.StartsWithNoAlloc(k_SettingsPath)) > 0)
                     {
                         UnityEngine.Debug.Log($"Crest: Settings.Crest.hlsl changed during compilation!");
                     }
@@ -72,7 +75,7 @@ namespace WaveHarmonic.Crest.Editor
                 if (EditorApplication.isUpdating)
                 {
 #if CREST_DEBUG
-                    if (imported.Contains(k_SettingsPath))
+                    if (imported.Count(x => x.StartsWithNoAlloc(k_SettingsPath)) > 0)
                     {
                         UnityEngine.Debug.Log($"Crest: Settings.Crest.hlsl changed during asset database update!");
                     }
@@ -81,7 +84,7 @@ namespace WaveHarmonic.Crest.Editor
                 }
 
                 // Regenerate if file changed like re-importing.
-                if (imported.Contains(k_SettingsPath))
+                if (imported.Count(x => x.StartsWithNoAlloc(k_SettingsPath)) > 0)
                 {
 #if CREST_DEBUG
                     UnityEngine.Debug.Log($"Crest: Settings.Crest.hlsl changed!");
@@ -178,139 +181,59 @@ namespace WaveHarmonic.Crest.Editor
         public static int s_CrestLegacyUnderwater = ProjectSettings.Instance.LegacyUnderwater ? 1 : 0;
     }
 
+    [@GenerateShaderSettings]
     [GenerateHLSL(sourcePath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.Default")]
-    sealed class ShaderSettingsDefault
+    sealed partial class ShaderSettingsDefault
     {
         static PlatformSettings Settings => ProjectSettings.Instance._PlatformSettings;
-
-        public static int s_CrestAlbedoSimulation = Settings.AlbedoSimulation ? 1 : 0;
-        public static int s_CrestAbsorptionSimulation = Settings.AbsorptionSimulation ? 1 : 0;
-        public static int s_CrestScatteringSimulation = Settings.ScatteringSimulation ? 1 : 0;
-        public static int s_CrestShadowSimulation = Settings.ShadowSimulation ? 1 : 0;
-
-        public static int s_CrestCausticsForceDistortion = Settings.CausticsForceDistortion ? 1 : 0;
-        public static int s_CrestFoamBioluminescence = Settings.FoamBioluminescence ? 1 : 0;
-        public static int s_CrestNormalMaps = Settings.NormalMaps ? 1 : 0;
-        public static int s_CrestSimpleTransparency = Settings.SimpleTransparency ? 1 : 0;
-        public static int s_CrestPlanarReflections = Settings.PlanarReflections ? 1 : 0;
     }
 
+    [@GenerateShaderSettings]
     [GenerateHLSL(sourcePath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.Standalone")]
-    sealed class ShaderSettingsStandalone
+    sealed partial class ShaderSettingsStandalone
     {
         static PlatformSettings Settings => ProjectSettings.Instance._PlatformSettingsDesktop;
-
-        public static int s_CrestAlbedoSimulation = Settings.AlbedoSimulation ? 1 : 0;
-        public static int s_CrestAbsorptionSimulation = Settings.AbsorptionSimulation ? 1 : 0;
-        public static int s_CrestScatteringSimulation = Settings.ScatteringSimulation ? 1 : 0;
-        public static int s_CrestShadowSimulation = Settings.ShadowSimulation ? 1 : 0;
-
-        public static int s_CrestCausticsForceDistortion = Settings.CausticsForceDistortion ? 1 : 0;
-        public static int s_CrestFoamBioluminescence = Settings.FoamBioluminescence ? 1 : 0;
-        public static int s_CrestNormalMaps = Settings.NormalMaps ? 1 : 0;
-        public static int s_CrestSimpleTransparency = Settings.SimpleTransparency ? 1 : 0;
-        public static int s_CrestPlanarReflections = Settings.PlanarReflections ? 1 : 0;
     }
 
+    [@GenerateShaderSettings]
     [GenerateHLSL(sourcePath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.Server")]
-    sealed class ShaderSettingsServer
+    sealed partial class ShaderSettingsServer
     {
         static PlatformSettings Settings => ProjectSettings.Instance._PlatformSettingsServer;
-
-        public static int s_CrestAlbedoSimulation = Settings.AlbedoSimulation ? 1 : 0;
-        public static int s_CrestAbsorptionSimulation = Settings.AbsorptionSimulation ? 1 : 0;
-        public static int s_CrestScatteringSimulation = Settings.ScatteringSimulation ? 1 : 0;
-        public static int s_CrestShadowSimulation = Settings.ShadowSimulation ? 1 : 0;
-
-        public static int s_CrestCausticsForceDistortion = Settings.CausticsForceDistortion ? 1 : 0;
-        public static int s_CrestFoamBioluminescence = Settings.FoamBioluminescence ? 1 : 0;
-        public static int s_CrestNormalMaps = Settings.NormalMaps ? 1 : 0;
-        public static int s_CrestSimpleTransparency = Settings.SimpleTransparency ? 1 : 0;
-        public static int s_CrestPlanarReflections = Settings.PlanarReflections ? 1 : 0;
     }
 
+    [@GenerateShaderSettings]
     [GenerateHLSL(sourcePath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.Android")]
-    sealed class ShaderSettingsAndroid
+    sealed partial class ShaderSettingsAndroid
     {
         static PlatformSettings Settings => ProjectSettings.Instance._PlatformSettingsAndroid;
-
-        public static int s_CrestAlbedoSimulation = Settings.AlbedoSimulation ? 1 : 0;
-        public static int s_CrestAbsorptionSimulation = Settings.AbsorptionSimulation ? 1 : 0;
-        public static int s_CrestScatteringSimulation = Settings.ScatteringSimulation ? 1 : 0;
-        public static int s_CrestShadowSimulation = Settings.ShadowSimulation ? 1 : 0;
-
-        public static int s_CrestCausticsForceDistortion = Settings.CausticsForceDistortion ? 1 : 0;
-        public static int s_CrestFoamBioluminescence = Settings.FoamBioluminescence ? 1 : 0;
-        public static int s_CrestNormalMaps = Settings.NormalMaps ? 1 : 0;
-        public static int s_CrestSimpleTransparency = Settings.SimpleTransparency ? 1 : 0;
-        public static int s_CrestPlanarReflections = Settings.PlanarReflections ? 1 : 0;
     }
 
+    [@GenerateShaderSettings]
     [GenerateHLSL(sourcePath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.iOS")]
-    sealed class ShaderSettingsIOS
+    sealed partial class ShaderSettingsIOS
     {
         static PlatformSettings Settings => ProjectSettings.Instance._PlatformSettingsIOS;
-
-        public static int s_CrestAlbedoSimulation = Settings.AlbedoSimulation ? 1 : 0;
-        public static int s_CrestAbsorptionSimulation = Settings.AbsorptionSimulation ? 1 : 0;
-        public static int s_CrestScatteringSimulation = Settings.ScatteringSimulation ? 1 : 0;
-        public static int s_CrestShadowSimulation = Settings.ShadowSimulation ? 1 : 0;
-
-        public static int s_CrestCausticsForceDistortion = Settings.CausticsForceDistortion ? 1 : 0;
-        public static int s_CrestFoamBioluminescence = Settings.FoamBioluminescence ? 1 : 0;
-        public static int s_CrestNormalMaps = Settings.NormalMaps ? 1 : 0;
-        public static int s_CrestSimpleTransparency = Settings.SimpleTransparency ? 1 : 0;
-        public static int s_CrestPlanarReflections = Settings.PlanarReflections ? 1 : 0;
     }
 
+    [@GenerateShaderSettings]
     [GenerateHLSL(sourcePath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.Web")]
-    sealed class ShaderSettingsWeb
+    sealed partial class ShaderSettingsWeb
     {
         static PlatformSettings Settings => ProjectSettings.Instance._PlatformSettingsWeb;
-
-        public static int s_CrestAlbedoSimulation = Settings.AlbedoSimulation ? 1 : 0;
-        public static int s_CrestAbsorptionSimulation = Settings.AbsorptionSimulation ? 1 : 0;
-        public static int s_CrestScatteringSimulation = Settings.ScatteringSimulation ? 1 : 0;
-        public static int s_CrestShadowSimulation = Settings.ShadowSimulation ? 1 : 0;
-
-        public static int s_CrestCausticsForceDistortion = Settings.CausticsForceDistortion ? 1 : 0;
-        public static int s_CrestFoamBioluminescence = Settings.FoamBioluminescence ? 1 : 0;
-        public static int s_CrestNormalMaps = Settings.NormalMaps ? 1 : 0;
-        public static int s_CrestSimpleTransparency = Settings.SimpleTransparency ? 1 : 0;
-        public static int s_CrestPlanarReflections = Settings.PlanarReflections ? 1 : 0;
     }
 
+    [@GenerateShaderSettings]
     [GenerateHLSL(sourcePath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.tvOS")]
-    sealed class ShaderSettingsTVOS
+    sealed partial class ShaderSettingsTVOS
     {
         static PlatformSettings Settings => ProjectSettings.Instance._PlatformSettingsTVOS;
-
-        public static int s_CrestAlbedoSimulation = Settings.AlbedoSimulation ? 1 : 0;
-        public static int s_CrestAbsorptionSimulation = Settings.AbsorptionSimulation ? 1 : 0;
-        public static int s_CrestScatteringSimulation = Settings.ScatteringSimulation ? 1 : 0;
-        public static int s_CrestShadowSimulation = Settings.ShadowSimulation ? 1 : 0;
-
-        public static int s_CrestCausticsForceDistortion = Settings.CausticsForceDistortion ? 1 : 0;
-        public static int s_CrestFoamBioluminescence = Settings.FoamBioluminescence ? 1 : 0;
-        public static int s_CrestNormalMaps = Settings.NormalMaps ? 1 : 0;
-        public static int s_CrestSimpleTransparency = Settings.SimpleTransparency ? 1 : 0;
-        public static int s_CrestPlanarReflections = Settings.PlanarReflections ? 1 : 0;
     }
 
+    [@GenerateShaderSettings]
     [GenerateHLSL(sourcePath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Settings.Crest.visionOS")]
-    sealed class ShaderSettingsVisionOS
+    sealed partial class ShaderSettingsVisionOS
     {
         static PlatformSettings Settings => ProjectSettings.Instance._PlatformSettingsVisionOS;
-
-        public static int s_CrestAlbedoSimulation = Settings.AlbedoSimulation ? 1 : 0;
-        public static int s_CrestAbsorptionSimulation = Settings.AbsorptionSimulation ? 1 : 0;
-        public static int s_CrestScatteringSimulation = Settings.ScatteringSimulation ? 1 : 0;
-        public static int s_CrestShadowSimulation = Settings.ShadowSimulation ? 1 : 0;
-
-        public static int s_CrestCausticsForceDistortion = Settings.CausticsForceDistortion ? 1 : 0;
-        public static int s_CrestFoamBioluminescence = Settings.FoamBioluminescence ? 1 : 0;
-        public static int s_CrestNormalMaps = Settings.NormalMaps ? 1 : 0;
-        public static int s_CrestSimpleTransparency = Settings.SimpleTransparency ? 1 : 0;
-        public static int s_CrestPlanarReflections = Settings.PlanarReflections ? 1 : 0;
     }
 }

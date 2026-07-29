@@ -19,6 +19,7 @@ namespace WaveHarmonic.Crest.Editor
     /// </summary>
     interface IEmbeddableEditor
     {
+        void SetHostComponent(object host);
         void SetTypeOfHostComponent(System.Type hostType);
     }
 
@@ -54,7 +55,7 @@ namespace WaveHarmonic.Crest.Editor
         public void OnDisable()
         {
             DestroyEditor();
-            Helpers.Destroy(_DefaultTarget);
+            Helpers.Destroy(ref _CreatedInstance);
         }
 
         /// <summary>
@@ -62,11 +63,12 @@ namespace WaveHarmonic.Crest.Editor
         /// </summary>
         public GUIContent _CreateButtonGUIContent;
 
-        UnityEditor.Editor _Editor = null;
+        internal UnityEditor.Editor _Editor = null;
 
         System.Type _Type;
 
         Object _DefaultTarget;
+        Object _CreatedInstance;
         FieldInfo _DefaultTargetField;
 
         const int k_IndentOffset = 3;
@@ -214,7 +216,8 @@ namespace WaveHarmonic.Crest.Editor
                 {
                     if (_DefaultTarget == null)
                     {
-                        _DefaultTarget = ScriptableObject.CreateInstance(_Type);
+                        _CreatedInstance = ScriptableObject.CreateInstance(_Type);
+                        _DefaultTarget = _CreatedInstance;
                         _DefaultTarget.hideFlags = HideFlags.DontSave | HideFlags.NotEditable;
                     }
                 }
@@ -253,9 +256,10 @@ namespace WaveHarmonic.Crest.Editor
                 _Editor = UnityEditor.Editor.CreateEditor(target);
 
                 // Pass through argument for editors that receive it
-                if (property.serializedObject.targetObject != null)
+                if (property.serializedObject.targetObject != null && _Editor is IEmbeddableEditor editor)
                 {
-                    (_Editor as IEmbeddableEditor)?.SetTypeOfHostComponent(property.serializedObject.targetObject.GetType());
+                    editor.SetHostComponent(property.serializedObject.targetObject);
+                    editor.SetTypeOfHostComponent(property.serializedObject.targetObject.GetType());
                 }
 
                 _OnCreateEditor?.Invoke(_Editor);

@@ -10,14 +10,9 @@ namespace WaveHarmonic.Crest
     /// This time provider feeds a Timeline time to the water system, using a Playable Director.
     /// </summary>
     [AddComponentMenu(Constants.k_MenuPrefixTime + "Cutscene Time Provider")]
-    [@HelpURL("Manual/TimeProviders.html#timelines-and-cutscenes")]
+    [@HelpURL("Manual/Advanced/TimeProviders.html#timelines-and-cutscenes")]
     public sealed partial class CutsceneTimeProvider : TimeProvider
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
 #if d_ModuleUnityDirector
         [Tooltip("Playable Director to take time from.")]
         [@GenerateAPI(symbol: "d_ModuleUnityDirector")]

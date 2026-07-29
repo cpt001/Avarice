@@ -44,7 +44,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70deb49b538e247b9ab1bf7773d16809, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 1
   _Type: 0
+  _Placement: 0
   _RefreshMode: 0
   _Layers:
     serializedVersion: 2
@@ -64,10 +66,8 @@ MonoBehaviour:
   _GenerateSignedDistanceField: 1
   _AdditionalJumpFloodRounds: 7
   _Debug:
-    _ForceAlwaysUpdateDebug: 0
     _ShowHiddenObjects: 0
     _ShowSimulationDataInScene: 0
-  _Version: 1
 --- !u!1 &4699276825329845214
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
+using System.Linq;
 /// <summary>
 /// This scripts entire purpose is to act as a library that determines
 /// - Master structure list of buildings belonging to town
@@ -42,6 +43,8 @@ public class FutureTownPlanner : MonoBehaviour
     [SerializeField] private List<GameObject> adjustedBuildings = new List<GameObject>();
     [SerializeField] private int numberOfResidents;
     [SerializeField] private int numberOfWorkers;
+
+    private List<GameObject> availableBeachSlots = new List<GameObject>();
 
     //This sorts through all structures to get their probabilities
     public void GetPossibleStructures(Any_Town_Phenotype town_Phenotype)
@@ -564,6 +567,21 @@ public class FutureTownPlanner : MonoBehaviour
             }
         }
     }
+    public void CheckBeachSlotViability()
+    {
+        foreach (Transform t in transform.parent)
+        {
+            if (t.GetComponent<BuildingSlot>())
+            {
+                BuildingSlot checkedSlot = t.GetComponent<BuildingSlot>();
+                checkedSlot.CheckBeachViability();
+                if (checkedSlot.slotStatus == BuildingSlot.SlotFillEnum.Unavailable) { Destroy(checkedSlot.gameObject); }
+                else { availableBeachSlots.Add(t.gameObject); }
+
+                availableBeachSlots.Sort((a, b) => Vector3.Distance(a.transform.position, transform.position).CompareTo(Vector3.Distance(b.transform.position, transform.position)));
+            }
+        }
+    }
 
     public void SpawnStructures()
     {
@@ -576,6 +594,8 @@ public class FutureTownPlanner : MonoBehaviour
         }
         StartCoroutine(SpawnStructuresCoroutine());
     }
+
+
     private IEnumerator SpawnStructuresCoroutine()
     {
         foreach (Town_Building bldg in masterBuildingQueue)
@@ -671,13 +691,36 @@ public class FutureTownPlanner : MonoBehaviour
                     }
                     else
                     {
-                        List<GameObject> availableSlots = new List<GameObject>();
+                        List<GameObject> availableTownSlots = new List<GameObject>();
+
                         switch (bldg.setupCondition)
                         {
                             case Town_Building.SetupCondition.Beach:
                                 {
                                     //Structures that are better served by remaining on the beach: docks, fishing huts etc
-                                    //Map magic's built in randomizer can serve as placement points for these, but will need to be retrofitted for this task
+                                    if (availableBeachSlots.Count != 0)
+                                    {
+                                        for (int i = 0; i < availableBeachSlots.Count; i++)
+                                        {
+                                            if (availableBeachSlots[i].GetComponent<BuildingSlot>().slotStatus == BuildingSlot.SlotFillEnum.Available)
+                                            {
+                                                g.transform.position = availableBeachSlots[i].transform.position;
+                                                availableBeachSlots[i].GetComponent<BuildingSlot>().slotStatus = BuildingSlot.SlotFillEnum.Occupied;
+                                                Debug.Log("Picked: " + availableBeachSlots[i], availableBeachSlots[0].gameObject);
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                continue;
+                                            }
+                                        }
+                                        //g.transform.localPosition = availableBeachSlots[0].transform.InverseTransformPoint(transform.position);
+                                        //g.transform.SetLocalPositionAndRotation(availableBeachSlots[0].transform.localPosition, Quaternion.identity);
+                                    }
+                                    else
+                                    {
+                                        Debug.Log("Failed to place " + g.name +", no available beach slot!",gameObject);
+                                    }
                                     break;
                                 }
                             case Town_Building.SetupCondition.Standalone:
@@ -720,6 +763,7 @@ public class FutureTownPlanner : MonoBehaviour
                                             if (g.GetComponentInChildren<SlotBuilder>())
                                             {
                                                 sb = g.GetComponentInChildren<SlotBuilder>();
+                                                sb.BuildStructureSlots(false);
                                                 for (int i = 0; i < 24; i++)
                                                 {
                                                     Quaternion rotation = Quaternion.Euler(0, i * 15, 0);
@@ -741,7 +785,7 @@ public class FutureTownPlanner : MonoBehaviour
                                                 if (validRots.Count != 0)
                                                 {
                                                     int randFinalRot = Random.Range(0, validRots.Count);
-                                                    g.transform.SetLocalPositionAndRotation(trySlot.localPosition, transform.rotation = Quaternion.Euler(new Vector3(0, validRots[randFinalRot], 0)));
+                                                    sb.initialSlot.transform.SetLocalPositionAndRotation(trySlot.localPosition, transform.rotation = Quaternion.Euler(new Vector3(0, validRots[randFinalRot], 0)));
                                                     //This breaks the loop in a big way
                                                     adjustedBuildings.Add(g);
                                                     placementAndRotationFinalized = true;

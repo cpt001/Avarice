@@ -2,6 +2,7 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -9,7 +10,7 @@ namespace WaveHarmonic.Crest
     /// Renders the meniscus (waterline).
     /// </summary>
     [System.Serializable]
-    public sealed partial class Meniscus
+    public sealed partial class Meniscus : Versioned
     {
         [@Space(10)]
 
@@ -107,6 +108,16 @@ namespace WaveHarmonic.Crest
             }
 #pragma warning restore format
         }
+
+        internal bool ShouldRender(Camera camera)
+        {
+            if (!Enabled)
+            {
+                return false;
+            }
+
+            return Renderer.ShouldExecute(camera);
+        }
     }
 
     // Getters/Setters
@@ -179,24 +190,19 @@ namespace WaveHarmonic.Crest
                     return false;
                 }
 
-                if (camera.cameraType is not CameraType.Game and not CameraType.SceneView)
-                {
-                    return false;
-                }
-
                 if (!WaterRenderer.ShouldRender(camera, _Meniscus.Layer, _Meniscus._CameraExclusions))
                 {
                     return false;
                 }
 
                 // Meniscus depends on both the surface and volume.
-                if (!_Water.Surface.ShouldRender(camera) || !_Water.Underwater.ShouldRender(camera))
+                if (!_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.SurfaceAndVolume))
                 {
                     return false;
                 }
 
 #if d_CrestPortals
-                if (_Water.Portals.Active)
+                if (_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Portal))
                 {
                     // Near surface check not compatible with portals.
                     return true;
@@ -223,7 +229,7 @@ namespace WaveHarmonic.Crest
 #if d_CrestPortals
                 passOffset = (int)Portals.PortalRenderer.MeniscusPass.Length;
 
-                if (_Water.Portals.Active)
+                if (_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Portal))
                 {
                     isMasked = isFullScreenRequired = _Water._Portals.RenderMeniscus(commands, _Meniscus.Material);
                 }

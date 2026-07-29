@@ -45,7 +45,7 @@ namespace WaveHarmonic.Crest
         public void SetVectorArray(int param, Vector4[] value) => Buffer.SetGlobalVectorArray(param, value);
         public void SetMatrix(int param, Matrix4x4 value) => Buffer.SetGlobalMatrix(param, value);
         public void SetInteger(int param, int value) => Buffer.SetGlobalInteger(param, value);
-        public void SetBoolean(int param, bool value) => Buffer.SetGlobalInteger(param, value ? 1 : 0);
+        public void SetBoolean(int param, bool value) => Buffer.SetGlobalFloat(param, value ? 1f : 0f);
 
         public void GetBlock() { }
         public void SetBlock() { }
@@ -70,13 +70,12 @@ namespace WaveHarmonic.Crest
         public void SetVectorArray(int param, Vector4[] value) => PropertyBlock.SetVectorArray(param, value);
         public void SetMatrix(int param, Matrix4x4 value) => PropertyBlock.SetMatrix(param, value);
         public void SetInteger(int param, int value) => PropertyBlock.SetInteger(param, value);
-        public void SetBoolean(int param, bool value) => PropertyBlock.SetInteger(param, value ? 1 : 0);
+        public void SetBoolean(int param, bool value) => PropertyBlock.SetFloat(param, value ? 1f : 0f);
 
         public void GetBlock() => Renderer.GetPropertyBlock(PropertyBlock);
         public void SetBlock() => Renderer.SetPropertyBlock(PropertyBlock);
     }
 
-    [System.Serializable]
     readonly struct PropertyWrapperMaterial : IPropertyWrapperVariants
     {
         public Material Material { get; }
@@ -102,7 +101,7 @@ namespace WaveHarmonic.Crest
         public void SetVectorArray(int param, Vector4[] value) => Material.SetVectorArray(param, value);
         public void SetMatrix(int param, Matrix4x4 value) => Material.SetMatrix(param, value);
         public void SetInteger(int param, int value) => Material.SetInteger(param, value);
-        public void SetBoolean(int param, bool value) => Material.SetInteger(param, value ? 1 : 0);
+        public void SetBoolean(int param, bool value) => Material.SetFloat(param, value ? 1f : 0f);
 
         public void GetBlock() { }
         public void SetBlock() { }
@@ -122,13 +121,12 @@ namespace WaveHarmonic.Crest
         public void SetVectorArray(int param, Vector4[] value) => MaterialPropertyBlock.SetVectorArray(param, value);
         public void SetMatrix(int param, Matrix4x4 value) => MaterialPropertyBlock.SetMatrix(param, value);
         public void SetInteger(int param, int value) => MaterialPropertyBlock.SetInteger(param, value);
-        public void SetBoolean(int param, bool value) => MaterialPropertyBlock.SetInteger(param, value ? 1 : 0);
+        public void SetBoolean(int param, bool value) => MaterialPropertyBlock.SetFloat(param, value ? 1f : 0f);
 
         public void GetBlock() { }
         public void SetBlock() { }
     }
 
-    [System.Serializable]
     readonly struct PropertyWrapperCompute : IPropertyWrapperVariants
     {
         readonly CommandBuffer _Buffer;
@@ -145,7 +143,8 @@ namespace WaveHarmonic.Crest
         public void SetFloat(int param, float value) => _Buffer.SetComputeFloatParam(_Shader, param, value);
         public void SetFloatArray(int param, float[] value) => _Buffer.SetGlobalFloatArray(param, value);
         public void SetInteger(int param, int value) => _Buffer.SetComputeIntParam(_Shader, param, value);
-        public void SetBoolean(int param, bool value) => _Buffer.SetComputeIntParam(_Shader, param, value ? 1 : 0);
+        public void SetIntegers(int param, params int[] value) => _Buffer.SetComputeIntParams(_Shader, param, value);
+        public void SetBoolean(int param, bool value) => _Buffer.SetComputeFloatParam(_Shader, param, value ? 1f : 0f);
         public void SetTexture(int param, Texture value) => _Buffer.SetComputeTextureParam(_Shader, _Kernel, param, value);
         public void SetTexture(int param, RenderTargetIdentifier value) => _Buffer.SetComputeTextureParam(_Shader, _Kernel, param, value);
         public void SetBuffer(int param, ComputeBuffer value) => _Buffer.SetComputeBufferParam(_Shader, _Kernel, param, value);
@@ -161,7 +160,6 @@ namespace WaveHarmonic.Crest
         public void Dispatch(int x, int y, int z) => _Buffer.DispatchCompute(_Shader, _Kernel, x, y, z);
     }
 
-    [System.Serializable]
     readonly struct PropertyWrapperComputeStandalone : IPropertyWrapperVariants
     {
         readonly ComputeShader _Shader;
@@ -176,7 +174,7 @@ namespace WaveHarmonic.Crest
         public void SetFloat(int param, float value) => _Shader.SetFloat(param, value);
         public void SetFloatArray(int param, float[] value) => _Shader.SetFloats(param, value);
         public void SetInteger(int param, int value) => _Shader.SetInt(param, value);
-        public void SetBoolean(int param, bool value) => _Shader.SetBool(param, value);
+        public void SetBoolean(int param, bool value) => _Shader.SetFloat(param, value ? 1f : 0f);
         public void SetTexture(int param, Texture value) => _Shader.SetTexture(_Kernel, param, value);
         public void SetBuffer(int param, ComputeBuffer value) => _Shader.SetBuffer(_Kernel, param, value);
         public void SetConstantBuffer(int param, ComputeBuffer value) => _Shader.SetConstantBuffer(param, value, 0, value.stride);

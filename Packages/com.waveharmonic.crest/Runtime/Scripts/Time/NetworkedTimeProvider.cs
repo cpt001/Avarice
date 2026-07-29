@@ -14,14 +14,9 @@ namespace WaveHarmonic.Crest
     /// this client's time to the shared server time.
     /// </remarks>
     [AddComponentMenu(Constants.k_MenuPrefixTime + "Networked Time Provider")]
-    [@HelpURL("Manual/TimeProviders.html#network-synchronisation")]
+    [@HelpURL("Manual/Advanced/TimeProviders.html#network-synchronisation")]
     public sealed class NetworkedTimeProvider : TimeProvider
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         /// <summary>
         /// If Time.time on this client is 1.5s ahead of the shared/server Time.time, set
         /// this field to -1.5.

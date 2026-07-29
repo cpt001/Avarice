@@ -17,7 +17,7 @@ namespace WaveHarmonic.Crest
 
         internal static IFlowProvider Create(WaterRenderer water)
         {
-            return water.MultipleViewpoints ? new FlowQueryPerCamera(water) : new FlowQuery(water);
+            return water.IsMultipleViewpointMode ? new FlowQueryPerCamera(water) : new FlowQuery(water);
         }
 
         /// <summary>

@@ -110,7 +110,7 @@ Shader "Crest/Inputs/All/Scale"
             half4 Frag(Varyings input) : SV_Target
             {
 #if d_Texture
-                float scale = _Crest_Texture.Sample(sampler_Crest_Texture, input.uv).r;
+                float scale = _Crest_Texture.Sample(sampler_Crest_Texture, TRANSFORM_TEX(input.uv, _Crest_Texture)).r;
 #else
                 float scale = _Crest_Scale;
 #endif

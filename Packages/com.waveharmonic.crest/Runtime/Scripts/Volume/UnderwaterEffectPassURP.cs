@@ -36,15 +36,10 @@ namespace WaveHarmonic.Crest
                 s_Instance._Renderer = renderer;
                 s_Instance._CopyDepthBufferPass = new(RenderPassEvent.AfterRenderingOpaques);
             }
-
-            RenderPipelineManager.activeRenderPipelineTypeChanged -= Disable;
-            RenderPipelineManager.activeRenderPipelineTypeChanged += Disable;
         }
 
         public static void Disable()
         {
-            RenderPipelineManager.activeRenderPipelineTypeChanged -= Disable;
-
             s_Instance?._UnderwaterEffectPass?.Release();
             s_Instance?._CopyDepthBufferPass?.Release();
             s_Instance = null;
@@ -52,7 +47,7 @@ namespace WaveHarmonic.Crest
 
         internal void EnqueuePass(ScriptableRenderContext context, Camera camera)
         {
-            if (!_Renderer.ShouldRender(camera, UnderwaterRenderer.Pass.Effect))
+            if (!_Renderer._Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Volume))
             {
                 return;
             }

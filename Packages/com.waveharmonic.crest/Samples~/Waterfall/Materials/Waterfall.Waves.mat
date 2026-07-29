@@ -26,6 +26,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - d_Feather
+  - d_FeatherDirectional
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -103,9 +104,11 @@ Material:
     - _BumpScale: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
+    - _Crest_Bicubic: 0
     - _Crest_BlendModeSource: 1
     - _Crest_BlendModeTarget: 1
     - _Crest_Feather: 1
+    - _Crest_FeatherDirectional: 1
     - _Crest_FeatherWaveStart: 2
     - _Crest_FeatherWidth: 0.25
     - _Cull: 2

@@ -13,20 +13,12 @@ namespace WaveHarmonic.Crest
         void OnEnableLegacy()
         {
             SetupUnderwaterEffect();
-
-            RenderPipelineManager.activeRenderPipelineTypeChanged -= OnDisableLegacy;
-            RenderPipelineManager.activeRenderPipelineTypeChanged += OnDisableLegacy;
-        }
-
-        void OnDisableLegacy()
-        {
-            RenderPipelineManager.activeRenderPipelineTypeChanged -= OnDisableLegacy;
         }
 
         // Listening to OnPreCull. Camera must have underwater layer.
         void OnBeforeLegacyRender(Camera camera)
         {
-            if (ShouldRender(camera, Pass.Effect))
+            if (_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Volume))
             {
                 _Water.UpdateMatrices(camera);
 

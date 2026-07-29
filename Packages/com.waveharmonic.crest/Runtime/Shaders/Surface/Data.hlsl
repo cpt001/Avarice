@@ -25,7 +25,7 @@ float SampleWaterLineHeight(const float2 i_PositionWS)
     else
     {
         const float2 uv = (i_PositionWS - _Crest_WaterLineSnappedPosition) / (_Crest_WaterLineTexel * _Crest_WaterLineResolution) + 0.5;
-        return _Crest_WaterLine.SampleLevel(_Crest_linear_clamp_sampler, uv, 0).r + g_Crest_WaterCenter.y;
+        return _Crest_WaterLine.SampleLevel(LODData_linear_clamp_sampler, uv, 0).r + g_Crest_WaterCenter.y;
     }
 }
 
@@ -39,8 +39,8 @@ half3 SampleWaterLineNormal(const float2 i_PositionWS, const float i_Height)
     {
         const float2 uv = (i_PositionWS - _Crest_WaterLineSnappedPosition) / (_Crest_WaterLineTexel * _Crest_WaterLineResolution) + 0.5;
         const float3 dd = float3(1.0 / _Crest_WaterLineResolution.xy, 0.0);
-        const float xOffset = _Crest_WaterLine.SampleLevel(_Crest_linear_clamp_sampler, uv + dd.xz, 0).r;
-        const float zOffset = _Crest_WaterLine.SampleLevel(_Crest_linear_clamp_sampler, uv + dd.zy, 0).r;
+        const float xOffset = _Crest_WaterLine.SampleLevel(LODData_linear_clamp_sampler, uv + dd.xz, 0).r;
+        const float zOffset = _Crest_WaterLine.SampleLevel(LODData_linear_clamp_sampler, uv + dd.zy, 0).r;
 
         return normalize(half3
         (

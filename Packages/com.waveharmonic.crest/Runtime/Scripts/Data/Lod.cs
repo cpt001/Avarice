@@ -8,10 +8,6 @@ using UnityEngine.Rendering;
 using WaveHarmonic.Crest.Internal;
 using WaveHarmonic.Crest.Utility;
 
-#if !UNITY_6000_0_OR_NEWER
-using GraphicsFormatUsage = UnityEngine.Experimental.Rendering.FormatUsage;
-#endif
-
 namespace WaveHarmonic.Crest
 {
     using Inputs = Utility.SortedList<int, ILodInput>;
@@ -43,7 +39,7 @@ namespace WaveHarmonic.Crest
     /// Base class for data/behaviours created on each LOD.
     /// </summary>
     [System.Serializable]
-    public abstract partial class Lod
+    public abstract partial class Lod : Versioned
     {
         [Tooltip("Whether the simulation is enabled.")]
         [@GenerateAPI(Getter.Custom, Setter.Custom)]
@@ -51,15 +47,14 @@ namespace WaveHarmonic.Crest
         internal bool _Enabled;
 
         [Tooltip("Whether to override the resolution.\n\nIf not enabled, then the simulation will use the resolution defined on the Water Renderer.")]
-        [@Predicated(typeof(AnimatedWavesLod), inverted: true, hide: true)]
+        [@Hide(typeof(AnimatedWavesLod))]
         [@GenerateAPI(Setter.Dirty)]
         [@InlineToggle, SerializeField]
         internal bool _OverrideResolution = true;
 
         [Tooltip("The resolution of the simulation data.\n\nSet higher for sharper results at the cost of higher memory usage.")]
-        [@Predicated(typeof(AnimatedWavesLod), inverted: true, hide: true)]
-        [@Predicated(nameof(_OverrideResolution), hide: true)]
-        [@ShowComputedProperty(nameof(Resolution))]
+        [@Show(nameof(_OverrideResolution))]
+        [@ShowComputedProperty(nameof(SafeResolution))]
         [@Delayed]
         [@GenerateAPI(Getter.Custom, Setter.Dirty)]
         [SerializeField]
@@ -73,7 +68,7 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("The render texture format used for this simulation data.\n\nIt will be overriden if the format is incompatible with the platform.")]
         [@ShowComputedProperty(nameof(RequestedTextureFormat))]
-        [@Predicated(nameof(_TextureFormatMode), inverted: true, nameof(LodTextureFormatMode.Manual), hide: true)]
+        [@Show(nameof(_TextureFormatMode), nameof(LodTextureFormatMode.Manual))]
         [@GenerateAPI(Setter.Dirty)]
         [@DecoratedField, SerializeField]
         internal GraphicsFormat _TextureFormat;
@@ -81,17 +76,17 @@ namespace WaveHarmonic.Crest
         [@Space(10)]
 
         [Tooltip("Blurs the output.\n\nEnable if blurring is desired or intolerable artifacts are present.\nThe blur is optimized to only run on inner LODs and at lower scales.")]
-        [@Predicated(typeof(AnimatedWavesLod), inverted: true, hide: true)]
-        [@Predicated(typeof(DynamicWavesLod), inverted: true, hide: true)]
-        [@GenerateAPI]
+        [@Hide(typeof(AnimatedWavesLod))]
+        [@Hide(typeof(DynamicWavesLod))]
+        [@GenerateAPI(Setter.Dirty)]
         [@DecoratedField]
         [SerializeField]
         private protected bool _Blur;
 
         [Tooltip("Number of blur iterations.\n\nBlur iterations are optimized to only run maximum iterations on the inner LODs.")]
-        [@Predicated(typeof(AnimatedWavesLod), inverted: true, hide: true)]
-        [@Predicated(typeof(DynamicWavesLod), inverted: true, hide: true)]
-        [@Predicated(nameof(_Blur))]
+        [@Hide(typeof(AnimatedWavesLod))]
+        [@Hide(typeof(DynamicWavesLod))]
+        [@Enable(nameof(_Blur))]
         [@GenerateAPI]
         [@DecoratedField]
         [SerializeField]
@@ -103,6 +98,9 @@ namespace WaveHarmonic.Crest
         internal const int k_ThreadGroupSize = 8;
         internal const int k_ThreadGroupSizeX = k_ThreadGroupSize;
         internal const int k_ThreadGroupSizeY = k_ThreadGroupSize;
+
+        internal const string k_BlurField = nameof(_Blur);
+        internal const string k_TextureFormatModeField = nameof(_TextureFormatMode);
 
         internal static class ShaderIDs
         {
@@ -132,42 +130,16 @@ namespace WaveHarmonic.Crest
         private protected abstract Inputs Inputs { get; }
         internal abstract Color GizmoColor { get; }
         internal virtual int BufferCount => 1;
-        private protected virtual Texture2DArray NullTexture => BlackTextureArray;
+        private protected virtual Texture2DArray NullTexture => _Water.BlackTextureArray;
         private protected virtual bool RequiresClearBorder => false;
 
         private protected IQueryable Queryable { get; set; }
 
-        // This is used as alternative to Texture2D.blackTexture, as using that
-        // is not possible in some shaders.
-        static Texture2DArray s_BlackTextureArray = null;
-        static Texture2DArray BlackTextureArray
-        {
-            get
-            {
-                if (s_BlackTextureArray == null)
-                {
-                    s_BlackTextureArray = TextureArrayHelpers.CreateTexture2DArray(Texture2D.blackTexture, k_MaximumSlices);
-                    s_BlackTextureArray.name = "_Crest_LodBlackTexture";
-                }
-
-                return s_BlackTextureArray;
-            }
-        }
-
-        static readonly GraphicsFormatUsage s_GraphicsFormatUsage =
-            // Ensures a non compressed format is returned.
-            GraphicsFormatUsage.LoadStore |
-            // All these textures are sampled at some point.
-            GraphicsFormatUsage.Sample |
-            // Always use linear filtering.
-            GraphicsFormatUsage.Linear;
-
-        private protected virtual bool Persistent => BufferCount > 1;
+        private protected bool Persistent => BufferCount > 1;
         internal virtual bool SkipEndOfFrame => false;
 
-        private protected BufferedData<RenderTexture> _Targets;
-        internal RenderTexture DataTexture => _Targets.Current;
-        internal RenderTexture GetDataTexture(int frameDelta) => _Targets.Previous(frameDelta);
+        private protected RenderTexture _DataTexture;
+        internal RenderTexture DataTexture => _DataTexture;
 
         private protected Matrix4x4[] _ViewMatrices = new Matrix4x4[k_MaximumSlices];
         private protected Cascade[] _Cascades = new Cascade[k_MaximumSlices];
@@ -182,7 +154,7 @@ namespace WaveHarmonic.Crest
         internal WaterRenderer _Water;
         internal WaterRenderer Water => _Water;
 
-        private protected int _TargetsToClear;
+        private protected bool _TargetsToClear;
 
         private protected readonly int _TextureShaderID;
         private protected readonly int _TextureSourceShaderID;
@@ -205,8 +177,10 @@ namespace WaveHarmonic.Crest
             _TextureName = $"_Crest_{ID}Lod";
         }
 
-        private protected RenderTexture CreateLodDataTextures()
+        private protected RenderTexture CreateLodDataTextures(string postfix = null)
         {
+            postfix ??= string.Empty;
+
             RenderTexture result = new(Resolution, Resolution, 0, CompatibleTextureFormat)
             {
                 wrapMode = TextureWrapMode.Clamp,
@@ -214,7 +188,7 @@ namespace WaveHarmonic.Crest
                 filterMode = FilterMode.Bilinear,
                 anisoLevel = 0,
                 useMipMap = false,
-                name = _TextureName,
+                name = _TextureName + postfix,
                 dimension = TextureDimension.Tex2DArray,
                 volumeDepth = Slices,
                 enableRandomWrite = NeedToReadWriteTextureData
@@ -235,13 +209,10 @@ namespace WaveHarmonic.Crest
             if (!UnityEditor.EditorApplication.isPaused || Time.deltaTime > 0)
 #endif
             {
-                _Targets.Flip();
                 _SamplingParameters.Flip();
             }
 
             UpdateSamplingParameters(commands);
-
-            commands.SetGlobalTexture(_TextureShaderID, DataTexture);
         }
 
         private protected void Clear(RenderTexture target)
@@ -258,12 +229,16 @@ namespace WaveHarmonic.Crest
 
             buffer.BeginSample(ID);
 
-            if (_TargetsToClear > 0 || AlwaysClear)
+            if (_TargetsToClear || AlwaysClear)
             {
+                // IMPORTANT:
+                // We need both clears otherwise problems on PS5.
+                // With only native clear, flow would clear to non black (ie constant flow).
+                // With only custom clear, absorption/scattering inputs were not clearing.
                 CoreUtils.SetRenderTarget(buffer, DataTexture, ClearFlag.Color, ClearColor);
 
                 // Custom clear because clear not working.
-                if (Helpers.IsWebGPU && WaterResources.Instance.Compute._Clear != null)
+                if (Helpers.RequiresCustomClear && WaterResources.Instance.Compute._Clear != null)
                 {
                     var compute = WaterResources.Instance._ComputeLibrary._ClearCompute;
                     var wrapper = new PropertyWrapperCompute(buffer, compute._Shader, compute._KernelClearTarget);
@@ -274,7 +249,7 @@ namespace WaveHarmonic.Crest
                     wrapper.Dispatch(Resolution / k_ThreadGroupSizeX, Resolution / k_ThreadGroupSizeY, Slices);
                 }
 
-                _TargetsToClear--;
+                _TargetsToClear = false;
             }
 
             if (Inputs.Count > 0)
@@ -282,7 +257,7 @@ namespace WaveHarmonic.Crest
                 SubmitDraws(buffer, Inputs, DataTexture);
 
                 // Ensure all targets clear when there are no inputs.
-                _TargetsToClear = _Targets.Size;
+                _TargetsToClear = true;
             }
 
             TryBlur(buffer);
@@ -509,7 +484,7 @@ namespace WaveHarmonic.Crest
 
                 // The smallest wavelengths should repeat no more than twice across the smaller
                 // spatial length. Unless we're in the last LOD - then this is the best we can do.
-                var minimumWavelength = _Water.MaximumWavelength(index) / 2f;
+                var minimumWavelength = _Water.MaximumWavelength(index, Resolution) / 2f;
                 if (minimumWavelength < minimumSpatialLength / 2f && index < count - 1)
                 {
                     continue;
@@ -539,16 +514,15 @@ namespace WaveHarmonic.Crest
             var temporary = ShaderIDs.s_TemporaryBlurLodTexture;
 
             commands.GetTemporaryRT(temporary, rt.descriptor);
-            commands.CopyTexture(rt, temporary);
 
             // Applies to both.
             compute.SetVariantForFormat(horizontal, rt.graphicsFormat);
             horizontal.SetInteger(Crest.ShaderIDs.s_Resolution, rt.width);
 
-            horizontal.SetTexture(Crest.ShaderIDs.s_Source, temporary);
-            horizontal.SetTexture(Crest.ShaderIDs.s_Target, rt);
-            vertical.SetTexture(Crest.ShaderIDs.s_Source, rt);
-            vertical.SetTexture(Crest.ShaderIDs.s_Target, temporary);
+            horizontal.SetTexture(Crest.ShaderIDs.s_Source, rt);
+            horizontal.SetTexture(Crest.ShaderIDs.s_Target, temporary);
+            vertical.SetTexture(Crest.ShaderIDs.s_Source, temporary);
+            vertical.SetTexture(Crest.ShaderIDs.s_Target, rt);
 
             var x = rt.width / 8;
             var y = rt.height / 8;
@@ -561,7 +535,6 @@ namespace WaveHarmonic.Crest
                 vertical.Dispatch(x, y, Mathf.Max(z - i, 1));
             }
 
-            commands.CopyTexture(temporary, rt);
             commands.ReleaseTemporaryRT(temporary);
         }
 
@@ -585,7 +558,7 @@ namespace WaveHarmonic.Crest
             // Validate textures.
             {
                 // Find a compatible texture format.
-                CompatibleTextureFormat = Helpers.GetCompatibleTextureFormat(RequestedTextureFormat, s_GraphicsFormatUsage, Name, NeedToReadWriteTextureData);
+                CompatibleTextureFormat = Helpers.GetCompatibleTextureFormat(RequestedTextureFormat, Helpers.s_DataGraphicsFormatUsage, Name, NeedToReadWriteTextureData);
 
                 if (CompatibleTextureFormat == GraphicsFormat.None)
                 {
@@ -595,6 +568,12 @@ namespace WaveHarmonic.Crest
                 }
 
                 Debug.Assert(Slices <= k_MaximumSlices);
+
+                // Create null texture - even if we do not need it.
+                // Otherwise, it will get created in OnDisable when the application quits, which causes:
+                // -[_MTLCommandEncoder dealloc]:134: failed assertion `Command encoder released without endEncoding'"
+                // We should refactor so this texture is either never created or here via a method.
+                var _ = NullTexture;
             }
 
             _Valid = true;
@@ -608,18 +587,13 @@ namespace WaveHarmonic.Crest
             // Bind/unbind data texture for all shaders.
             Shader.SetGlobalTexture(_TextureShaderID, enable && Enabled ? DataTexture : NullTexture);
 
-            if (BufferCount > 1)
-            {
-                Shader.SetGlobalTexture(_TextureSourceShaderID, enable && Enabled ? GetDataTexture(1) : NullTexture);
-            }
-
             if (_SamplingParameters == null || _SamplingParameters.Size != BufferCount)
             {
                 _SamplingParameters = new(BufferCount, () => new Vector4[k_MaximumSlices]);
             }
 
             // For safety. Disable to see if we are sampling outside of LOD chain.
-            _SamplingParameters.RunLambda(x => System.Array.Fill(x, Vector4.zero));
+            _SamplingParameters.RunLambda(x => System.Array.Fill(x, new(0, 0, 1, 0)));
 
             UpdateSamplingParameters(null, initialize: true);
         }
@@ -637,21 +611,9 @@ namespace WaveHarmonic.Crest
 
         internal virtual void Destroy()
         {
-            // Release resources and destroy object to avoid reference leak.
-            _Targets?.RunLambda(x =>
-            {
-                if (x != null) x.Release();
-                Helpers.Destroy(x);
-            });
+            Queryable?.CleanUp();
 
-            foreach (var data in _AdditionalCameraData.Values)
-            {
-                data._Targets?.RunLambda(x =>
-                {
-                    if (x != null) x.Release();
-                    Helpers.Destroy(x);
-                });
-            }
+            Helpers.Destroy(ref _DataTexture);
 
             _AdditionalCameraData.Clear();
         }
@@ -664,16 +626,10 @@ namespace WaveHarmonic.Crest
         private protected virtual void Allocate()
         {
             // Use per-camera data.
-            if (_Water.SeparateViewpoint && Persistent)
-            {
-                _ReAllocateTexture = false;
-                return;
-            }
+            _DataTexture = CreateLodDataTextures();
+            Clear(DataTexture);
 
-            _Targets = new(BufferCount, CreateLodDataTextures);
-            _Targets.RunLambda(Clear);
-
-            // Bind globally once here on init, which will bind to all graphics shaders (not compute)
+            // Bind globally once here on init, which will bind to all shaders.
             Shader.SetGlobalTexture(_TextureShaderID, DataTexture);
 
             _ReAllocateTexture = false;
@@ -701,31 +657,20 @@ namespace WaveHarmonic.Crest
             SetGlobals(current);
         }
 
-        int GetResolution() => _OverrideResolution || Water == null ? _Resolution : Water.LodResolution;
+        int GetResolution() => _OverrideResolution ? _Resolution : Water.LodResolution;
+        internal int SafeResolution => _OverrideResolution || Water == null ? _Resolution : Water.LodResolution;
 
-        private protected void ReAllocate()
+        private protected virtual void ReAllocate()
         {
             if (!Enabled) return;
-            CompatibleTextureFormat = Helpers.GetCompatibleTextureFormat(RequestedTextureFormat, s_GraphicsFormatUsage, Name, NeedToReadWriteTextureData);
-            var descriptor = _Targets.Current.descriptor;
+            CompatibleTextureFormat = Helpers.GetCompatibleTextureFormat(RequestedTextureFormat, Helpers.s_DataGraphicsFormatUsage, Name, NeedToReadWriteTextureData);
+            var descriptor = DataTexture.descriptor;
             descriptor.height = descriptor.width = Resolution;
             descriptor.graphicsFormat = CompatibleTextureFormat;
-            _Targets.RunLambda(texture =>
-            {
-                texture.Release();
-                texture.descriptor = descriptor;
-                texture.Create();
-            });
-
-            foreach (var data in _AdditionalCameraData.Values)
-            {
-                data._Targets.RunLambda(texture =>
-                {
-                    texture.Release();
-                    texture.descriptor = descriptor;
-                    texture.Create();
-                });
-            }
+            descriptor.enableRandomWrite = NeedToReadWriteTextureData;
+            DataTexture.Release();
+            DataTexture.descriptor = descriptor;
+            DataTexture.Create();
 
             _ReAllocateTexture = false;
 
@@ -741,6 +686,7 @@ namespace WaveHarmonic.Crest
                 case nameof(_Enabled):
                     SetEnabled((bool)previousValue, _Enabled);
                     break;
+                case nameof(_Blur):
                 case nameof(_Resolution):
                 case nameof(_OverrideResolution):
                 case nameof(_TextureFormat):
@@ -754,44 +700,27 @@ namespace WaveHarmonic.Crest
 
     partial class Lod
     {
-        class AdditionalCameraData
-        {
-            public BufferedData<RenderTexture> _Targets;
-            public BufferedData<Vector4[]> _SamplingParameters;
-        }
-
-        readonly Dictionary<Camera, AdditionalCameraData> _AdditionalCameraData = new();
+        readonly Dictionary<Camera, BufferedData<Vector4[]>> _AdditionalCameraData = new();
 
         internal virtual void LoadCameraData(Camera camera)
         {
             Queryable?.Initialize(_Water);
 
             // For non-persistent sims, we do not need to store per camera data.
-            if (!_Water.SeparateViewpoint || !Persistent)
+            if (!Persistent)
             {
                 return;
             }
 
-            AdditionalCameraData data;
-
             if (!_AdditionalCameraData.ContainsKey(camera))
             {
-                data = new()
-                {
-                    _Targets = new(BufferCount, CreateLodDataTextures),
-                    _SamplingParameters = new(BufferCount, () => new Vector4[k_MaximumSlices]),
-                };
-
-                data._Targets.RunLambda(Clear);
-                _AdditionalCameraData.Add(camera, data);
+                _SamplingParameters = new(BufferCount, () => new Vector4[k_MaximumSlices]);
+                _AdditionalCameraData.Add(camera, _SamplingParameters);
             }
             else
             {
-                data = _AdditionalCameraData[camera];
+                _SamplingParameters = _AdditionalCameraData[camera];
             }
-
-            _Targets = data._Targets;
-            _SamplingParameters = data._SamplingParameters;
         }
 
         internal virtual void StoreCameraData(Camera camera)
@@ -799,18 +728,10 @@ namespace WaveHarmonic.Crest
 
         }
 
-        internal void RemoveCameraData(Camera camera)
+        internal virtual void RemoveCameraData(Camera camera)
         {
             if (_AdditionalCameraData.ContainsKey(camera))
             {
-                var acd = _AdditionalCameraData[camera];
-
-                acd._Targets.RunLambda(x =>
-                {
-                    if (x != null) x.Release();
-                    Helpers.Destroy(x);
-                });
-
                 _AdditionalCameraData.Remove(camera);
             }
         }
@@ -840,6 +761,7 @@ namespace WaveHarmonic.Crest
         bool Enabled { get; }
         WaterRenderer Water { get; }
         int MaximumQueryCount { get; }
+        float Texel { get; }
         LodQuerySource QuerySource { get; }
     }
 
@@ -878,7 +800,7 @@ namespace WaveHarmonic.Crest
         private protected LodQuerySource _QuerySource = LodQuerySource.GPU;
 
         [Tooltip("Maximum number of queries that can be performed when using GPU queries.")]
-        [@Predicated(nameof(_QuerySource), true, nameof(LodQuerySource.GPU))]
+        [@Show(nameof(_QuerySource), nameof(LodQuerySource.GPU))]
         [@GenerateAPI(Setter.None)]
         [@DecoratedField]
         [SerializeField]
@@ -891,19 +813,20 @@ namespace WaveHarmonic.Crest
 
         WaterRenderer IQueryableLod<T>.Water => Water;
         string IQueryableLod<T>.Name => Name;
+        float IQueryableLod<T>.Texel => _Cascades[0]._Texel;
 
-        private protected abstract T CreateProvider(bool enable);
+        private protected abstract T CreateProvider(bool onEnable);
 
-        internal override void SetGlobals(bool enable)
+        internal override void SetGlobals(bool onEnable)
         {
-            base.SetGlobals(enable);
+            base.SetGlobals(onEnable);
             // We should always have a provider (null provider if disabled).
-            InitializeProvider(enable);
+            InitializeProvider(onEnable);
         }
 
-        private protected void InitializeProvider(bool enable)
+        private protected void InitializeProvider(bool onEnable)
         {
-            Provider = CreateProvider(enable);
+            Provider = CreateProvider(onEnable);
             // None providers are not IQueryable.
             Queryable = Provider as IQueryable;
         }
@@ -919,7 +842,7 @@ namespace WaveHarmonic.Crest
     {
         private protected void ResetQueryChange()
         {
-            if (_Water == null || !_Water.isActiveAndEnabled || !Enabled) return;
+            if (_Water == null || !_Water.isActiveAndEnabled || !_Enabled) return;
             Queryable?.CleanUp();
             InitializeProvider(true);
         }

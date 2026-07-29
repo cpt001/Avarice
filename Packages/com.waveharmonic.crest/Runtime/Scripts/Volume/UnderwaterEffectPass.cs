@@ -45,7 +45,7 @@ namespace WaveHarmonic.Crest
         {
             _GraphicsFormat = format;
 
-            if (_Renderer.RenderBeforeTransparency && !_Renderer._NeedsColorTexture)
+            if (_Renderer.RenderBeforeTransparency && !_Renderer.NeedsColorTexture)
             {
                 return;
             }
@@ -68,19 +68,21 @@ namespace WaveHarmonic.Crest
 
         public void ReAllocate(RenderTextureDescriptor descriptor)
         {
-            if (_Renderer.RenderBeforeTransparency && !_Renderer._NeedsColorTexture)
+            if (_Renderer.RenderBeforeTransparency && !_Renderer.NeedsColorTexture)
             {
                 return;
             }
 
             // Descriptor will not have MSAA bound.
             RenderPipelineCompatibilityHelper.ReAllocateIfNeeded(ref _ColorTexture, descriptor, name: "_Crest_UnderwaterCameraColorTexture");
+            _AllocatedColor = true;
         }
 
         public void Release()
         {
             _ColorTexture?.Release();
             _ColorTexture = null;
+            _AllocatedColor = false;
         }
 
         public void Execute(Camera camera, CommandBuffer buffer, RTHandle color, RTHandle depth, MaterialPropertyBlock mpb = null)
@@ -90,7 +92,7 @@ namespace WaveHarmonic.Crest
             _ColorTarget = color;
             _DepthTarget = depth;
 
-            if (!_Renderer.RenderBeforeTransparency || _Renderer._NeedsColorTexture)
+            if (!_Renderer.RenderBeforeTransparency || _Renderer.NeedsColorTexture)
             {
                 if (!_AllocatedColor)
                 {

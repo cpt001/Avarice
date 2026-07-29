@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace WaveHarmonic.Crest
 {
-    [@ExecuteDuringEditMode(ExecuteDuringEditMode.Include.None, ExecuteDuringEditMode.Options.Singleton)]
+    [@ExecuteDuringEditMode(ExecuteDuringEditMode.Include.None)]
     [SelectionBase]
     [AddComponentMenu(Constants.k_MenuPrefixScripts + "Water Renderer")]
     [@HelpURL("About/Introduction.html")]
@@ -19,6 +19,8 @@ namespace WaveHarmonic.Crest
         private protected override bool CanRunInEditMode => !_ShowWaterProxyPlane;
         internal bool IsSceneViewActive { get; set; }
         int _LastFrameSceneCamera;
+        internal Camera _SceneCameraWithMouseHover;
+        internal bool _CurrentSceneCameraHasMouseHover;
 
         private protected override void Reset()
         {
@@ -31,7 +33,7 @@ namespace WaveHarmonic.Crest
         }
 
         // Tracks the scene view rendering to determine if a scene camera is active.
-        void UpdateLastActiveSceneCamera(Camera camera)
+        void OnBeginSceneCameraRendering(Camera camera)
         {
             if (camera.cameraType == CameraType.SceneView)
             {
@@ -43,6 +45,36 @@ namespace WaveHarmonic.Crest
             {
                 IsSceneViewActive = false;
             }
+
+            if (camera.cameraType != CameraType.SceneView)
+            {
+                return;
+            }
+
+            foreach (SceneView sceneView in SceneView.sceneViews)
+            {
+                if (sceneView == null)
+                {
+                    continue;
+                }
+
+                if (sceneView.camera != camera)
+                {
+                    continue;
+                }
+
+                if (sceneView.cameraViewport.Contains(Event.current.mousePosition))
+                {
+                    _SceneCameraWithMouseHover = sceneView.camera;
+                    _CurrentSceneCameraHasMouseHover = true;
+                    return;
+                }
+            }
+        }
+
+        void OnEndSceneCameraRendering(Camera camera)
+        {
+            _CurrentSceneCameraHasMouseHover = false;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -62,13 +94,17 @@ namespace WaveHarmonic.Crest
         {
             switch (path)
             {
+                case nameof(_Resolution):
+                case nameof(_Slices):
                 case nameof(_MultipleViewpoints):
                 case nameof(_EditorMultipleViewpoints):
                     Rebuild();
                     break;
                 case nameof(_ExtentsSizeMultiplier):
+                    SetExtentsSizeMultiplier((float)previous, _ExtentsSizeMultiplier);
+                    break;
                 case nameof(_GeometryDownSampleFactor):
-                    Surface._Rebuild = true;
+                    SetGeometryDownSampleFactor((int)previous, _GeometryDownSampleFactor);
                     break;
                 case nameof(_ShowWaterProxyPlane):
                     SetShowProxyPlane((bool)previous, _ShowWaterProxyPlane);

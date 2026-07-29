@@ -9,7 +9,7 @@ namespace WaveHarmonic.Crest
 {
     partial class WaterResources
     {
-        public ComputeLibrary _ComputeLibrary;
+        internal ComputeLibrary _ComputeLibrary;
 
         public sealed class ComputeLibrary
         {
@@ -17,12 +17,14 @@ namespace WaveHarmonic.Crest
             public BlurCompute _BlurCompute;
             public ClearCompute _ClearCompute;
             public ShapeCombineCompute _ShapeCombineCompute;
+            public GerstnerCompute _GerstnerCompute;
             public ComputeLibrary(WaterResources resources)
             {
                 _BlitCompute = new(resources.Compute._Blit);
                 _BlurCompute = new(resources.Compute._Blur);
                 _ClearCompute = new(resources.Compute._Clear);
                 _ShapeCombineCompute = new(resources.Compute._ShapeCombine);
+                _GerstnerCompute = new(resources.Compute._Gerstner);
             }
         }
 
@@ -97,7 +99,6 @@ namespace WaveHarmonic.Crest
             public readonly ComputeShader _Shader;
             public readonly LocalKeyword _CombineKeyword;
             public readonly LocalKeyword _DynamicWavesKeyword;
-            public readonly LocalKeyword _FlowKeyword;
             public readonly int _CopyAnimatedWavesKernel;
             public readonly int _CombineAnimatedWavesKernel;
             public readonly int _CombineDynamicWavesKernel;
@@ -109,11 +110,27 @@ namespace WaveHarmonic.Crest
                 var keywords = shader.keywordSpace;
                 _CombineKeyword = keywords.FindKeyword("d_Combine");
                 _DynamicWavesKeyword = keywords.FindKeyword("d_DynamicWaves");
-                _FlowKeyword = keywords.FindKeyword("d_Flow");
 
                 _CombineAnimatedWavesKernel = 0;
                 _CopyAnimatedWavesKernel = 1;
                 _CombineDynamicWavesKernel = 2;
+            }
+        }
+
+        public sealed class GerstnerCompute
+        {
+            public readonly ComputeShader _Shader;
+            public readonly LocalKeyword _WavePairsKeyword;
+            public readonly int _ExecuteKernel;
+
+            public GerstnerCompute(ComputeShader shader)
+            {
+                _Shader = shader;
+
+                var keywords = shader.keywordSpace;
+                _WavePairsKeyword = keywords.FindKeyword("d_WavePairs");
+
+                _ExecuteKernel = 0;
             }
         }
     }

@@ -14,6 +14,12 @@
 #include "Packages/com.waveharmonic.crest.shifting-origin/Runtime/Shaders/ShiftingOrigin.hlsl"
 #endif
 
+#if d_Crest_FoamStochastic
+#define m_SampleFoam SampleStochastic
+#else
+#define m_SampleFoam Sample
+#endif
+
 m_CrestNameSpace
 
 half2 WhiteFoamTexture
@@ -32,12 +38,20 @@ half2 WhiteFoamTexture
     const float2 uvOffset = i_TexelOffset + g_Crest_Time * i_Texture._speed / 32.0;
     // Scale with lods to get multiscale detail. 10 is magic number that gets the
     // material 'scale' slider into an intuitive range.
-    const float scale = i_Texture._scale * i_CascadeData0._Scale / 10.0;
+    float scale = i_Texture._scale * 0.5;
 
-    const half2 f0 = i_Texture.Sample((i_WorldXZ0 + uvOffset) / scale).rg;
-    const half2 f1 = i_Texture.Sample((i_WorldXZ1 + uvOffset) / (2.0 * scale)).rg;
+#if d_Crest_FoamMultiScale
+    // 0.5 * 0.2 == / 10. We only need the full amount for multi-scale to account for
+    // the default lower scale of 4. * 0.5 alone above will not match multi-scaled, but
+    // overall better matches visually.
+    scale *= i_CascadeData0._Scale * 0.2;
+#endif
 
-    const half fr = lerp(f0.r, f1.r, i_LodAlpha);
+    half2 f0 = i_Texture.m_SampleFoam((i_WorldXZ0 + uvOffset) / scale).rg;
+
+#if d_Crest_FoamMultiScale
+    const half2 f1 = i_Texture.m_SampleFoam((i_WorldXZ1 + uvOffset) / (2.0 * scale)).rg;
+#endif
 
     // Black point fade.
     const half result = saturate(1.0 - i_Foam);
@@ -45,17 +59,20 @@ half2 WhiteFoamTexture
 #if d_Crest_FoamBioluminescence
     if (i_Sample2ndChannel)
     {
-        // Helps with exaggerating at LOD borders. Very specific to sparkles as they do not
-        // overlap leaving a dead zone in the middle.
-        const half fg = f0.g * min(0.5, 1.0 - i_LodAlpha) * 2.0 +
-                        f1.g * min(0.5, i_LodAlpha) * 2.0;
+#if d_Crest_FoamMultiScale
+        f0 = lerp(f0, f1, i_LodAlpha);
+#endif
 
-        return smoothstep(result, result + i_Feather, half2(fr, fg));
+        return smoothstep(result, result + i_Feather, f0);
     }
     else
 #endif
     {
-        return half2(smoothstep(result, result + i_Feather, fr), 0.0);
+#if d_Crest_FoamMultiScale
+        f0.r = lerp(f0.r, f1.r, i_LodAlpha);
+#endif
+
+        return half2(smoothstep(result, result + i_Feather, f0.r), 0.0);
     }
 }
 
@@ -89,13 +106,13 @@ half2 MultiScaleFoamNormal
 (
     const TiledTexture i_Texture,
     const half i_Feather,
-    const half i_NormalStrength,
     const half i_FoamData,
-    const half i_FoamAlbedo,
     const Cascade i_CascadeData0,
     const Cascade i_CascadeData1,
     const half i_LodAlpha,
     const float2 i_UndisplacedXZ,
+    const half i_NormalStrength,
+    const half i_FoamAlbedo,
     const float i_PixelZ
 )
 {
@@ -163,13 +180,13 @@ half2 MultiScaleFoamNormal
     const Flow i_Flow,
     const TiledTexture i_Texture,
     const half i_Feather,
-    const half i_NormalStrength,
     const half i_FoamData,
-    const half i_FoamAlbedo,
     const Cascade i_CascadeData0,
     const Cascade i_CascadeData1,
     const half i_LodAlpha,
     const float2 i_UndisplacedXZ,
+    const half i_NormalStrength,
+    const half i_FoamAlbedo,
     const float i_PixelZ
 )
 {
@@ -177,25 +194,25 @@ half2 MultiScaleFoamNormal
     (
         i_Texture,
         i_Feather,
-        i_NormalStrength,
         i_FoamData,
-        i_FoamAlbedo,
         i_CascadeData0,
         i_CascadeData1,
         i_LodAlpha,
         i_UndisplacedXZ - i_Flow._Flow * i_Flow._Offset0,
+        i_NormalStrength,
+        i_FoamAlbedo,
         i_PixelZ
     ) * i_Flow._Weight0 + MultiScaleFoamNormal
     (
         i_Texture,
         i_Feather,
-        i_NormalStrength,
         i_FoamData,
-        i_FoamAlbedo,
         i_CascadeData0,
         i_CascadeData1,
         i_LodAlpha,
         i_UndisplacedXZ - i_Flow._Flow * i_Flow._Offset1,
+        i_NormalStrength,
+        i_FoamAlbedo,
         i_PixelZ
     ) * i_Flow._Weight1;
 }

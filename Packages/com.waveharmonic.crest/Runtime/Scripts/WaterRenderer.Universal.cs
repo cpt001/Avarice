@@ -3,7 +3,6 @@
 
 #if d_UnityURP
 
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -70,6 +69,13 @@ namespace WaveHarmonic.Crest
                 );
             }
 
+            public void Destroy()
+            {
+                Helpers.Destroy(_CopyColorMaterial);
+                Helpers.Destroy(_CopyDepthMaterial);
+                Helpers.Destroy(_SampleColorMaterial);
+            }
+
             public static void Enable(WaterRenderer water)
             {
                 Instance = new(water);
@@ -80,32 +86,13 @@ namespace WaveHarmonic.Crest
             {
                 var water = _Water;
 
-                if (!ShouldRender(camera, water.Surface.Layer))
-                {
-                    return;
-                }
-
-                // Our reflections do not need them.
-                if (camera == _Water.Reflections.ReflectionCamera)
-                {
-                    return;
-                }
-
-
                 if (!water.WriteToColorTexture && !water.WriteToDepthTexture)
                 {
                     return;
                 }
 
-                var material = water.Surface.Material;
-
-                if (material == null)
-                {
-                    return;
-                }
-
                 // TODO: Could also check RenderType. Which is better?
-                if (!SurfaceRenderer.IsTransparent(material))
+                if (!SurfaceRenderer.IsTransparent(water.Surface.Material))
                 {
                     return;
                 }
@@ -170,7 +157,7 @@ namespace WaveHarmonic.Crest
                 }
                 else
                 {
-                    var queue = s_ActiveRenderPassQueue.GetValue(renderer) as List<ScriptableRenderPass>;
+                    var queue = s_ActiveRenderPassQueue.GetValue(renderer) as System.Collections.Generic.List<ScriptableRenderPass>;
                     queue.Remove(_CopyColorPass);
                 }
 
@@ -184,7 +171,7 @@ namespace WaveHarmonic.Crest
                 }
                 else
                 {
-                    var queue = s_ActiveRenderPassQueue.GetValue(renderer) as List<ScriptableRenderPass>;
+                    var queue = s_ActiveRenderPassQueue.GetValue(renderer) as System.Collections.Generic.List<ScriptableRenderPass>;
                     queue.Remove(_CopyDepthPass);
                 }
             }

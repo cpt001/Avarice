@@ -76,7 +76,7 @@ half _Crest_SunBoost;
 float _Crest_OutScatteringFactor;
 float _Crest_OutScatteringExtinctionFactor;
 half3 _Crest_AmbientLighting;
-int _Crest_DataSliceOffset;
+uint _Crest_DataSliceOffset;
 
 half _Crest_DitheringIntensity;
 CBUFFER_END
@@ -99,6 +99,8 @@ static const m_Crest::TiledTexture _Crest_CausticsDistortionTiledTexture =
 #endif // !d_Crest_WaterSurface
 
 m_CrestNameSpace
+
+#if d_Crest_OutScattering
 
 // Get the out-scattering term.
 half3 EvaluateOutScattering
@@ -141,6 +143,7 @@ half3 EvaluateOutScattering
     // benefit of both approaches.
     return lerp(outScatteringTerm, 1.0, _Crest_UnderwaterEnvironmentalLightingWeight);
 }
+#endif // d_Crest_OutScattering
 
 void GetWaterSurfaceAndUnderwaterData
 (
@@ -222,16 +225,24 @@ half3 ApplyUnderwaterEffect
 
         // We sample shadows at the camera position. Pass a user defined slice offset for smoothing out detail.
         // Offset slice so that we dont get high freq detail. But never use last lod as this has crossfading.
-        int sliceIndex = clamp(_Crest_DataSliceOffset, 0, g_Crest_LodCount - 2);
+        uint sliceIndex = clamp(_Crest_DataSliceOffset, 0, g_Crest_LodCount - 2);
 
-        if (g_Crest_SampleAbsorptionSimulation) absorption = Cascade::MakeAbsorption(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
-        if (g_Crest_SampleScatteringSimulation) scattering = Cascade::MakeScattering(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
+#if d_Crest_AbsorptionLod
+        if (g_Crest_SampleAbsorptionSimulation)
+        {
+            absorption = Cascade::MakeAbsorption(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
+        }
+#endif
+
+#if d_Crest_ScatteringLod
+        if (g_Crest_SampleScatteringSimulation)
+        {
+            scattering = Cascade::MakeScattering(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
+        }
+#endif
 
         absorption *= _Crest_ExtinctionMultiplier;
         scattering *= _Crest_ExtinctionMultiplier;
-
-        const float4 displacement = Cascade::MakeAnimatedWaves(sliceIndex).Sample(_WorldSpaceCameraPos.xz);
-        const float waterLevel = g_Crest_WaterCenter.y + displacement.y + displacement.w;
 
         half shadow = 1.0;
 #if d_Crest_ShadowLod
@@ -249,8 +260,12 @@ half3 ApplyUnderwaterEffect
 
         const half3 extinction = VolumeExtinction(absorption, scattering);
 
+#if d_Crest_OutScattering
         // Out-Scattering Term.
         {
+            const float4 displacement = Cascade::MakeAnimatedWaves(sliceIndex).Sample(_WorldSpaceCameraPos.xz);
+            const float waterLevel = g_Crest_WaterCenter.y + displacement.y + displacement.w;
+
             const half3 outScatteringTerm = EvaluateOutScattering
             (
                 extinction,
@@ -268,6 +283,7 @@ half3 ApplyUnderwaterEffect
             ambientLighting *= outScatteringTerm;
 #endif
         }
+#endif // d_Crest_OutScattering
 
         volumeOpacity = VolumeOpacity(extinction, fogDistance);
         volumeLight = VolumeLighting
@@ -281,8 +297,10 @@ half3 ApplyUnderwaterEffect
             lightDirection,
             lightColor,
             half3(0.0, 0.0, 0.0),
+            1.0, // Additional lights blend
             _Crest_AmbientTerm,
             _Crest_DirectTerm,
+            1.0, // Additional lights term
             _Crest_SunBoost,
             _Crest_ShadowsAffectsAmbientFactor
         );
@@ -298,7 +316,7 @@ half3 ApplyUnderwaterEffect
 
 #if d_Crest_FlowLod
         half2 flowData = Cascade::MakeFlow(slice0).SampleFlow(i_positionWS.xz);
-        const Flow flow = Flow::Make(flowData, g_Crest_Time);
+        const Flow flow = Flow::Make(flowData, g_Crest_Flow);
         blur = _Crest_CausticsMotionBlur;
 #endif
 

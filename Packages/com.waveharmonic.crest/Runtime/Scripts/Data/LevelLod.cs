@@ -18,6 +18,7 @@ namespace WaveHarmonic.Crest
         internal static readonly Color s_GizmoColor = new(75f / 255f, 0f, 130f / 255f, 0.5f);
 
         internal override string ID => "Level";
+        internal override string Name => "Water Level";
         internal override Color GizmoColor => s_GizmoColor;
         private protected override Color ClearColor => Color.black;
         private protected override bool NeedToReadWriteTextureData => true;

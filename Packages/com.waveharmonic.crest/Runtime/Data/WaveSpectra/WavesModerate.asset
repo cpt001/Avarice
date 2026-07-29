@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: WavesModerate
   m_EditorClassIdentifier: 
   _Version: 0
-  _WaveDirectionVariance: 90
-  _GravityScale: 1
   _Multiplier: 1
+  _Chop: 1.54
+  _GravityScale: 1
+  _WaveDirectionVariance: 90
   _PowerLogarithmicScales:
   - -7.1418724
   - -6.539813
@@ -62,6 +63,20 @@ MonoBehaviour:
   - 1
   - 1
   - 1
-  _Chop: 1.54
+  _Attenuation:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
   _ShowAdvancedControls: 0
   _Model: 0

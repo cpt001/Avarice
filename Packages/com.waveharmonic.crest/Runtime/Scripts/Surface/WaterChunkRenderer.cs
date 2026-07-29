@@ -1,7 +1,6 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
-using System.Collections.Generic;
 using UnityEngine;
 using WaveHarmonic.Crest.Internal;
 
@@ -46,8 +45,16 @@ namespace WaveHarmonic.Crest
         internal Rect _UnexpandedBoundsXZ = new();
         public Rect UnexpandedBoundsXZ => _UnexpandedBoundsXZ;
 
+        internal Bounds _LocalBounds;
+        internal float _LocalScale;
+
+        // WaterBody culling.
         internal bool _Culled;
+
+        // Frustum visibility.
         internal bool _Visible;
+
+        internal bool _CulledByVolume;
 
         internal WaterRenderer _Water;
 
@@ -59,7 +66,7 @@ namespace WaveHarmonic.Crest
         // contiguous surface.
         internal bool _WaterDataHasBeenBound = true;
 
-        int _LodIndex = -1;
+        internal int _LodIndex = -1;
 
 
         // There is a 1-frame delay with Initialized in edit mode due to setting
@@ -71,14 +78,7 @@ namespace WaveHarmonic.Crest
             _LodIndex = index;
             Rend = renderer;
             _Mesh = mesh;
-            _PreviousObjectToWorld = _CurrentObjectToWorld = transform.localToWorldMatrix;
             _Transform = transform;
-            WaterRenderer.s_OnLoadCameraData -= LoadCameraData;
-            WaterRenderer.s_OnLoadCameraData += LoadCameraData;
-            WaterRenderer.s_OnStoreCameraData -= StoreCameraData;
-            WaterRenderer.s_OnStoreCameraData += StoreCameraData;
-            WaterRenderer.s_OnRemoveCameraData -= RemoveCameraData;
-            WaterRenderer.s_OnRemoveCameraData += RemoveCameraData;
         }
 
         private protected override void OnStart()
@@ -95,7 +95,7 @@ namespace WaveHarmonic.Crest
             var count = surface.TimeSliceBoundsUpdateFrameCount;
 
             // Time slice update to distribute the load.
-            if (count <= 1 || !(_SiblingIndex % count != Time.frameCount % surface.Chunks.Count % count))
+            if (count <= 1 || _Water.IsMultipleViewpointMode || !(_SiblingIndex % count != Time.frameCount % surface.Chunks.Count % count))
             {
                 // This needs to be called on Update because the bounds depend on transform scale which can change. Also OnWillRenderObject depends on
                 // the bounds being correct. This could however be called on scale change events, but would add slightly more complexity.
@@ -122,8 +122,9 @@ namespace WaveHarmonic.Crest
 
         internal void OnLateUpdate()
         {
-            _PreviousObjectToWorld = _CurrentObjectToWorld;
+            _PreviousObjectToWorld = _Water.Surface.PreviousObjectToWorld[_SiblingIndex];
             _CurrentObjectToWorld = _Transform.localToWorldMatrix;
+            _Water.Surface.PreviousObjectToWorld[_SiblingIndex] = _CurrentObjectToWorld;
         }
 
         internal void RenderMotionVectors(SurfaceRenderer surface, Camera camera)
@@ -163,30 +164,20 @@ namespace WaveHarmonic.Crest
         {
             s_UpdateMeshBoundsMarker.Begin(this);
 
-            var bounds = _Mesh.bounds;
+            var bounds = _LocalBounds;
 
-            if (WaterBody.WaterBodies.Count > 0)
+            bounds = ComputeBounds(_Transform, bounds);
+
+            _UnexpandedBoundsXZ = new(0, 0, bounds.size.x, bounds.size.z)
             {
-                _UnexpandedBoundsXZ = ComputeBoundsXZ(_Transform, bounds);
-            }
+                center = bounds.center.XZ(),
+            };
 
             bounds = ExpandBoundsForDisplacements(_Transform, bounds);
 
-            Rend.localBounds = bounds;
+            Rend.bounds = bounds;
 
             s_UpdateMeshBoundsMarker.End();
-        }
-
-        public static Rect ComputeBoundsXZ(Transform transform, Bounds bounds)
-        {
-            // Since chunks are axis-aligned it is safe to rotate the bounds.
-            var center = transform.rotation * bounds.center * transform.lossyScale.x + transform.position;
-            var size = transform.rotation * bounds.size * transform.lossyScale.x;
-            // Rotation can make size negative.
-            return new(0, 0, Mathf.Abs(size.x), Mathf.Abs(size.z))
-            {
-                center = center.XZ(),
-            };
         }
 
         internal void Bind()
@@ -198,9 +189,11 @@ namespace WaveHarmonic.Crest
             _WaterDataHasBeenBound = true;
         }
 
-        void OnDestroy()
+        private protected override void OnDestroy()
         {
-            Helpers.Destroy(_Mesh);
+            base.OnDestroy();
+
+            Helpers.Destroy(ref _Mesh);
         }
 
         // Called when visible to a camera
@@ -210,6 +203,14 @@ namespace WaveHarmonic.Crest
             {
                 return;
             }
+
+#if CREST_DEBUG
+            if (_Water._Debug._VisualizeData)
+            {
+                Rend.sharedMaterial = _Water.Surface.VisualizeDataMaterial;
+                MaterialOverridden = true;
+            }
+#endif
 
             if (!MaterialOverridden && Rend.sharedMaterial != _Water.Surface.Material)
             {
@@ -221,12 +222,27 @@ namespace WaveHarmonic.Crest
             {
                 Bind();
             }
-
-            if (_DrawRenderBounds)
-            {
-                Rend.bounds.DebugDraw();
-            }
         }
+
+        public Bounds ComputeBounds(Transform transform, Bounds bounds)
+        {
+            var extents = bounds.extents;
+            var center = bounds.center;
+
+            // Apply transform. Rotation already done.
+            var scale = _LocalScale * _Water.Scale;
+            extents.x *= scale;
+            extents.z *= scale;
+            center.x *= scale;
+            center.z *= scale;
+            center += transform.position;
+
+            bounds.center = center;
+            bounds.extents = extents;
+
+            return bounds;
+        }
+
 
         // this is called every frame because the bounds are given in world space and depend on the transform scale, which
         // can change depending on view altitude
@@ -235,104 +251,53 @@ namespace WaveHarmonic.Crest
             var extents = bounds.extents;
             var center = bounds.center;
 
-            var scale = transform.lossyScale;
-            var rotation = transform.rotation;
+            var rect = _UnexpandedBoundsXZ;
 
             // Extend the kinematic bounds slightly to give room for dynamic waves.
             if (_Water._DynamicWavesLod.Enabled)
             {
-                extents.y += 5f;
-            }
-
-            // Get XZ bounds. Doing this manually bypasses updating render bounds call.
-            Rect rect;
-            {
-                var p1 = transform.position;
-                var p2 = rotation * new Vector3(center.x, 0f, center.z);
-                var s1 = scale;
-                var s2 = rotation * (extents.XNZ(0f) * 2f);
-
-                rect = new(0, 0, Mathf.Abs(s1.x * s2.x), Mathf.Abs(s1.z * s2.z))
-                {
-                    center = new(p1.x + p2.x, p1.z + p2.z)
-                };
+                var settings = _Water.DynamicWavesLod.Settings;
+                extents.x += settings._HorizontalDisplace;
+                extents.y += settings._VerticalDisplacementCullingContributions;
+                extents.z += settings._HorizontalDisplace;
             }
 
             // Extend bounds by local waves.
             {
-                var totalHorizontal = 0f;
-                var totalVertical = 0f;
+                var horizontal = 0f;
+                var vertical = 0f;
 
                 foreach (var (key, input) in AnimatedWavesLod.s_Inputs)
                 {
-                    input.DisplacementReporter?.ReportDisplacement(_Water, ref rect, ref totalHorizontal, ref totalVertical);
+                    input.DisplacementReporter?.ReportDisplacement(_Water, ref rect, ref horizontal, ref vertical);
                 }
 
-                var expandXZ = totalHorizontal / scale.x;
-
-                extents.x += expandXZ;
-                extents.y += totalVertical;
-                extents.z += expandXZ;
+                extents.x += horizontal;
+                extents.y += vertical;
+                extents.z += horizontal;
             }
 
             // Expand and offset bounds by height.
             {
-                var minimumWaterLevelBounds = 0f;
-                var maximumWaterLevelBounds = 0f;
+                var minimum = 0f;
+                var maximum = 0f;
 
                 foreach (var (key, input) in LevelLod.s_Inputs)
                 {
-                    input.HeightReporter?.ReportHeight(_Water, ref rect, ref minimumWaterLevelBounds, ref maximumWaterLevelBounds);
+                    input.HeightReporter?.ReportHeight(_Water, ref rect, ref minimum, ref maximum);
                 }
 
-                extents.y += Mathf.Abs((minimumWaterLevelBounds - maximumWaterLevelBounds) * 0.5f);
-                bounds.extents = extents;
+                extents.y += Mathf.Abs((minimum - maximum) * 0.5f);
 
-                var offset = Mathf.Lerp(minimumWaterLevelBounds, maximumWaterLevelBounds, 0.5f);
+                var offset = Mathf.Lerp(minimum, maximum, 0.5f);
                 center.y += offset;
-                bounds.center = center;
             }
+
+            // Get XZ bounds. Doing this manually bypasses updating render bounds call.
+            bounds.center = center;
+            bounds.extents = extents;
 
             return bounds;
-        }
-    }
-
-    partial class WaterChunkRenderer
-    {
-        class AdditionalCameraData
-        {
-            public Matrix4x4 _CurrentObjectToWorld;
-            public Matrix4x4 _PreviousObjectToWorld;
-        }
-
-        readonly Dictionary<Camera, AdditionalCameraData> _CameraData = new();
-        AdditionalCameraData _AdditionalCameraData;
-
-        void LoadCameraData(Camera camera)
-        {
-            if (!_CameraData.ContainsKey(camera))
-            {
-                _CameraData[camera] = new();
-            }
-
-            _AdditionalCameraData = _CameraData[camera];
-            _CurrentObjectToWorld = _AdditionalCameraData._CurrentObjectToWorld;
-            _PreviousObjectToWorld = _AdditionalCameraData._PreviousObjectToWorld;
-        }
-
-        void StoreCameraData(Camera camera)
-        {
-            if (_AdditionalCameraData == null) return;
-            _AdditionalCameraData._CurrentObjectToWorld = _CurrentObjectToWorld;
-            _AdditionalCameraData._PreviousObjectToWorld = _PreviousObjectToWorld;
-        }
-
-        void RemoveCameraData(Camera camera)
-        {
-            if (_CameraData.ContainsKey(camera))
-            {
-                _CameraData.Remove(camera);
-            }
         }
     }
 

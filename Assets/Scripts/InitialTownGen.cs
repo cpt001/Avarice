@@ -48,17 +48,15 @@ public class InitialTownGen : MonoBehaviour
             if (ims.transform.parent == transform.parent)
             {
                 islandMaster = ims.GetComponent<IslandMaster>();
+                islandMaster.townsOnIsland.Add(this);
+                StartCoroutine(GenerateTown());
             }
-        }
-        if (islandMaster)
-        {
-            islandMaster.townsOnIsland.Add(this);
-            StartCoroutine(GenerateTown());
         }
     }
 
     private IEnumerator GenerateTown()
     {
+        Debug.Log("Generating town");
         #region Set Initial Detail
         if (islandMaster.townsOnIsland.Count != 0)
         {
@@ -289,6 +287,7 @@ public class InitialTownGen : MonoBehaviour
         //associatedTownPlanner.SetDemolitionOrders();      ---Just not needed right now, needs review of further function in game
         associatedTownPlanner.GenerateInitialTown(setTownStarterTier, setMaxTownTier);
         transform.name = "DebugTown " + islandMaster.islandBiome.ToString() + " | " + townType.ToString() + " | MT: " + setMaxTownTier + " | ST" + setTownStarterTier;
+        associatedTownPlanner.CheckBeachSlotViability();
         associatedTownPlanner.SpawnStructures();
     }
 }

@@ -1,7 +1,7 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
-#if d_UnityInputSystem && ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM
 #define INPUT_SYSTEM_ENABLED
 #endif
 
@@ -17,11 +17,6 @@ namespace WaveHarmonic.Crest
     [AddComponentMenu(Constants.k_MenuPrefixDebug + "Debug GUI")]
     sealed class DebugGUI : ManagedBehaviour<WaterRenderer>
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [SerializeField]
         bool _ShowWaterData = true;
 
@@ -132,10 +127,12 @@ namespace WaveHarmonic.Crest
             s_Instance = null;
         }
 
-        void OnDestroy()
+        private protected override void OnDestroy()
         {
+            base.OnDestroy();
+
             // Safe as there should only be one instance at a time.
-            Helpers.Destroy(s_DebugArrayMaterial);
+            Helpers.Destroy(ref s_DebugArrayMaterial);
         }
 
         Vector3 _ViewerPositionLastFrame;
@@ -480,6 +477,8 @@ namespace WaveHarmonic.Crest
         {
             // Init here from 2019.3 onwards
             s_SimulationNames.Clear();
+            s_DebugArrayMaterial = null;
+            s_Instance = null;
         }
     }
 }

@@ -90,15 +90,10 @@ namespace WaveHarmonic.Crest
                 FixMaskArtefacts(commands, descriptor, mask._ColorRTI);
             }
             // Portals have their own fitted to the portal bounds.
-            else
-#pragma warning disable format
-#if d_CrestPortals
-            if (!Portaled || _Water.Portals.RequiresFullScreenMask)
-#endif
+            else if (RequiresFullScreenMask)
             {
                 RenderLineMask(commands, camera, mask.ColorRT.descriptor, mask._ColorRTI);
             }
-#pragma warning restore format
         }
 
         internal void RenderLineMask(CommandBuffer buffer, Camera camera, RenderTextureDescriptor descriptor, RenderTargetIdentifier target)
@@ -111,7 +106,7 @@ namespace WaveHarmonic.Crest
             var keep = false;
 
 #if d_CrestPortals
-            if (_Water.Portals.Active)
+            if (_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Portal))
             {
                 keep = _Water.Portals.RenderLineMask(buffer, target);
             }
@@ -197,7 +192,6 @@ namespace WaveHarmonic.Crest
         }
 
         internal bool _MaskRead;
-        bool _DoneMaskRead;
 
         MaskRenderer.MaskInput MaskRenderer.IMaskProvider.Allocate()
         {
@@ -211,13 +205,12 @@ namespace WaveHarmonic.Crest
 
         MaskRenderer.MaskInput MaskRenderer.IMaskProvider.Write(Camera camera)
         {
-            if (!_DoneMaskRead)
-            {
-                _MaskRead = ShouldRender(camera, Pass.Mask);
-                _DoneMaskRead = true;
-            }
+            _MaskRead = _Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.SurfaceAndVolume);
 
-            return _MaskRead ? (UseLegacyMask || UseStencilBuffer ? MaskRenderer.MaskInput.Both : MaskRenderer.MaskInput.Color) : MaskRenderer.MaskInput.None;
+            // We only need the mask if rendering both surface and volume.
+            return _MaskRead
+                ? (UseLegacyMask || UseStencilBuffer ? MaskRenderer.MaskInput.Both : MaskRenderer.MaskInput.Color)
+                : MaskRenderer.MaskInput.None;
         }
     }
 }

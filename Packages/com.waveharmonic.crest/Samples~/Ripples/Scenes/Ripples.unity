@@ -638,6 +638,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e64c239f69eea46778ded6dcc3427a34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 2
   _Layer: 4
   _Material: {fileID: 2100000, guid: aa74fe26a90564079a48cdae97645f7b, type: 2}
   _VolumeMaterial: {fileID: 0}
@@ -648,7 +649,6 @@ MonoBehaviour:
   _TimeSliceBoundsUpdateFrameCount: 1
   _SurfaceSelfIntersectionFixMode: 4
   _AllowRenderQueueSorting: 0
-  _Version: 2
   _Camera: {fileID: 0}
   _TimeProvider: {fileID: 0}
   _WindZone: {fileID: 0}
@@ -714,11 +714,17 @@ MonoBehaviour:
     rid: 9040549687677943810
   _Portals:
     rid: 9154139594981113870
+  _DefaultExcludes: 0
   _ShowWaterProxyPlane: 0
   _FollowSceneCamera: 1
   _EditorMultipleViewpoints: 1
   _HeightQueries: 1
   _Debug:
+    _VisualizeData: 0
+    _VisualizeDataType: 0
+    _VisualizeDataExposure: 0
+    _VisualizeDataRange: 10
+    _VisualizeDataSaturate: 1
     _SimulatePaused: 0
     _AttachDebugGUI: 0
     _ShowHiddenObjects: 0
@@ -739,6 +745,7 @@ MonoBehaviour:
     - rid: 323759186686771352
       type: {class: AbsorptionLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 0
         _OverrideResolution: 1
         _Resolution: 256
@@ -753,6 +760,7 @@ MonoBehaviour:
     - rid: 323759186686771353
       type: {class: ScatteringLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 0
         _OverrideResolution: 1
         _Resolution: 256
@@ -769,14 +777,14 @@ MonoBehaviour:
       data:
         _Version: 0
         _Enabled: 1
-        _MeshType: 0
         _Layer: 4
-        _Material: {fileID: 2100000, guid: aa74fe26a90564079a48cdae97645f7b, type: 2}
-        _VolumeMaterial: {fileID: 0}
+        _MeshType: 0
         _ChunkTemplate: {fileID: 1516456258233481520, guid: 17840562212c147d6bdb5144d35bc442,
           type: 3}
+        _SupportCustomRenderers: 1
+        _Material: {fileID: 2100000, guid: aa74fe26a90564079a48cdae97645f7b, type: 2}
+        _VolumeMaterial: {fileID: 0}
         _CastShadows: 0
-        _WaterBodyCulling: 1
         _TimeSliceBoundsUpdateFrameCount: 1
         _CameraExclusions: 6
         _SurfaceSelfIntersectionFixMode: 4
@@ -784,9 +792,12 @@ MonoBehaviour:
         _Debug:
           _UniformTiles: 0
           _DisableSkirt: 0
+          _DrawRendererBounds: 0
+        _WaterBodyCulling: 1
     - rid: 9040549687677943810
       type: {class: Meniscus, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 1
         _Layer: 4
         _Material: {fileID: 2100000, guid: 238e45299a5ec46308e9bf99ddf67963, type: 2}
@@ -794,6 +805,7 @@ MonoBehaviour:
     - rid: 9154139594981113859
       type: {class: AnimatedWavesLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 1
         _OverrideResolution: 0
         _Resolution: 256
@@ -813,6 +825,7 @@ MonoBehaviour:
     - rid: 9154139594981113860
       type: {class: DepthLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 1
         _OverrideResolution: 1
         _Resolution: 256
@@ -827,6 +840,7 @@ MonoBehaviour:
     - rid: 9154139594981113861
       type: {class: LevelLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 0
         _OverrideResolution: 0
         _Resolution: 256
@@ -837,6 +851,7 @@ MonoBehaviour:
     - rid: 9154139594981113862
       type: {class: FoamLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 1
         _OverrideResolution: 1
         _Resolution: 256
@@ -850,6 +865,7 @@ MonoBehaviour:
     - rid: 9154139594981113863
       type: {class: DynamicWavesLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 1
         _OverrideResolution: 0
         _Resolution: 512
@@ -863,6 +879,7 @@ MonoBehaviour:
     - rid: 9154139594981113864
       type: {class: FlowLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 0
         _OverrideResolution: 1
         _Resolution: 128
@@ -875,6 +892,7 @@ MonoBehaviour:
     - rid: 9154139594981113865
       type: {class: ShadowLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 1
         _OverrideResolution: 1
         _Resolution: 256
@@ -894,6 +912,7 @@ MonoBehaviour:
     - rid: 9154139594981113866
       type: {class: ClipLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 0
         _OverrideResolution: 1
         _Resolution: 256
@@ -905,6 +924,7 @@ MonoBehaviour:
     - rid: 9154139594981113867
       type: {class: AlbedoLod, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 0
         _OverrideResolution: 1
         _Resolution: 768
@@ -923,7 +943,6 @@ MonoBehaviour:
           m_Bits: 1
         _Resolution: 512
         _Overscan: 1.5
-        _RenderOnlySingleCamera: 0
         _Sky: 1
         _DisablePixelLights: 1
         _DisableShadows: 1
@@ -944,6 +963,8 @@ MonoBehaviour:
         _UseObliqueMatrix: 1
         _NonObliqueNearSurface: 0
         _NonObliqueNearSurfaceThreshold: 0.05
+        _RenderOnlySingleCamera: 0
+        _RendererIndex: 0
         _Debug:
           _ShowHiddenObjects: 0
           _DisableRecursiveRendering: 0
@@ -952,6 +973,7 @@ MonoBehaviour:
     - rid: 9154139594981113869
       type: {class: UnderwaterRenderer, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 1
         _Layer: 4
         _Material: {fileID: 2100000, guid: f2b096e4d95e646c49d48ece0afa0547, type: 2}
@@ -961,6 +983,7 @@ MonoBehaviour:
         _CameraExclusions: 6
         _CopyWaterMaterialParametersEachFrame: 1
         _FarPlaneMultiplier: 0.68
+        _EnableChunkCulling: 1
         _CullLimit: 0.001
         _Debug:
           _VisualizeMask: 0
@@ -969,15 +992,17 @@ MonoBehaviour:
           _DisableHeightAboveWaterOptimization: 0
           _DisableArtifactCorrection: 0
           _OnlyReflectionCameras: 0
-        _Version: 0
         _AllCameras: 0
     - rid: 9154139594981113870
       type: {class: PortalRenderer, ns: WaveHarmonic.Crest.Portals, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Enabled: 0
         _Mode: 2
         _Geometry: {fileID: 0}
         _Invert: 0
+        _MaximumResolution: 1024
+        _TexelSize: 0.02
 --- !u!1001 &2904561123747805697
 PrefabInstance:
   m_ObjectHideFlags: 0

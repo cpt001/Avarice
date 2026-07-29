@@ -200,6 +200,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 002f2642204d348f3a2fab18595c44cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 3
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -209,6 +210,7 @@ MonoBehaviour:
   _Data:
     rid: 5498492911464218864
   _DrawBounds: 0
+  _BicubicSampling: 0
   _Spectrum: {fileID: 11400000, guid: e13a1902b10e34e9fb08e1d09e39b5d4, type: 2}
   _EvaluateSpectrumAtRunTimeEveryFrame: 0
   _RespectShallowWaterAttenuation: 1
@@ -224,15 +226,16 @@ MonoBehaviour:
   _Swell: 0
   _ReverseWaveWeight: 0.5
   _ComponentsPerOctave: 8
+  _Randomize: 1
   _RandomSeed: 0
   _ManualGeneration: 0
-  _Version: 3
   references:
     version: 2
     RefIds:
     - rid: 5498492911464218864
       type: {class: ShapeWavesRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 2827377323468785439}
         _Renderer: {fileID: 5651362053109087375}
         _DisableRenderer: 1
@@ -415,6 +418,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88bb6e05d83b64105a4d8cbd478f5916, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 3
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -424,6 +428,7 @@ MonoBehaviour:
   _Data:
     rid: 5498492892080767375
   _DrawBounds: 0
+  _BicubicSampling: 0
   _Spectrum: {fileID: 11400000, guid: e13a1902b10e34e9fb08e1d09e39b5d4, type: 2}
   _EvaluateSpectrumAtRunTimeEveryFrame: 0
   _RespectShallowWaterAttenuation: 1
@@ -436,6 +441,7 @@ MonoBehaviour:
   _IncludeInDropDetailHeightBasedOnWaves: 0
   _DrawSlicesInEditor: 0
   _AlphaSource: 0
+  _ApplyAdvancedSpectrumControls: 0
   _OverrideGlobalWindTurbulence: 1
   _WindTurbulence: 0.145
   _WindAlignment: 0
@@ -447,13 +453,13 @@ MonoBehaviour:
   _TimeResolution: 4
   _SmallestWavelengthRequired: 2
   _BakedTimeLoopLength: 32
-  _Version: 3
   references:
     version: 2
     RefIds:
     - rid: 5498492892080767375
       type: {class: ShapeWavesRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 2912691268591623129}
         _Renderer: {fileID: 9056547554985079878}
         _DisableRenderer: 1

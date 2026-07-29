@@ -1,13 +1,15 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
-    abstract class BakedWaveData : ScriptableObject
+    abstract class BakedWaveData : CustomScriptableObject
     {
         public abstract ICollisionProvider CreateCollisionProvider();
         public abstract float WindSpeed { get; }
@@ -129,12 +131,12 @@ namespace WaveHarmonic.Crest
     public sealed partial class AnimatedWavesLod : Lod<ICollisionProvider>
     {
         [Tooltip("Collision layers to enable.\n\nSome layers will have overhead with CPU, GPU and memory.")]
-        [@Predicated(nameof(_QuerySource), inverted: true, nameof(LodQuerySource.GPU))]
+        [@Enable(nameof(_QuerySource), nameof(LodQuerySource.GPU))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         internal CollisionLayers _CollisionLayers = CollisionLayers.Everything;
 
-        [@Predicated(nameof(_QuerySource), true, nameof(LodQuerySource.CPU))]
+        [@Enable(nameof(_QuerySource), nameof(LodQuerySource.CPU))]
         [@DecoratedField, SerializeField]
         internal BakedWaveData _BakedWaveData;
 
@@ -147,7 +149,7 @@ namespace WaveHarmonic.Crest
         internal WaveSampling _WaveSampling;
 
         [Tooltip("Shifts wavelengths to maintain quality for higher resolutions.\n\nSet this to 2 to improve wave quality. In some cases like flowing rivers, this can make a substantial difference to visual stability. We recommend doubling the Resolution on the WaterRenderer component to preserve detail after making this change.")]
-        [@Predicated(nameof(_WaveSampling), inverted: true, nameof(WaveSampling.Performance))]
+        [@Enable(nameof(_WaveSampling), nameof(WaveSampling.Performance))]
         [@Range(1f, 4f)]
         [@GenerateAPI(Getter.Custom)]
         [SerializeField]
@@ -186,6 +188,7 @@ namespace WaveHarmonic.Crest
         internal static bool s_Combine = true;
 
         WaterResources.ShapeCombineCompute _CombineShader;
+        RenderTexture _PersistentDataTexture;
 
         internal override string ID => "AnimatedWaves";
         internal override string Name => "Animated Waves";
@@ -228,6 +231,40 @@ namespace WaveHarmonic.Crest
             }
 
             base.Initialize();
+
+            if (Persistent && !_Water.IsMultipleViewpointMode)
+            {
+                _PersistentDataTexture = CreateLodDataTextures();
+            }
+        }
+
+        internal override void Destroy()
+        {
+            base.Destroy();
+
+            Helpers.Destroy(ref _PersistentDataTexture);
+
+            foreach (var data in _AdditionalCameraData.Values)
+            {
+                Helpers.Destroy(data);
+            }
+
+            _AdditionalCameraData.Clear();
+        }
+
+        internal override void SetGlobals(bool enable)
+        {
+            base.SetGlobals(enable);
+
+            if (_Water.IsRunningWithoutGraphics)
+            {
+                return;
+            }
+
+            if (Persistent)
+            {
+                Shader.SetGlobalTexture(_TextureSourceShaderID, enable && Enabled ? _PersistentDataTexture : NullTexture);
+            }
         }
 
         internal override void BuildCommandBuffer(WaterRenderer water, CommandBuffer buffer)
@@ -236,6 +273,16 @@ namespace WaveHarmonic.Crest
 
             FlipBuffers(buffer);
 
+            // Flip textures
+            if (Persistent)
+            {
+                (_PersistentDataTexture, _DataTexture) = (_DataTexture, _PersistentDataTexture);
+
+                // Update current and previous. Latter for MVs and/or VFX.
+                buffer.SetGlobalTexture(_TextureSourceShaderID, _PersistentDataTexture);
+                buffer.SetGlobalTexture(_TextureShaderID, DataTexture);
+            }
+
             Shader.SetGlobalFloat(ShaderIDs.s_AttenuationInShallows, _AttenuationInShallows);
 
             // Get temporary buffer to store waves. They will be copied in the combine pass.
@@ -243,7 +290,7 @@ namespace WaveHarmonic.Crest
             CoreUtils.SetRenderTarget(buffer, ShaderIDs.s_WaveBuffer, ClearFlag.Color, ClearColor);
 
             // Custom clear because clear not working.
-            if (Helpers.IsWebGPU && WaterResources.Instance.Compute._Clear != null)
+            if (Helpers.RequiresCustomClear && WaterResources.Instance.Compute._Clear != null)
             {
                 var compute = WaterResources.Instance._ComputeLibrary._ClearCompute;
                 var wrapper = new PropertyWrapperCompute(buffer, compute._Shader, compute._KernelClearTarget);
@@ -280,7 +327,6 @@ namespace WaveHarmonic.Crest
 
                 // Start with last LOD which does not combine.
                 wrapper.SetKeyword(_CombineShader._CombineKeyword, false);
-                wrapper.SetKeyword(_CombineShader._FlowKeyword, _Water._FlowLod.Enabled);
                 wrapper.SetKeyword(_CombineShader._DynamicWavesKeyword, _Water._DynamicWavesLod.Enabled && !PreserveWaveQuality && !_CollisionLayers.HasFlag(CollisionLayers.DynamicWaves));
 
                 // The per-octave wave buffers we read from.
@@ -425,13 +471,6 @@ namespace WaveHarmonic.Crest
                 Queryable?.UpdateQueries(_Water);
             }
 
-            if (BufferCount > 1)
-            {
-                // Update current and previous. Latter for MVs and/or VFX.
-                Shader.SetGlobalTexture(_TextureSourceShaderID, _Targets.Previous(1));
-                Shader.SetGlobalTexture(_TextureShaderID, DataTexture);
-            }
-
             buffer.EndSample(ID);
         }
 
@@ -443,50 +482,59 @@ namespace WaveHarmonic.Crest
         /// <summary>
         /// Provides water shape to CPU.
         /// </summary>
-        private protected override ICollisionProvider CreateProvider(bool enable)
+        private protected override ICollisionProvider CreateProvider(bool onEnable)
         {
-            ICollisionProvider result = null;
+            ICollisionProvider provider = ICollisionProvider.None;
 
             Queryable?.CleanUp();
 
-            if (!enable || _Water.Surface.IsQuadMesh)
+            // Respect user choice and early exit. If not in OnEnable, then none provider.
+            // Do not check Enabled, as it includes _Valid which checks for GPU.
+            if (!_Enabled || !onEnable)
             {
-                return ICollisionProvider.None;
+                return provider;
             }
 
-            switch (QuerySource)
+            var source = QuerySource;
+
+            if (_Water.Surface.IsQuadMesh)
             {
-                case LodQuerySource.None:
-                    result = ICollisionProvider.None;
-                    break;
+                source = LodQuerySource.None;
+            }
+
+            switch (source)
+            {
                 case LodQuerySource.GPU:
-                    if (_Valid && !_Water.IsRunningWithoutGraphics)
+                {
+                    if (_Valid)
                     {
-                        result = ICollisionProvider.Create(_Water);
+                        provider = ICollisionProvider.Create(_Water);
                     }
 
                     if (_Water.IsRunningWithoutGraphics)
                     {
-                        Debug.LogError($"Crest: GPU queries not supported in headless/batch mode. To resolve, assign an Animated Wave Settings asset to the {nameof(WaterRenderer)} component and set the Collision Source to be a CPU option.");
+                        Debug.LogError("Crest: GPU queries requires a GPU. Please consider CPU queries if running from a server without a GPU.");
                     }
+
                     break;
+                }
                 case LodQuerySource.CPU:
+                {
                     if (_BakedWaveData != null)
                     {
-                        result = _BakedWaveData.CreateCollisionProvider();
+                        provider = _BakedWaveData.CreateCollisionProvider();
                     }
+
                     break;
+                }
             }
 
-            if (result == null)
-            {
-                // This should not be hit, but can be if compute shaders aren't loaded correctly.
-                // They will print out appropriate errors. Don't just return null and have null reference
-                // exceptions spamming the logs.
-                return ICollisionProvider.None;
-            }
+            // This should not be hit, but can be if compute shaders aren't loaded correctly.
+            // They will print out appropriate errors. Don't just return null and have null
+            // reference exceptions spamming the logs.
+            provider ??= ICollisionProvider.None;
 
-            return result;
+            return provider;
         }
 
         //
@@ -503,13 +551,13 @@ namespace WaveHarmonic.Crest
             public readonly int _Slices;
             public readonly bool _HighQualityCombine;
 
-            public WavelengthFilter(WaterRenderer water, int slice)
+            public WavelengthFilter(WaterRenderer water, int slice, int resolution)
             {
                 _Slice = slice;
                 _Slices = water.LodLevels;
-                _Maximum = water.MaximumWavelength(slice);
+                _Maximum = water.MaximumWavelength(slice, resolution);
                 _Minimum = _Maximum * 0.5f;
-                _TransitionThreshold = water.MaximumWavelength(_Slices - 1) * 0.5f;
+                _TransitionThreshold = water.MaximumWavelength(_Slices - 1, resolution) * 0.5f;
                 _ViewerAltitudeLevelAlpha = water.ViewerAltitudeLevelAlpha;
                 _HighQualityCombine = water.AnimatedWavesLod.PreserveWaveQuality;
             }
@@ -551,9 +599,9 @@ namespace WaveHarmonic.Crest
             return filter._HighQualityCombine ? 1f : 0f;
         }
 
-        internal static float FilterByWavelength(WaterRenderer water, int slice, float wavelength)
+        internal static float FilterByWavelength(WaterRenderer water, int slice, float wavelength, int resolution)
         {
-            return FilterByWavelength(new(water, slice), wavelength);
+            return FilterByWavelength(new(water, slice, resolution), wavelength);
         }
 
 
@@ -568,6 +616,57 @@ namespace WaveHarmonic.Crest
         static void OnLoad()
         {
             s_Inputs.Clear();
+        }
+    }
+
+    // Multiple Viewpoints
+    partial class AnimatedWavesLod
+    {
+        readonly Dictionary<Camera, RenderTexture> _AdditionalCameraData = new();
+
+        internal override void LoadCameraData(Camera camera)
+        {
+            base.LoadCameraData(camera);
+
+            if (!Persistent)
+            {
+                return;
+            }
+
+            if (!_AdditionalCameraData.ContainsKey(camera))
+            {
+                _PersistentDataTexture = CreateLodDataTextures();
+                Clear(_PersistentDataTexture);
+                _AdditionalCameraData.Add(camera, _PersistentDataTexture);
+            }
+            else
+            {
+                _PersistentDataTexture = _AdditionalCameraData[camera];
+            }
+        }
+
+        internal override void StoreCameraData(Camera camera)
+        {
+            base.StoreCameraData(camera);
+
+            if (!Persistent)
+            {
+                return;
+            }
+
+            _AdditionalCameraData[camera] = _PersistentDataTexture;
+        }
+
+        internal override void RemoveCameraData(Camera camera)
+        {
+            base.RemoveCameraData(camera);
+
+            if (_AdditionalCameraData.ContainsKey(camera))
+            {
+                var rt = _AdditionalCameraData[camera];
+                Helpers.Destroy(ref rt);
+                _AdditionalCameraData.Remove(camera);
+            }
         }
     }
 

@@ -104,6 +104,10 @@ namespace WaveHarmonic.Crest
             None,
             Zero = 1 << 0,
             Color = 1 << 1,
+
+            /// <summary>
+            /// Depth is used for the legacy mask or for stencil operations.
+            /// </summary>
             Depth = 1 << 2,
             Both = Color | Depth,
         }

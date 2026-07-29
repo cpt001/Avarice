@@ -27,6 +27,15 @@
 
 
 //
+// Motion Vector Pass Fix
+//
+
+#if SHADERPASS == SHADERPASS_MOTION_VECTORS
+#undef VARYINGS_NEED_NORMAL_WS
+#endif
+
+
+//
 // Deferred Fix
 //
 

@@ -150,6 +150,7 @@ public class SlotBuilder : MonoBehaviour
     {
         int rand = Random.Range(0, slots.Count);
         initialSlot = slots[rand];
+        gameObject.transform.SetParent(initialSlot.transform, false);
     }
 
     public void CheckCollider()

@@ -32,14 +32,14 @@
             "define": "d_Unity_Terrain"
         },
         {
+            "name": "com.unity.modules.wind",
+            "expression": "",
+            "define": "d_UnityModuleWind"
+        },
+        {
             "name": "com.unity.modules.vr",
             "expression": "",
             "define": "d_UnityModuleVR"
-        },
-        {
-            "name": "com.unity.inputsystem",
-            "expression": "",
-            "define": "d_UnityInputSystem"
         },
         {
             "name": "com.unity.render-pipelines.core",

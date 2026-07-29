@@ -81,71 +81,85 @@ namespace WaveHarmonic.Crest
         // API
         //
 
+        [Obsolete]
         int GetLayer()
         {
             return Surface.Layer;
         }
 
+        [Obsolete]
         void SetLayer(int previous, int current)
         {
             Surface.Layer = current;
         }
 
+        [Obsolete]
         Material GetMaterial()
         {
             return Surface.Material;
         }
 
+        [Obsolete]
         void SetMaterial(Material previous, Material current)
         {
             Surface.Material = current;
         }
 
+        [Obsolete]
         Material GetVolumeMaterial()
         {
             return Surface.VolumeMaterial;
         }
 
+        [Obsolete]
         void SetVolumeMaterial(Material previous, Material current)
         {
             Surface.VolumeMaterial = current;
         }
 
+        [Obsolete]
         bool GetCastShadows()
         {
             return Surface.CastShadows;
         }
 
+        [Obsolete]
         void SetCastShadows(bool previous, bool current)
         {
             Surface.CastShadows = current;
         }
 
+        [Obsolete]
         bool GetWaterBodyCulling()
         {
             return Surface.WaterBodyCulling;
         }
 
+        [Obsolete]
         void SetWaterBodyCulling(bool previous, bool current)
         {
             Surface.WaterBodyCulling = current;
         }
 
+        [Obsolete]
         int GetTimeSliceBoundsUpdateFrameCount()
         {
             return Surface.TimeSliceBoundsUpdateFrameCount;
         }
 
+        [Obsolete]
         void SetTimeSliceBoundsUpdateFrameCount(int previous, int current)
         {
             Surface.TimeSliceBoundsUpdateFrameCount = current;
         }
 
+        [Obsolete]
         bool GetAllowRenderQueueSorting()
         {
             return Surface.AllowRenderQueueSorting;
         }
 
+        [Obsolete]
         void SetAllowRenderQueueSorting(bool previous, bool current)
         {
             Surface.AllowRenderQueueSorting = current;

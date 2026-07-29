@@ -13,11 +13,6 @@ namespace WaveHarmonic.Crest.Examples
     [AddComponentMenu(Constants.k_MenuPrefixSample + "Sample Displacement Demo")]
     sealed class SampleDisplacementDemo : ManagedBehaviour<WaterRenderer>
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [Tooltip(ICollisionProvider.k_LayerTooltip)]
         [SerializeField]
         CollisionLayer _Layer;

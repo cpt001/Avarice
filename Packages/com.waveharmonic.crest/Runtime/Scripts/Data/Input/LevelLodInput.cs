@@ -2,7 +2,6 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
-using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -12,7 +11,7 @@ namespace WaveHarmonic.Crest
     /// <remarks>
     /// Attach this to objects that you want to influence the water height.
     /// </remarks>
-    [@HelpURL("Manual/WaterBodies.html#water-bodies")]
+    [@HelpURL("Manual/Simulation/WaterLevel.html")]
     [@FilterEnum(nameof(_Blend), Filtered.Mode.Include, (int)LodInputBlend.Off, (int)LodInputBlend.Additive, (int)LodInputBlend.Minimum, (int)LodInputBlend.Maximum)]
     public sealed partial class LevelLodInput : LodInput
     {
@@ -20,11 +19,12 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Whether to use the manual \"Height Range\" for water chunk culling.\n\nMandatory for non mesh inputs like \"Texture\".")]
         [@GenerateAPI]
-        [@DecoratedField, SerializeField]
+        [@InlineToggle]
+        [@SerializeField]
         bool _OverrideHeight;
 
         [Tooltip("The minimum and maximum height value to report for water chunk culling.")]
-        [@Predicated(nameof(_OverrideHeight))]
+        [@Enable(nameof(_OverrideHeight))]
         [@Range(-100, 100, Range.Clamp.None)]
         [@GenerateAPI]
         [SerializeField]
@@ -88,26 +88,18 @@ namespace WaveHarmonic.Crest
                 range.x -= water.SeaLevel;
                 range.y -= water.SeaLevel;
 
-                var r = new Vector2(minimum, maximum);
+                var current = new Vector2(minimum, maximum);
 
                 range = _Blend switch
                 {
-                    LodInputBlend.Additive => range + r,
-                    LodInputBlend.Minimum => Vector2.Min(range, r),
-                    LodInputBlend.Maximum => Vector2.Max(range, r),
+                    LodInputBlend.Additive => range + current,
+                    LodInputBlend.Minimum => Vector2.Min(range, current),
+                    LodInputBlend.Maximum => Vector2.Max(range, current),
                     _ => range,
                 };
 
-                if (rect.Encapsulates(bounds))
-                {
-                    minimum = range.x;
-                    maximum = range.y;
-                }
-                else
-                {
-                    minimum = Mathf.Min(minimum, range.x);
-                    maximum = Mathf.Max(maximum, range.y);
-                }
+                minimum = Mathf.Min(minimum, range.x);
+                maximum = Mathf.Max(maximum, range.y);
 
                 return true;
             }
@@ -129,29 +121,20 @@ namespace WaveHarmonic.Crest
         }
     }
 
-    partial class LevelLodInput : ISerializationCallbackReceiver
+    partial class LevelLodInput
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 1;
-#pragma warning restore 414
+        private protected override int Version => Mathf.Max(base.Version, 1);
 
-        /// <inheritdoc/>
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        private protected override void OnMigrate()
         {
+            base.OnMigrate();
+
             // Version 1
             // - Implemented blend mode but default value was serialized as Additive.
             if (_Version < 1)
             {
                 if (_Mode is LodInputMode.Spline or LodInputMode.Renderer) _Blend = LodInputBlend.Off;
-                _Version = 1;
             }
-        }
-
-        /// <inheritdoc/>
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-            // Empty.
         }
     }
 }

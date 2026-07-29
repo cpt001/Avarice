@@ -23,19 +23,158 @@
 
 #endif // CREST_URP
 
-#if CREST_HDRP
+#if CREST_HDRP_FORWARD_PASS
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
 
 #if UNITY_VERSION < 202310
 #define GetMeshRenderingLayerMask GetMeshRenderingLightLayer
 #endif // UNITY_VERSION
 
+#if d_Crest_AdditionalLights
+#if d_Crest_WaterSurface
+// Causes rendering issues at a distance with foreground objects.
+#ifndef LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
+#define LIGHTLOOP_DISABLE_TILE_AND_CLUSTER 1
+#define d_Crest_LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
+#endif // LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
+
+m_CrestNameSpace
+
+// Adapted from: com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoop.hlsl
+half3 GetPunctualLights(float3 i_PositionWS, float2 i_PositionSS, const float4 i_ScreenPosition, const half3 i_Normal)
+{
+    half3 color = 0.0;
+
+    BuiltinData builtinData;
+    ZERO_INITIALIZE(BuiltinData, builtinData);
+
+    LightLoopContext context;
+    context.sampleReflection  = 0;
+    context.shadowContext     = InitShadowContext();
+    context.contactShadow     = 0;
+    context.contactShadowFade = 0.0;
+    context.shadowValue       = 1;
+#if UNITY_VERSION < 60000000
+    context.splineVisibility  = -1;
+#endif
+#ifdef APPLY_FOG_ON_SKY_REFLECTIONS
+    context.positionWS        = i_PositionWS;
+#endif
+
+    float3 positionWS = GetCameraRelativePositionWS(i_PositionWS);
+    ApplyCameraRelativeXR(positionWS);
+
+    PositionInputs posInput;
+    ZERO_INITIALIZE(PositionInputs, posInput);
+
+    posInput.tileCoord = uint2(i_PositionSS) / GetTileSize();
+    posInput.positionWS = positionWS;
+    posInput.positionSS = i_PositionSS;
+    posInput.positionNDC = i_ScreenPosition.xy / i_ScreenPosition.w;
+
+    const uint renderingLayers = GetMeshRenderingLayerMask();
+
+    uint lightCount, lightStart;
+
+#ifndef LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
+    GetCountAndStart(posInput, LIGHTCATEGORY_PUNCTUAL, lightStart, lightCount);
+#else   // LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
+    lightCount = _PunctualLightCount;
+    lightStart = 0;
+#endif
+
+    bool fastPath = false;
+#if SCALARIZE_LIGHT_LOOP
+    uint lightStartLane0;
+    fastPath = IsFastPath(lightStart, lightStartLane0);
+
+    if (fastPath)
+    {
+        lightStart = lightStartLane0;
+    }
+#endif
+
+    // Scalarized loop. All lights that are in a tile/cluster touched by any pixel in the wave are loaded (scalar load), only the one relevant to current thread/pixel are processed.
+    // For clarity, the following code will follow the convention: variables starting with s_ are meant to be wave uniform (meant for scalar register),
+    // v_ are variables that might have different value for each thread in the wave (meant for vector registers).
+    // This will perform more loads than it is supposed to, however, the benefits should offset the downside, especially given that light data accessed should be largely coherent.
+    // Note that the above is valid only if wave intriniscs are supported.
+    uint v_lightListOffset = 0;
+    uint v_lightIdx = lightStart;
+
+#if NEED_TO_CHECK_HELPER_LANE
+    // On some platform helper lanes don't behave as we'd expect, therefore we prevent them from entering the loop altogether.
+    // IMPORTANT! This has implications if ddx/ddy is used on results derived from lighting, however given Lightloop is called in compute we should be
+    // sure it will not happen.
+    bool isHelperLane = WaveIsHelperLane();
+    while (!isHelperLane && v_lightListOffset < lightCount)
+#else
+    while (v_lightListOffset < lightCount)
+#endif
+    {
+        // Causes flickering. Manually increment below.
+        // v_lightIdx = FetchIndex(lightStart, v_lightListOffset);
+
+#if SCALARIZE_LIGHT_LOOP
+        uint s_lightIdx = ScalarizeElementIndex(v_lightIdx, fastPath);
+#else
+        uint s_lightIdx = v_lightIdx;
+#endif
+        if (s_lightIdx == -1)
+        {
+            break;
+        }
+
+        LightData s_light = FetchLight(s_lightIdx);
+
+        // If current scalar and vector light index match, we process the light. The v_lightListOffset for current thread is increased.
+        // Note that the following should really be ==, however, since helper lanes are not considered by WaveActiveMin, such helper lanes could
+        // end up with a unique v_lightIdx value that is smaller than s_lightIdx hence being stuck in a loop. All the active lanes will not have this problem.
+        if (s_lightIdx >= v_lightIdx)
+        {
+            v_lightListOffset++;
+            // Manually increment.
+            v_lightIdx += 1;
+
+            if (IsMatchingLightLayer(s_light.lightLayers, renderingLayers))
+            {
+                float3 L; float4 distances; // {d, d^2, 1/d, d_proj}
+                GetPunctualLightVectors(positionWS, s_light, L, distances);
+
+                // Is it worth evaluating the light?
+                if (s_light.lightDimmer > 0)
+                {
+                    float4 lightColor = EvaluateLight_Punctual(context, posInput, s_light, L, distances);
+                    lightColor.rgb *= lightColor.a * max(k_Crest_AdditionalLightLerp, dot(i_Normal, L)); // Composite
+
+                    SHADOW_TYPE shadow = EvaluateShadow_Punctual(context, posInput, s_light, builtinData, i_Normal, L, distances);
+
+                    lightColor.rgb *= ComputeShadowColor(shadow, s_light.shadowTint, s_light.penumbraTint);
+
+                    color += lightColor.rgb;
+                }
+            }
+        }
+    }
+
+    return color;
+}
+
+m_CrestNameSpaceEnd
+
+#ifdef d_Crest_LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
+#undef LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
+#endif
+#endif // d_Crest_WaterSurface
+#endif // d_Crest_AdditionalLights
+
 #if UNITY_VERSION < 60000000
 #if PROBE_VOLUMES_L1
+// URP sets this to zero.
 #define AMBIENT_PROBE_BUFFER 1
 #endif // PROBE_VOLUMES_L1
 #endif // UNITY_VERSION
-#endif // CREST_HDRP
+#endif // CREST_HDRP_FORWARD_PASS
 
 m_CrestNameSpace
 
@@ -46,13 +185,19 @@ void PrimaryLight
     out half3 o_Direction
 )
 {
-#if CREST_HDRP
-    // We could get the main light the same way we get the main light shadows,
-    // but most of the data would be missing (including below horizon
-    // attenuation) which would require re-running the light loop which is expensive.
-    o_Direction = g_Crest_PrimaryLightDirection;
-    o_Color = g_Crest_PrimaryLightIntensity;
-#elif CREST_URP
+    o_Direction = half3(0.0, 1.0, 0.0);
+    o_Color = 0.0;
+
+#ifndef d_IsAdditionalLight
+    if (g_Crest_PrimaryLightFallback)
+    {
+        o_Direction = g_Crest_PrimaryLightDirection;
+        o_Color = g_Crest_PrimaryLightIntensity;
+        return;
+    }
+#endif
+
+#if CREST_URP
     // Actual light data from the pipeline.
     Light light = GetMainLight();
     o_Direction = light.direction;
@@ -85,7 +230,7 @@ half3 AmbientLight(const half3 i_AmbientLight)
     half3 ambient = i_AmbientLight;
 
 #ifndef SHADERGRAPH_PREVIEW
-#if CREST_HDRP
+#if CREST_HDRP_FORWARD_PASS
     // Allows control of baked lighting through volume framework.
     // We could create a BuiltinData struct which would have rendering layers on it, but it seems more complicated.
     ambient *= GetIndirectDiffuseMultiplier(GetMeshRenderingLayerMask());
@@ -108,7 +253,9 @@ half3 AmbientLight()
     return AmbientLight(ambient);
 }
 
-half3 AdditionalLighting(const float3 i_PositionWS, const float4 i_ScreenPosition, const float2 i_StaticLightMapUV)
+#if d_Crest_AdditionalLights
+#if d_Crest_WaterSurface
+half3 AdditionalLighting(const float3 i_PositionWS, const float4 i_ScreenPosition, const float2 i_StaticLightMapUV, const float2 i_PositionSS, const half3 i_Normal)
 {
     half3 color = 0.0;
 
@@ -142,7 +289,7 @@ LIGHT_LOOP_BEGIN(pixelLightCount)
     if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
 #endif
     {
-        color += light.color * (light.distanceAttenuation * light.shadowAttenuation);
+        color += light.color * max(k_Crest_AdditionalLightLerp, dot(i_Normal, light.direction)) * (light.distanceAttenuation * light.shadowAttenuation);
     }
 LIGHT_LOOP_END
 
@@ -165,11 +312,16 @@ LIGHT_LOOP_END
 #endif // _ADDITIONAL_LIGHTS
 #endif // CREST_URP
 
-    // HDRP todo.
+#if CREST_HDRP_FORWARD_PASS
+    color = GetPunctualLights(i_PositionWS, i_PositionSS, i_ScreenPosition, i_Normal);
+#endif
+
     // BIRP has additional lights as additional passes. Handled elsewhere.
 
     return color;
 }
+#endif // d_Crest_WaterSurface
+#endif // d_Crest_AdditionalLights
 
 m_CrestNameSpaceEnd
 

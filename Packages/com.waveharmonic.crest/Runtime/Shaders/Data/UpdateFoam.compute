@@ -5,12 +5,20 @@
 
 #pragma kernel CrestUpdateFoam
 
+#pragma multi_compile _ CREST_FLOW_ON_INTERNAL
+
+// Cascade macros expect this to be available.
+#define g_Crest_CascadeFoamSource _Crest_Source
+Texture2DArray _Crest_Source;
+
 #include "HLSLSupport.cginc"
 
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Keywords.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Constants.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Helpers.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Cascade.hlsl"
 
 RWTexture2DArray<float> _Crest_Target;
@@ -23,7 +31,6 @@ float _Crest_WaveFoamCoverage;
 float _Crest_ShorelineFoamMaxDepth;
 float _Crest_ShorelineFoamStrength;
 float _Crest_SimDeltaTime;
-float _Crest_SimDeltaTimePrev;
 float _Crest_LodChange;
 bool _Crest_NeedsPrewarming;
 uint _Crest_MinimumWavesSlice;
@@ -41,10 +48,14 @@ void UpdateFoam(uint3 id)
 
     // Sample from previous frame.
     {
+        float2 positionXZ = worldPosXZ;
+
+#if d_Crest_FlowLod
         const half2 velocity = Cascade::MakeFlow(slice0).SampleFlow(worldPosXZ);
-        const float2 positionXZ = worldPosXZ - _Crest_SimDeltaTime * velocity;
+        positionXZ -= velocity * _Crest_SimDeltaTime;
+#endif
         // Slice to sample previous frames data from. LOD change takes into account shifting of the cascades in scale.
-        const float sliceIndexSource = clamp(id.z + _Crest_LodChange, 0.0, cascade._Count - 1.0);
+        const uint sliceIndexSource = ComputeSlice(slice0, _Crest_LodChange, g_Crest_LodCount - 1);
         foam = Cascade::MakeFoamSource(sliceIndexSource).SampleFoamOverflow(positionXZ, 1.0);
     }
 

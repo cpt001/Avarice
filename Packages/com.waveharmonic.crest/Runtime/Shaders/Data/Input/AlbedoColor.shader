@@ -63,7 +63,7 @@ Shader "Crest/Inputs/Albedo/Color"
                 float3 positionWS = mul(unity_ObjectToWorld, float4(input.vertex, 1.0)).xyz;
                 positionWS.xz -= _Crest_DisplacementAtInputPosition.xz;
                 output.vertex = mul(UNITY_MATRIX_VP, float4(positionWS, 1.0));
-                output.uv = input.uv;
+                output.uv = TRANSFORM_TEX(input.uv, _Crest_Texture);
                 output.color = input.color;
                 return output;
             }

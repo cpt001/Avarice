@@ -97,6 +97,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82638e366ec3c4f5587d1ff63e01d8b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 0
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -106,13 +107,13 @@ MonoBehaviour:
   _Data:
     rid: 5130806863891791890
   _DrawBounds: 0
-  _Version: 0
   references:
     version: 2
     RefIds:
     - rid: 5130806863891791890
       type: {class: DynamicWavesRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 4365008454756617228}
         _Renderer: {fileID: 7469831289853732886}
         _DisableRenderer: 1
@@ -133,6 +134,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _Version: 0
-  _WarmUp: 1
-  _OnTime: 0.25
+  _StartTime: 1
   _Period: 4
+  _Length: 0.25

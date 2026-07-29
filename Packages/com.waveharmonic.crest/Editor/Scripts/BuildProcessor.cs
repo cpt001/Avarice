@@ -117,6 +117,11 @@ namespace WaveHarmonic.Crest.Editor.Build
         ProjectSettings _Settings;
         WaterResources _Resources;
 
+        static readonly string[] s_LightMapKeywords =
+        {
+            "LIGHTMAP_ON", "DIRLIGHTMAP_COMBINED", "DYNAMICLIGHTMAP_ON", "LIGHTMAP_SHADOW_MIXING", "SHADOWS_SHADOWMASK"
+        };
+
         void Logger(string message)
         {
             Debug.Log(message);
@@ -207,6 +212,24 @@ namespace WaveHarmonic.Crest.Editor.Build
 
                         return true;
                     }
+                }
+            }
+
+            // Strip lightmap variants.
+            // Unity strips these unless they are used by any shader once in the scene, then
+            // they are always included. Seems like a bug. To test, make sure lightmaps are
+            // set up, and there is a static object in the scene. Or set the following:
+            // Project Settings > Graphics > Shader Stripping > Lightmap Modes
+            foreach (var keyword in keywords)
+            {
+                if (s_LightMapKeywords.Contains(keyword.name))
+                {
+                    if (_Settings.LogStrippedVariants)
+                    {
+                        Logger($"Stripping Keyword: {keyword.name}");
+                    }
+
+                    return true;
                 }
             }
 

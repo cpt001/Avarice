@@ -26,6 +26,8 @@
 // C# code to check if any parameters are within the MAX_LOD_COUNT limits
 #define MAX_LOD_COUNT 15
 
+#define k_Crest_WaveOctaveCount 14
+
 // How light is attenuated deep in water
 #define DEPTH_OUTSCATTER_CONSTANT 0.25
 
@@ -41,6 +43,9 @@
 
 #define CREST_SSS_MAXIMUM 0.6
 #define CREST_SSS_RANGE 0.12
+
+// Rudimentary SSS approximation for additional lights.
+#define k_Crest_AdditionalLightLerp 0.25
 
 // Note: Must match k_MaskBelowSurface in UnderwaterRenderer.Mask.cs.
 // Fog rendered from below.

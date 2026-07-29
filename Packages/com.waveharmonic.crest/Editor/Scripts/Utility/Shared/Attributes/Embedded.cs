@@ -23,6 +23,12 @@ namespace WaveHarmonic.Crest
 
         internal override void OnGUI(Rect position, SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
         {
+            if (drawer._Inspector != null && !drawer._Inspector._EmbeddedEditors.Contains(_Editor))
+            {
+                drawer._Inspector._EmbeddedEditors.Add(_Editor);
+                Inspector.s_EmbeddedEditors.Add(_Editor);
+            }
+
             _Editor.DrawEditorCombo(this, label, drawer, property, "asset");
         }
 

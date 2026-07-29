@@ -18,6 +18,11 @@ namespace WaveHarmonic.Crest
             Allocate();
         }
 
+        public override void Destroy()
+        {
+            base.Destroy();
+            Helpers.Destroy(ref _Commands);
+        }
 
         public override void OnBeginCameraRendering(Camera camera)
         {

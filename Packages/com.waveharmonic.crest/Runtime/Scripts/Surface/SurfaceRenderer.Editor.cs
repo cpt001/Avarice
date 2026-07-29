@@ -45,6 +45,9 @@ namespace WaveHarmonic.Crest
                 case nameof(_Debug) + "." + nameof(DebugFields._UniformTiles):
                     Rebuild();
                     break;
+                case nameof(_Debug) + "." + nameof(DebugFields._DrawRendererBounds):
+                    foreach (var chunk in Chunks) chunk._DrawRenderBounds = _Debug._DrawRendererBounds;
+                    break;
             }
         }
     }

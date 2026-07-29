@@ -13,13 +13,19 @@
 #pragma multi_compile __ SHADOWS_SPLIT_SPHERES
 #pragma multi_compile __ SHADOWS_SINGLE_CASCADE
 
+// Cascade macros expect this to be available.
+#define g_Crest_CascadeShadowSource _Crest_Source
+Texture2DArray _Crest_Source;
+
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/RP/Compute.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/RP/Shadows.hlsl"
 
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Keywords.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Constants.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Helpers.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Cascade.hlsl"
 
 // Noise functions used for jitter.
@@ -81,7 +87,7 @@ void UpdateShadows(const uint3 id)
     positionWS.y = g_Crest_WaterCenter.y;
 
     // Shadow from last frame. Manually implement black border.
-    const float sliceIndexSource = clamp((int)slice0 + g_Crest_LodChange, 0.0, g_Crest_LodCount - 1.0);
+    const uint sliceIndexSource = ComputeSlice(slice0, g_Crest_LodChange, g_Crest_LodCount - 1);
     half2 shadow = Cascade::MakeShadowSource(sliceIndexSource).SampleShadowOverflow(positionWS.xz, 1.0);
 
     // Add displacement so shorelines do not receive shadows incorrectly.
@@ -110,15 +116,19 @@ void UpdateShadows(const uint3 id)
             half3 absorption = _Crest_Absorption;
             half3 scattering = _Crest_Scattering;
 
+#if d_Crest_AbsorptionLod
             if (g_Crest_SampleAbsorptionSimulation)
             {
                 absorption = Cascade::MakeAbsorption(slice0).SampleAbsorption(positionWS.xz);
             }
+#endif
 
+#if d_Crest_ScatteringLod
             if (g_Crest_SampleScatteringSimulation)
             {
                 scattering = Cascade::MakeScattering(slice0).SampleScattering(positionWS.xz);
             }
+#endif
 
             half3 extinction = absorption + scattering;
             half factor = saturate(min(min(extinction.x, extinction.y), extinction.z) * g_Crest_DynamicSoftShadowsFactor);

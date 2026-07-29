@@ -16,7 +16,7 @@ float ClipSurface(const float2 i_PositionWSXZ)
 {
     // Do not include transition slice to avoid blending as we do a black border instead.
     uint slice0; uint slice1; float alpha;
-    PosToSliceIndices(i_PositionWSXZ, 0.0, g_Crest_LodCount - 1.0, g_Crest_WaterScale, slice0, slice1, alpha);
+    PositionToSliceIndices(i_PositionWSXZ, 0, g_Crest_LodCount - 1, g_Crest_WaterScale, slice0, slice1, alpha);
 
     const Cascade cascade0 = Cascade::Make(slice0);
     const Cascade cascade1 = Cascade::Make(slice1);
@@ -34,7 +34,7 @@ float ClipSurface(const float2 i_PositionWSXZ)
         Cascade::MakeClip(slice1).SampleClip(i_PositionWSXZ, weight1, value);
     }
 
-    return lerp(g_Crest_ClipByDefault, value, weight0 + weight1);
+    return value;
 }
 
 m_CrestNameSpaceEnd

@@ -2,10 +2,17 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 // ENABLE_VR is defined if the platform supports XR.
-// d_UnityModuleVR is defined if the VR module is installed.
-// VR module depends on XR module (which does nothing by itself) so we only need to check the VR module.
-#if ENABLE_VR && d_UnityModuleVR
+// In Unity 6.5, the XR module replaced the VR module.
+#if ENABLE_VR
+#if UNITY_6000_5_OR_NEWER
+#if d_UnityModuleXR
 #define _XR_ENABLED
+#endif
+#else
+#if d_UnityModuleVR
+#define _XR_ENABLED
+#endif
+#endif
 #endif
 
 using System.Collections.Generic;

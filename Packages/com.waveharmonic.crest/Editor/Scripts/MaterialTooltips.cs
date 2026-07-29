@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEditor.Rendering.HighDefinition;
 using UnityEngine;
+using WaveHarmonic.Crest.Editor.Settings;
 
 namespace WaveHarmonic.Crest.Editor
 {
@@ -25,6 +26,13 @@ namespace WaveHarmonic.Crest.Editor
                 "Crest/Inputs/Animated Waves/Add From Texture", new()
                 {
                     { "_Crest_HeightsOnly", "Treats the texture as a heightmap and reads from the R channel" },
+                }
+            },
+            {
+                "Crest/Inputs/Dynamic Waves/Add Bump", new()
+                {
+                    { "_Crest_Amplitude", "The vertical radius of the bump. How much the surface will rise or fall." },
+                    { "_Crest_Radius", "The horizontal radius of the bump." },
                 }
             },
             {
@@ -66,6 +74,7 @@ namespace WaveHarmonic.Crest.Editor
                 WaterShaderUtility.k_ShaderName, new()
                 {
                     { "_Crest_NormalsStrengthOverall", "Strength of the final surface normal (both wave normal and normal map)" },
+                    { "_Crest_ApplyDisplacementNormals", "Whether to sample the displacement maps (Animated Waves and Dynamic Waves) for normal contributions." },
                     { "_Crest_NormalMapEnabled", "Whether to add normal detail from a texture. Can be used to add visual detail to the water surface" },
                     { "_Crest_NormalMapTexture", "Normal map texture" },
                     { "_Crest_NormalMapStrength", "Strength of normal map influence" },
@@ -78,8 +87,11 @@ namespace WaveHarmonic.Crest.Editor
                     { "_Crest_Scattering", "Light scattered by the water towards the viewer (in-scattered) per meter. Brighter color reduces transparency" },
                     { "_Crest_Anisotropy", "The directionality of the scattering where zero means scattered in all directions. The further towards one, the less visible soft shadows will be" },
                     { "_Crest_DirectTerm", "Scale direct light contribution to volume lighting" },
+                    { "_Crest_DirectTermAdditional", "Scale additional lights contribution to volume lighting" },
                     { "_Crest_AmbientTerm", "Scale ambient light contribution to volume lighting" },
                     { "_Crest_ShadowsAffectsAmbientFactor", "How much shadows affect ambient lighting. Typically this not required, but can help scenes with large shadowed areas" },
+                    { "_Crest_AdditionalLightsBlend", "How much the additional light contributions blend with scattering." },
+                    { "_Crest_ApplyFresnelToVolumeLighting", "Applies the fresnel to volume lighting to help the surface blend with the horizon in the form of being a mirror. Typically, only suitable with full smoothness (unless skybox is designed for water rather than earth)." },
                     { "_Crest_SSSEnabled", "Whether to to emulate light scattering through waves" },
                     { "_Crest_SSSIntensity", "Direct light contribution intensity. Applied to the scattering color. This effect is best if subtle" },
                     { "_Crest_SSSPinchMinimum", "Higher the value the more scattering is towards the peaks of the waves" },
@@ -89,6 +101,7 @@ namespace WaveHarmonic.Crest.Editor
                     { "_Crest_Specular", "Strength of specular lighting response" },
                     { "_Crest_Occlusion", "Strength of reflection" },
                     { "_Crest_OcclusionUnderwater", "Strength of reflection when underwater. Keep this at zero to avoid skybox reflections which look incorrect when underwater, unless you want reflections from Planar Reflections or probes" },
+                    { "_Crest_Fresnel", "The fresnel power. Decrease to increase strength of reflections." },
                     { "_Crest_Smoothness", "Smoothness of surface. A value of one is ideal for flat water only" },
                     { "_Crest_SmoothnessFar", "Material smoothness at far distance from camera. Helps to spread out specular highlight in mid-to-background. From a theory point of view, models transfer of normal detail to microfacets in BRDF" },
                     { "_Crest_SmoothnessFarDistance", "Definition of far distance" },
@@ -164,6 +177,25 @@ namespace WaveHarmonic.Crest.Editor
             }
         }
 
+        internal static readonly List<string> s_HiddenCategories = new();
+        static bool s_Initialized;
+        internal static void FilterCategories()
+        {
+            // Only need to do it once after compile.
+            if (s_Initialized)
+            {
+                return;
+            }
+
+            var settings = ProjectSettings.Instance.CurrentPlatformSettings;
+            s_HiddenCategories.Clear();
+            if (!settings.AlbedoSimulation) s_HiddenCategories.Add("Albedo");
+            if (!settings.FoamBioluminescence) s_HiddenCategories.Add("Bioluminescence");
+            if (!settings.PlanarReflections) s_HiddenCategories.Add("Reflections (Planar)");
+            if (!settings.SimpleTransparency) s_HiddenCategories.Add("Simple Transparency");
+            s_Initialized = true;
+        }
+
         internal static MaterialProperty[] FilterProperties(MaterialProperty[] properties)
         {
             // Show specular control.
@@ -183,9 +215,25 @@ namespace WaveHarmonic.Crest.Editor
             }
 #endif
 
-            return properties
-                .Where(x => (specular || x.name != "_Crest_Specular") && x.name != "_Crest_Absorption")
-                .ToArray();
+            var settings = ProjectSettings.Instance.CurrentPlatformSettings;
+            var filtered = properties.Where(x => (specular || x.name != "_Crest_Specular") && x.name != "_Crest_Absorption");
+
+            if (!settings.CausticsForceDistortion)
+            {
+                filtered = filtered.Where(x => x.name != "_Crest_CausticsForceDistortion");
+            }
+
+            if (!settings.NormalMaps)
+            {
+                filtered = filtered.Where(x => !x.name.StartsWithNoAlloc("_Crest_NormalMap"));
+            }
+
+            if (!settings.ShadowSimulation)
+            {
+                filtered = filtered.Where(x => x.name != "_Crest_ShadowsAffectsAmbientFactor");
+            }
+
+            return filtered.ToArray();
         }
     }
 
@@ -249,7 +297,8 @@ namespace WaveHarmonic.Crest.Editor
 
         protected override void DrawSurfaceInputs(Material material)
         {
-            ShaderGraphPropertyDrawers.DrawShaderGraphGUI(_Editor, _Properties, MaterialTooltips.s_Grouped[_ShaderName]);
+            WaterShaderUtility.FilterCategories();
+            ShaderGraphPropertyDrawers.DrawShaderGraphGUI(_Editor, _Properties, MaterialTooltips.s_Grouped[_ShaderName], WaterShaderUtility.s_HiddenCategories);
         }
     }
 
@@ -291,7 +340,8 @@ namespace WaveHarmonic.Crest.Editor
 
         public override void DrawSurfaceInputs(Material material)
         {
-            ShaderGraphPropertyDrawers.DrawShaderGraphGUI(_Editor, _Properties, MaterialTooltips.s_Grouped[_ShaderName]);
+            WaterShaderUtility.FilterCategories();
+            ShaderGraphPropertyDrawers.DrawShaderGraphGUI(_Editor, _Properties, MaterialTooltips.s_Grouped[_ShaderName], WaterShaderUtility.s_HiddenCategories);
         }
     }
 
@@ -324,8 +374,10 @@ namespace WaveHarmonic.Crest.Editor
                 return;
             }
 
+            WaterShaderUtility.FilterCategories();
+
             var name = (materialEditor.customShaderGUI as HighDefinitionCustomShaderGUI)._ShaderName;
-            ShaderGraphPropertyDrawers.DrawShaderGraphGUI(materialEditor, properties, MaterialTooltips.s_Grouped[name]);
+            ShaderGraphPropertyDrawers.DrawShaderGraphGUI(materialEditor, properties, MaterialTooltips.s_Grouped[name], WaterShaderUtility.s_HiddenCategories);
         }
     }
 

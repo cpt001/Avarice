@@ -90,7 +90,7 @@ Shader "Crest/Inputs/Dynamic Waves/Add Bump"
                 y = pow(y, 0.05);
                 y *= _Crest_Amplitude;
 
-                y /= g_Crest_LodCount;
+                y /= (float)g_Crest_LodCount;
 
                 // Feather edges to reduce streaking without introducing reflections.
                 y *= FeatherWeightFromUV(input.uv, 0.1);
@@ -107,4 +107,5 @@ Shader "Crest/Inputs/Dynamic Waves/Add Bump"
             ENDCG
         }
     }
+    CustomEditor "WaveHarmonic.Crest.Editor.CustomShaderGUI"
 }

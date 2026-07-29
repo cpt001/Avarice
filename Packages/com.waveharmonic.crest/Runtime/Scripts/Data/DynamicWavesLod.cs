@@ -97,12 +97,6 @@ namespace WaveHarmonic.Crest
             simMaterial.SetFloat(AnimatedWavesLod.ShaderIDs.s_AttenuationInShallows, _AttenuationInShallows);
         }
 
-        private protected override void GetSubstepData(float timeToSimulate, out int substeps, out float delta)
-        {
-            substeps = Mathf.FloorToInt(timeToSimulate * _SimulationFrequency);
-            delta = substeps > 0 ? (1f / _SimulationFrequency) : 0f;
-        }
-
         internal static readonly SortedList<int, ILodInput> s_Inputs = new(Helpers.DuplicateComparison);
         private protected override SortedList<int, ILodInput> Inputs => s_Inputs;
 

@@ -4,10 +4,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
-
-#if UNITY_EDITOR
-using MonoBehaviour = WaveHarmonic.Crest.Internal.EditorBehaviour;
-#endif
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Editor
 {
@@ -15,14 +12,9 @@ namespace WaveHarmonic.Crest.Editor
     [AddComponentMenu("")]
 #endif
     [DefaultExecutionOrder(-1000)]
-    [ExecuteAlways]
-    sealed class LightingPatcher : MonoBehaviour
+    [@ExecuteDuringEditMode]
+    sealed partial class LightingPatcher : CustomBehaviour
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
 #if !CREST_DEBUG
         [HideInInspector]
 #endif
@@ -38,8 +30,10 @@ namespace WaveHarmonic.Crest.Editor
         bool _CurrentLightsUseLinearIntensity;
         bool _CurrentLightsUseColorTemperature;
 
-        void OnEnable()
+        private protected override void OnEnable()
         {
+            base.OnEnable();
+
             // SRP is always linear with temperature.
             if (RenderPipelineHelper.IsLegacy)
             {
@@ -60,8 +54,10 @@ namespace WaveHarmonic.Crest.Editor
             _CurrentLightsUseColorTemperature = GraphicsSettings.lightsUseColorTemperature;
         }
 
-        void OnDisable()
+        private protected override void OnDisable()
         {
+            base.OnDisable();
+
             if (RenderPipelineHelper.IsLegacy)
             {
                 Camera.onPreCull -= OnBeginRendering;

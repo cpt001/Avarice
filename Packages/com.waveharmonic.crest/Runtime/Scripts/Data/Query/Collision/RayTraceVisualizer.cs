@@ -14,11 +14,6 @@ namespace WaveHarmonic.Crest
     [AddComponentMenu(Constants.k_MenuPrefixDebug + "Ray Cast Visualizer")]
     sealed class RayTraceVisualizer : ManagedBehaviour<WaterRenderer>
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         readonly RayCastHelper _RayCast = new(50f, 2f);
 
         private protected override System.Action<WaterRenderer> OnUpdateMethod => OnUpdate;

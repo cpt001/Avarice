@@ -11,8 +11,13 @@ namespace WaveHarmonic.Crest
     // Edit Mode.
     partial class UnderwaterRenderer
     {
-        static bool IsFogEnabledForEditorCamera(Camera camera)
+        internal bool ShouldRenderForSceneView(Camera camera)
         {
+            if (GL.wireframe)
+            {
+                return false;
+            }
+
             // Check if scene view has disabled fog rendering.
             if (camera.cameraType == CameraType.SceneView)
             {

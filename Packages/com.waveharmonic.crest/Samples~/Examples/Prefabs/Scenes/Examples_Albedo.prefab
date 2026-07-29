@@ -96,6 +96,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c972e8f11f2447768dc0314b7bc34a4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 0
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -105,13 +106,13 @@ MonoBehaviour:
   _Data:
     rid: 5163698717554376705
   _DrawBounds: 0
-  _Version: 0
   references:
     version: 2
     RefIds:
     - rid: 5163698717554376705
       type: {class: AlbedoRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 5663845876579632776}
         _Renderer: {fileID: 2404576928627305884}
         _DisableRenderer: 1

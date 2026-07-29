@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -455,11 +456,12 @@ namespace WaveHarmonic.Crest
 
                     var order = -lodCount + (patchTypes[i] == PatchType.Interior ? -1 : lodIndex);
 
+                    var chunk = patch.AddComponent<WaterChunkRenderer>();
+                    var mesh = meshData[(int)patchTypes[i]];
+
                     {
-                        var mesh = meshData[(int)patchTypes[i]];
                         patch.AddComponent<MeshFilter>().sharedMesh = mesh;
 
-                        var chunk = patch.AddComponent<WaterChunkRenderer>();
                         chunk._Water = water;
                         chunk._SortingOrder = order;
                         chunk._SiblingIndex = s_SiblingIndex++;
@@ -470,6 +472,8 @@ namespace WaveHarmonic.Crest
                         // be optimally sorted. We statically sort by LOD. Sub-sort is only done for LOD0,
                         // where interior tiles are placed first. Further sorting must be done dynamically.
                         tiles.Add(chunk);
+
+                        chunk._DrawRenderBounds = water.Surface._Debug._DrawRendererBounds;
                     }
 
                     // Sorting order to stop unity drawing it back to front. Make the innermost four tiles draw first,
@@ -531,6 +535,14 @@ namespace WaveHarmonic.Crest
                             patch.transform.localEulerAngles = Vector3.up * 180f;
                         else
                             patch.transform.localRotation = Quaternion.FromToRotation(from, to);
+                    }
+
+                    // Pre-rotate bounds.
+                    {
+                        var bounds = mesh.bounds;
+                        bounds = bounds.Rotate(chunk.transform.rotation);
+                        chunk._LocalBounds = bounds;
+                        chunk._LocalScale = chunk.transform.localScale.x;
                     }
                 }
             }

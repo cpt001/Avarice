@@ -49,6 +49,11 @@ namespace WaveHarmonic.Crest
             // Empty.
         }
 
+        internal override void OnDestroy()
+        {
+            Helpers.Destroy(ref _Material);
+        }
+
         internal override void RecalculateBounds()
         {
             _Bounds = _Input.transform.TransformBounds(_Geometry.bounds);

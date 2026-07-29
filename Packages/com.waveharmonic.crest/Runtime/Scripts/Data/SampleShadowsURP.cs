@@ -34,18 +34,6 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            var water = s_Instance._Water;
-
-            if (!water._ShadowLod.Enabled)
-            {
-                return;
-            }
-
-            // Only sample shadows for the main camera.
-            if (!ReferenceEquals(water.Viewer, camera))
-            {
-                return;
-            }
 
             if (camera.TryGetComponent<UniversalAdditionalCameraData>(out var cameraData))
             {

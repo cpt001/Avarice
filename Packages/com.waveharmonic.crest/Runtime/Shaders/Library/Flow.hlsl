@@ -41,6 +41,22 @@ struct Flow
         flow._Flow = i_Flow;
         return flow;
     }
+
+    static Flow Make
+    (
+        const half2 i_Flow,
+        const float4 i_FlowParameters
+    )
+    {
+        Flow flow;
+        flow._Offset0 = i_FlowParameters.x;
+        flow._Weight0 = i_FlowParameters.y;
+        flow._Offset1 = i_FlowParameters.z;
+        flow._Weight1 = i_FlowParameters.w;
+        flow._Period = 1.0;
+        flow._Flow = i_Flow;
+        return flow;
+    }
 };
 
 m_CrestNameSpaceEnd

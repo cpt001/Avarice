@@ -12,8 +12,10 @@ namespace WaveHarmonic.Crest
     [System.Serializable]
     public abstract partial class PersistentLod : Lod
     {
+        [@Space(10)]
+
         [Tooltip("Frequency to run the simulation, in updates per second.\n\nLower frequencies are more efficient but may lead to visible jitter or slowness.")]
-        [@Range(15, 200, order = -1000)]
+        [@Range(15, 200)]
         [@GenerateAPI]
         [SerializeField]
         private protected int _SimulationFrequency = 60;
@@ -21,14 +23,11 @@ namespace WaveHarmonic.Crest
         static new class ShaderIDs
         {
             public static readonly int s_SimDeltaTime = Shader.PropertyToID("_Crest_SimDeltaTime");
-            public static readonly int s_SimDeltaTimePrev = Shader.PropertyToID("_Crest_SimDeltaTimePrev");
             public static readonly int s_TemporaryPersistentTarget = Shader.PropertyToID("_Crest_TemporaryPersistentTarget");
         }
 
         private protected override bool NeedToReadWriteTextureData => true;
         internal override int BufferCount => 2;
-
-        float _PreviousSubstepDeltaTime = 1f / 60f;
 
         // Is this the first step since being enabled?
         private protected bool _NeedsPrewarmingThisStep = true;
@@ -36,14 +35,15 @@ namespace WaveHarmonic.Crest
         // This is how far the simulation time is behind Unity's time.
         private protected float _TimeToSimulate = 0f;
 
+        // Pristine historic data. Needed if using blur or multiple viewpoints. For the
+        // latter, we cannot optimize the upstream data texture away due to camera filtering.
+        private protected RenderTexture _PersistentDataTexture;
+
         internal int LastUpdateSubstepCount { get; private set; }
 
         private protected virtual int Kernel => 0;
         private protected virtual bool SkipFlipBuffers => false;
         private protected abstract ComputeShader SimulationShader { get; }
-        private protected abstract void GetSubstepData(float timeToSimulate, out int substeps, out float delta);
-
-        private protected override bool Persistent => true;
 
         internal override void Initialize()
         {
@@ -58,22 +58,48 @@ namespace WaveHarmonic.Crest
             _NeedsPrewarmingThisStep = true;
         }
 
+        private protected override void Allocate()
+        {
+            base.Allocate();
+
+            // Use per-camera data.
+            if (!_Water.IsSingleViewpointMode)
+            {
+                return;
+            }
+
+            if (Blur)
+            {
+                _PersistentDataTexture = CreateLodDataTextures("_Source");
+            }
+        }
+
+        internal override void Destroy()
+        {
+            base.Destroy();
+
+            Helpers.Destroy(ref _PersistentDataTexture);
+
+            foreach (var data in _AdditionalCameraData.Values)
+            {
+                Helpers.Destroy(ref data._PersistentData);
+            }
+
+            _AdditionalCameraData.Clear();
+        }
+
         internal override void BuildCommandBuffer(WaterRenderer water, CommandBuffer buffer)
         {
             buffer.BeginSample(ID);
 
-            if (!SkipFlipBuffers)
-            {
-                FlipBuffers(buffer);
-            }
-
-            var slices = water.LodLevels;
+            FlipBuffers(buffer);
 
             // How far are we behind.
             _TimeToSimulate += water.DeltaTime;
 
             // Do a set of substeps to catch up.
-            GetSubstepData(_TimeToSimulate, out var substeps, out var delta);
+            var substeps = Mathf.FloorToInt(_TimeToSimulate * _SimulationFrequency);
+            var delta = substeps > 0 ? (1f / _SimulationFrequency) : 0f;
 
             LastUpdateSubstepCount = substeps;
 
@@ -87,7 +113,10 @@ namespace WaveHarmonic.Crest
                 delta = 0f;
             }
 
-            if (substeps > 1)
+            // Use temporary if only storing one texture upstream which has the source.
+            var useTemporary = _Water.IsSingleViewpointMode && !Blur;
+
+            if (useTemporary)
             {
                 // No need to clear, as the update dispatch overwrites every pixel, but finding
                 // artifacts if not and there is a renderer input. Happens for foam and dynamic
@@ -96,9 +125,9 @@ namespace WaveHarmonic.Crest
                 CoreUtils.SetRenderTarget(buffer, ShaderIDs.s_TemporaryPersistentTarget, ClearFlag.Color, ClearColor);
             }
 
-            var target = new RenderTargetIdentifier(DataTexture);
-            var source = new RenderTargetIdentifier(ShaderIDs.s_TemporaryPersistentTarget);
-            var current = target;
+            var final = new RenderTargetIdentifier(DataTexture);
+            var target = useTemporary ? new RenderTargetIdentifier(ShaderIDs.s_TemporaryPersistentTarget) : final;
+            var source = useTemporary ? final : new RenderTargetIdentifier(_PersistentDataTexture);
 
             var wrapper = new PropertyWrapperCompute(buffer, SimulationShader, Kernel);
 
@@ -126,10 +155,9 @@ namespace WaveHarmonic.Crest
 
                 // Both simulation update and input draws need delta time.
                 buffer.SetGlobalFloat(ShaderIDs.s_SimDeltaTime, delta);
-                buffer.SetGlobalFloat(ShaderIDs.s_SimDeltaTimePrev, _PreviousSubstepDeltaTime);
 
+                wrapper.SetTexture(Crest.ShaderIDs.s_Source, source);
                 wrapper.SetTexture(Crest.ShaderIDs.s_Target, target);
-                wrapper.SetTexture(_TextureSourceShaderID, isFirstStep ? _Targets.Previous(1) : source);
 
                 // Compute which LOD data we are sampling source data from. if a scale change has
                 // happened this can be any LOD up or down the chain. This is only valid on the
@@ -153,22 +181,23 @@ namespace WaveHarmonic.Crest
 
                 // The very first step since being enabled.
                 _NeedsPrewarmingThisStep = false;
-                _PreviousSubstepDeltaTime = delta;
             }
 
             // Swap textures if needed.
-            if (target != current)
+            if (target != final)
             {
-                buffer.CopyTexture(target, DataTexture);
+                buffer.CopyTexture(target, final);
+            }
+            // Preserve non-blurred historic data.
+            else if (!useTemporary)
+            {
+                buffer.CopyTexture(target, source);
             }
 
-            if (substeps > 1)
+            if (useTemporary)
             {
                 buffer.ReleaseTemporaryRT(ShaderIDs.s_TemporaryPersistentTarget);
             }
-
-            // Set the target texture as to make sure we catch the 'pong' each frame.
-            Shader.SetGlobalTexture(_TextureShaderID, DataTexture);
 
             TryBlur(buffer);
 
@@ -182,14 +211,57 @@ namespace WaveHarmonic.Crest
         {
 
         }
+
+        private protected override void ReAllocate()
+        {
+            base.ReAllocate();
+
+            if (!Enabled)
+            {
+                return;
+            }
+
+            var descriptor = DataTexture.descriptor;
+
+            if (_Water.IsMultipleViewpointMode)
+            {
+                foreach (var (key, data) in _AdditionalCameraData)
+                {
+                    var texture = data._PersistentData;
+                    texture.Release();
+                    texture.descriptor = descriptor;
+                    texture.Create();
+                }
+
+                return;
+            }
+
+            if (_PersistentDataTexture != null)
+            {
+                _PersistentDataTexture.Release();
+                if (Blur)
+                {
+                    _PersistentDataTexture.descriptor = descriptor;
+                    _PersistentDataTexture.Create();
+                }
+                else
+                {
+                    Helpers.Destroy(ref _PersistentDataTexture);
+                }
+            }
+            else if (Blur)
+            {
+                _PersistentDataTexture = CreateLodDataTextures("_Source");
+            }
+        }
     }
 
     partial class PersistentLod
     {
-        class AdditionalCameraData
+        sealed class AdditionalCameraData
         {
+            public RenderTexture _PersistentData;
             public float _TimeToSimulate;
-            public float _PreviousSubstepDeltaTime;
         }
 
         readonly System.Collections.Generic.Dictionary<Camera, AdditionalCameraData> _AdditionalCameraData = new();
@@ -198,19 +270,14 @@ namespace WaveHarmonic.Crest
         {
             base.LoadCameraData(camera);
 
-            if (!_Water.SeparateViewpoint)
-            {
-                return;
-            }
-
             AdditionalCameraData data;
 
             if (!_AdditionalCameraData.ContainsKey(camera))
             {
                 data = new()
                 {
+                    _PersistentData = CreateLodDataTextures("_Source"),
                     _TimeToSimulate = _TimeToSimulate,
-                    _PreviousSubstepDeltaTime = _PreviousSubstepDeltaTime,
                 };
 
                 _AdditionalCameraData.Add(camera, data);
@@ -220,21 +287,29 @@ namespace WaveHarmonic.Crest
                 data = _AdditionalCameraData[camera];
             }
 
+            _PersistentDataTexture = data._PersistentData;
             _TimeToSimulate = data._TimeToSimulate;
-            _PreviousSubstepDeltaTime = data._PreviousSubstepDeltaTime;
         }
 
         internal override void StoreCameraData(Camera camera)
         {
             base.StoreCameraData(camera);
 
-            if (!_Water.SeparateViewpoint)
+            if (_AdditionalCameraData.ContainsKey(camera))
             {
-                return;
+                _AdditionalCameraData[camera]._TimeToSimulate = _TimeToSimulate;
             }
+        }
 
-            _AdditionalCameraData[camera]._TimeToSimulate = _TimeToSimulate;
-            _AdditionalCameraData[camera]._PreviousSubstepDeltaTime = _PreviousSubstepDeltaTime;
+        internal override void RemoveCameraData(Camera camera)
+        {
+            base.RemoveCameraData(camera);
+
+            if (_AdditionalCameraData.ContainsKey(camera))
+            {
+                Helpers.Destroy(ref _AdditionalCameraData[camera]._PersistentData);
+                _AdditionalCameraData.Remove(camera);
+            }
         }
     }
 }

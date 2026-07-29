@@ -14,22 +14,24 @@ namespace WaveHarmonic.Crest
     {
         [Tooltip("Whether to override the LOD bias.")]
         [@GenerateAPI]
-        [@DecoratedField, SerializeField]
+        [@InlineToggle]
+        [@SerializeField]
         internal bool _OverrideLodBias;
 
         [Tooltip("Overrides the LOD bias for meshes.\n\nHighest quality is infinity.")]
-        [@Predicated(nameof(_OverrideLodBias))]
+        [@Enable(nameof(_OverrideLodBias))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         internal float _LodBias;
 
         [Tooltip("Whether to override the maximum LOD level.")]
         [@GenerateAPI]
-        [@DecoratedField, SerializeField]
+        [@InlineToggle]
+        [@SerializeField]
         internal bool _OverrideMaximumLodLevel;
 
         [Tooltip("Overrides the maximum LOD level.\n\nHighest quality is zero.")]
-        [@Predicated(nameof(_OverrideMaximumLodLevel))]
+        [@Enable(nameof(_OverrideMaximumLodLevel))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         internal int _MaximumLodLevel;
@@ -37,11 +39,12 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Whether to override the terrain pixel error.")]
         [@GenerateAPI]
-        [@DecoratedField, SerializeField]
+        [@InlineToggle]
+        [@SerializeField]
         internal bool _OverrideTerrainPixelError;
 
         [Tooltip("Overrides the pixel error value for terrains.\n\nHighest quality is zero.")]
-        [@Predicated(nameof(_OverrideTerrainPixelError))]
+        [@Enable(nameof(_OverrideTerrainPixelError))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         internal float _TerrainPixelError;

@@ -66,7 +66,7 @@ namespace WaveHarmonic.Crest
 
         public int Query(int hash, float minimumLength, Vector3[] points, float[] heights, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null)
         {
-            if (_Water._InCameraLoop)
+            if (_Water.IsSeparateViewpointCameraLoop)
             {
                 return _Providers[_Water.CurrentCamera].Query(hash, minimumLength, points, heights, normals, velocities, layer, center);
             }
@@ -106,7 +106,7 @@ namespace WaveHarmonic.Crest
 
         public int Query(int hash, float minimumLength, Vector3[] points, Vector3[] displacements, Vector3[] normals, Vector3[] velocities, CollisionLayer layer = CollisionLayer.Everything, Vector3? center = null)
         {
-            if (_Water._InCameraLoop)
+            if (_Water.IsSeparateViewpointCameraLoop)
             {
                 return _Providers[_Water.CurrentCamera].Query(hash, minimumLength, points, displacements, normals, velocities, layer, center);
             }

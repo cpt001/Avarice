@@ -133,6 +133,25 @@ namespace WaveHarmonic.Crest.Editor
         }
 
         [DrawGizmo(GizmoType.Selected)]
+        static void DrawGizmos(LevelLodInput target, GizmoType type)
+        {
+            if (!target.Enabled) return;
+            if (target.Data is not LodInputData data) return;
+
+            var bounds = data.Bounds;
+
+            if (target.OverrideHeight)
+            {
+                var minimum = target.HeightRange.x;
+                var maximum = target.HeightRange.y;
+                bounds.size = bounds.size.XNZ(Mathf.Abs(minimum - maximum));
+                bounds.center = bounds.center.XNZ(Mathf.Lerp(minimum, maximum, 0.5f));
+            }
+
+            bounds.GizmosDraw();
+        }
+
+        [DrawGizmo(GizmoType.Selected)]
         static void DrawWatertightHullGizmos(WatertightHull target, GizmoType type)
         {
             if (!target.Enabled) return;
@@ -253,8 +272,7 @@ namespace WaveHarmonic.Crest.Editor
                 var scale = Vector3.one;
                 var position = Vector3.zero;
 
-                position.y = Mathf.LerpUnclamped(target._CaptureRange.x, target._CaptureRange.y, target._CaptureRange.y / scale.y);
-                position.y *= 0.5f;
+                position.y = Mathf.LerpUnclamped(target._CaptureRange.x, target._CaptureRange.y, 0.5f);
                 Gizmos.DrawWireCube(position, scale.XNZ(-target._CaptureRange.x + target._CaptureRange.y));
 
                 position.y = target._CaptureRange.y + target._FillHolesCaptureHeight * 0.5f;
@@ -307,7 +325,8 @@ namespace WaveHarmonic.Crest.Editor
             var oldColor = Gizmos.color;
             Gizmos.color = new(1f, 1f, 1f, 0.5f);
             var center = target.AABB.center;
-            var size = 2f * new Vector3(target.AABB.extents.x, 1f, target.AABB.extents.z);
+            var size = target.AABB.size;
+            if (!target.Vertical) size.y = 1f;
             Gizmos.DrawCube(center, size);
             Gizmos.color = Color.white;
             Gizmos.DrawWireCube(center, size);
@@ -317,19 +336,17 @@ namespace WaveHarmonic.Crest.Editor
         [DrawGizmo(GizmoType.Selected | GizmoType.NonSelected)]
         static void DrawGizmos(WaterChunkRenderer target, GizmoType type)
         {
-            if (target._DrawRenderBounds)
+            if ((target._DrawRenderBounds || type.HasFlag(GizmoType.Selected)) && target.Rend != null)
             {
+                Gizmos.color = type.HasFlag(GizmoType.Selected) ? Color.green : Color.white;
+                Handles.Label(target.transform.position, $"{target._LodIndex},{target._SiblingIndex}");
                 target.Rend.bounds.GizmosDraw();
+                Gizmos.color = Color.white;
             }
 
             if (!type.HasFlag(GizmoType.Selected))
             {
                 return;
-            }
-
-            if (target.Rend != null)
-            {
-                target.Rend.bounds.GizmosDraw();
             }
 
             if (WaterBody.WaterBodies.Count > 0)
@@ -366,8 +383,8 @@ namespace WaveHarmonic.Crest.Editor
 
         static void DrawGrid(Vector2 size, Vector3 offset)
         {
-            var xPoints = new Vector3[Mathf.FloorToInt(size.x / 2f) * 2];
-            var zPoints = new Vector3[Mathf.FloorToInt(size.y / 2f) * 2];
+            var xPoints = new Vector3[(Mathf.FloorToInt(size.x / 2f) + 1) * 2];
+            var zPoints = new Vector3[(Mathf.FloorToInt(size.y / 2f) + 1) * 2];
             var xCellSize = 1f / size.x;
             var zCellSize = 1f / size.y;
             var xSize = size.x;

@@ -8,6 +8,7 @@
 using System;
 using UnityEditor;
 using UnityEngine;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Utility
 {
@@ -22,7 +23,7 @@ namespace WaveHarmonic.Crest.Utility
         }
     }
 
-    abstract class ScriptableSingleton<T> : ScriptableObject where T : ScriptableObject
+    abstract class ScriptableSingleton<T> : CustomScriptableObject where T : ScriptableObject
     {
         public static T Instance { get; private set; }
 

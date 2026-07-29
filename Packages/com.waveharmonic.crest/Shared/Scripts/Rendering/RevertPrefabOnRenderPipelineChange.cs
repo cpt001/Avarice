@@ -10,21 +10,27 @@ namespace WaveHarmonic.Crest.Editor
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
-    sealed class RevertPrefabOnRenderPipelineChange : RenderPipelinePatcher
+    sealed partial class RevertPrefabOnRenderPipelineChange : RenderPipelinePatcher
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
 #if UNITY_EDITOR
-        private protected override void Awake()
+        internal override bool DisableEventAssertions => true;
+        private protected override bool SkipLifeCycle => true;
+
+        bool _Reverted;
+
+        private protected override void Start()
         {
-            base.Awake();
-            if (!Application.isPlaying) OnActiveRenderPipelineTypeChanged();
+            base.Start();
+            if (!Application.isPlaying) RevertRenderPipelineChanges();
         }
 
         protected override void OnActiveRenderPipelineTypeChanged()
+        {
+            _Reverted = false;
+            RevertRenderPipelineChanges();
+        }
+
+        void RevertRenderPipelineChanges()
         {
             if (PrefabStageUtility.GetCurrentPrefabStage() != null)
             {
@@ -36,13 +42,21 @@ namespace WaveHarmonic.Crest.Editor
                 return;
             }
 
+            if (_Reverted)
+            {
+                return;
+            }
+
             foreach (var item in gameObject.GetComponents<Component>())
             {
                 if (item is Transform) continue;
                 if (item == null) continue; // Can happen if missing packages/scripts.
                 if (!PrefabUtility.IsPartOfPrefabInstance(item)) continue;
+                // NOTE: this will trigger scene refresh for our samples.
                 PrefabUtility.RevertObjectOverride(item, InteractionMode.AutomatedAction);
             }
+
+            _Reverted = true;
         }
 #endif
     }

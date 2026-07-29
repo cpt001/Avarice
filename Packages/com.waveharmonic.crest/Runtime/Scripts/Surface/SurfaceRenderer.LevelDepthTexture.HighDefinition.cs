@@ -57,7 +57,12 @@ namespace WaveHarmonic.Crest
                     return;
                 }
 
-                if (camera.cameraType != CameraType.SceneView || (_Water.SingleViewpoint && camera != _Water.Viewer))
+                if (!_Water._CurrentSceneCameraHasMouseHover)
+                {
+                    return;
+                }
+
+                if (camera.cameraType != CameraType.SceneView || (_Water.IsSingleViewpointMode && camera != _Water.Viewer))
                 {
                     return;
                 }

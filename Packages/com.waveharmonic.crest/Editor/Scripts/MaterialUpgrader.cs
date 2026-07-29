@@ -27,7 +27,12 @@ namespace WaveHarmonic.Crest.Editor
                 return;
             }
 
-            if (ProjectSettings.Instance._MaterialVersion > 0)
+            if (EditorApplication.isCompiling)
+            {
+                return;
+            }
+
+            if (ProjectSettings.Instance._MaterialVersion >= k_MaterialVersion)
             {
                 EditorApplication.update -= OnEditorUpdate;
                 return;
@@ -46,12 +51,14 @@ namespace WaveHarmonic.Crest.Editor
 
         static void UpgradeMaterials(bool force)
         {
-            var dirty = false;
             var version = force ? 0 : ProjectSettings.Instance._MaterialVersion;
+            var save = false;
 
-            AssetDatabase.StartAssetEditing();
             try
             {
+                AssetDatabase.StartAssetEditing();
+
+                var dirty = false;
                 foreach (var guid in AssetDatabase.FindAssets("t:Material"))
                 {
                     var material = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
@@ -59,16 +66,22 @@ namespace WaveHarmonic.Crest.Editor
                 }
 
                 ProjectSettings.Instance._MaterialVersion = k_MaterialVersion;
-                ProjectSettings.Save();
-
-                if (dirty)
-                {
-                    AssetDatabase.SaveAssets();
-                }
+                save = dirty;
+            }
+            catch
+            {
+                Debug.LogError("Crest: upgrading materials failed. Please report this to us, and try upgrading manually via the menu 'Edit/Crest/Materials/Upgrade Materials'");
             }
             finally
             {
                 AssetDatabase.StopAssetEditing();
+
+                if (save)
+                {
+                    AssetDatabase.SaveAssets();
+                }
+
+                ProjectSettings.Save();
             }
         }
     }

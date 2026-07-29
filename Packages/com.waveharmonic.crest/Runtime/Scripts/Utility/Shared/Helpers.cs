@@ -80,6 +80,24 @@ namespace WaveHarmonic.Crest
             return result != 0 ? result : 1;
         }
 
+        public static Object[] FindObjectsByType(System.Type type, FindObjectsInactive inactive = FindObjectsInactive.Exclude)
+        {
+#if UNITY_6000_4_OR_NEWER
+            return Object.FindObjectsByType(type, inactive);
+#else
+            return Object.FindObjectsByType(type, inactive, FindObjectsSortMode.None);
+#endif
+        }
+
+        public static T[] FindObjectsByType<T>(FindObjectsInactive inactive = FindObjectsInactive.Exclude) where T : Object
+        {
+#if UNITY_6000_4_OR_NEWER
+            return Object.FindObjectsByType<T>(inactive);
+#else
+            return Object.FindObjectsByType<T>(inactive, FindObjectsSortMode.None);
+#endif
+        }
+
         static Vector2Int CalculateResolution(Vector2 resolution, int maximum)
         {
             // Enforce maximum and scale to maintain aspect ratio.
@@ -126,7 +144,16 @@ namespace WaveHarmonic.Crest
             return (T)System.Attribute.GetCustomAttribute(type, typeof(T));
         }
 
+        /// <inheritdoc cref="UnityEngine.WaitForEndOfFrame"/>
+        /// <remarks>
+        /// Does not work in batch mode or with the scene view.
+        /// </remarks>
         public static WaitForEndOfFrame WaitForEndOfFrame { get; } = new();
+
+        public static float Fmod(float x, float y)
+        {
+            return x - y * (float)System.Math.Truncate(x / y);
+        }
 
         // Taken from:
         // https://github.com/Unity-Technologies/Graphics/blob/871df5563d88e1ba778c82a43f39c9afc95368e6/Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl#L1149-L1152
@@ -370,6 +397,8 @@ namespace WaveHarmonic.Crest
             false;
 #endif
 
+        public static bool RequiresCustomClear => IsWebGPU || Application.platform == RuntimePlatform.PS5;
+
         // R16G16B16A16_SFloat appears to be the most compatible format.
         // https://docs.unity3d.com/Manual/class-TextureImporterOverride.html#texture-compression-support-platforms
         // https://learn.microsoft.com/en-us/windows/win32/direct3d12/typed-unordered-access-view-loads#supported-formats-and-api-calls
@@ -392,10 +421,34 @@ namespace WaveHarmonic.Crest
             };
         }
 
+        internal static readonly GraphicsFormatUsage s_DataGraphicsFormatUsage =
+            // Ensures a non compressed format is returned. This is a prerequisite for random
+            // write, but not random write itself according to a dubious comment in the
+            // Graphics repository. Search UUM-91313.
+            GraphicsFormatUsage.LoadStore |
+            // All these textures are sampled at some point.
+            GraphicsFormatUsage.Sample |
+            // Always use linear filtering.
+            GraphicsFormatUsage.Linear;
+
         internal static GraphicsFormat GetCompatibleTextureFormat(GraphicsFormat format, GraphicsFormatUsage usage, string label, bool randomWrite = false)
         {
             var result = SystemInfo.GetCompatibleFormat(format, usage);
             var useFallback = result == GraphicsFormat.None;
+            var isMetal = GraphicsDeviceType.Metal == SystemInfo.graphicsDeviceType;
+
+#if CREST_DISABLE_PLATFORM_RTFORMAT_OVERRIDES
+            isMetal = false;
+#endif
+
+#if !UNITY_6000_0_OR_NEWER
+            // Weird bug on macOS where unknown format is returned, but it is really the same
+            // as the input (R32G32B32A32_SFloat).
+            if (isMetal && (int)result == 89)
+            {
+                result = GraphicsFormat.R32G32B32A32_SFloat;
+            }
+#endif
 
 #if CREST_DEBUG_LOG_FORMAT_CHANGES
             if (useFallback)
@@ -408,42 +461,53 @@ namespace WaveHarmonic.Crest
             }
 #endif
 
-            // NOTE: Disabling for now. RenderTextureFormat is a subset of GraphicsFormat and
-            // there is not always an equivalent.
-            // if (!useFallback && randomWrite && !SupportsRandomWriteOnRenderTextureFormat(result))
-            // {
-            //     Debug.Log($"Crest: The graphics device does not support the render texture format {result} with random read/write. Will attempt to use fallback.");
-            //     useFallback = true;
-            // }
+#if !CREST_DISABLE_RANDOMWRITE_CHECK
+            // Metal will return false for any two channel texture, as per the below link, but
+            // they work without issue. Lets trust the API, but only for other platforms.
+            // https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf
+            if (!isMetal && !useFallback && randomWrite && !SupportsRandomWriteOnRenderTextureFormat(result))
+            {
+#if CREST_DEBUG_LOG_FORMAT_CHANGES
+                Debug.Log($"Crest: The graphics device does not support the render texture format {result} with random read/write. Will attempt to use fallback. ({label})");
+#endif
 
+                useFallback = true;
+            }
+#endif
+
+#if CREST_DEBUG_LOG_FORMAT_CHANGES
             // Check if fallback is compatible before using it.
             if (useFallback && format == s_FallbackGraphicsFormat)
             {
-                Debug.Log($"Crest: Fallback {s_FallbackGraphicsFormat} is not supported on this device. Please inform us. ({label})");
-                useFallback = false;
+                Debug.Log($"Crest: Fallback {s_FallbackGraphicsFormat} is not supported on this device. This may be a false positive. Please inform us if you have any issues. ({label})");
             }
+#endif
 
             if (useFallback)
             {
                 result = s_FallbackGraphicsFormat;
             }
 
+#if !CREST_DISABLE_PLATFORM_RTFORMAT_OVERRIDES
             if (randomWrite && IsWebGPU)
             {
                 // Pass the requested format otherwise GetCompatibleFormat may change the component
                 // count which we need to pick the right format.
                 result = GetWebGPUTextureFormat(format);
             }
+#endif
 
             return result;
         }
 
         public static GraphicsFormat GetCompatibleTextureFormat(GraphicsFormat format, bool randomWrite)
         {
+#if !CREST_DISABLE_PLATFORM_RTFORMAT_OVERRIDES
             if (randomWrite && IsWebGPU)
             {
                 format = GetWebGPUTextureFormat(format);
             }
+#endif
 
             return format;
         }
@@ -603,15 +667,45 @@ namespace WaveHarmonic.Crest
         }
 
         /// <summary>
-        /// Uses Destroy in play mode or DestroyImmediate in edit mode.
+        /// Clears any state required before destruction.
         /// </summary>
+        /// <param name="object">The object to clear.</param>
+        static void Clear(Object @object)
+        {
+            // Clear as destroying the texture will raise an error.
+            if (@object is Camera camera) camera.targetTexture = null;
+        }
+
+        /// <summary>
+        /// Destroy an object and release its memory.
+        /// </summary>
+        /// <remarks>
+        /// Uses Destroy in play mode or DestroyImmediate in edit mode.
+        /// </remarks>
         public static void Destroy(Object @object, bool undo = false)
         {
+            if (@object == null)
+            {
+                return;
+            }
+
+            Clear(@object);
+
+            // Unity is not clear if we need to release before destroy, but let's play it safe
+            // since destroy is only rarely executed.
+            if (@object is RenderTexture rt)
+            {
+                if (RenderTexture.active == rt) RenderTexture.active = null;
+                rt.Release();
+            }
+
 #if UNITY_EDITOR
             // We must use DestroyImmediate in edit mode. As it apparently has an overhead, use recommended Destroy in
             // play mode. DestroyImmediate is generally recommended in edit mode by Unity:
             // https://docs.unity3d.com/ScriptReference/Object.DestroyImmediate.html
-            if (!Application.isPlaying)
+            // Furthermore, check for pause too as per:
+            // com.unity.render-pipelines.core/Runtime/Utilities/CoreUtils.cs
+            if (!Application.isPlaying || UnityEditor.EditorApplication.isPaused)
             {
                 if (undo)
                 {
@@ -627,6 +721,119 @@ namespace WaveHarmonic.Crest
             {
                 Object.Destroy(@object);
             }
+        }
+
+        /// <summary>
+        /// Destroy an object, release its memory and null the reference.
+        /// </summary>
+        /// <inheritdoc cref="Destroy(Object, bool)" />
+        public static void Destroy<T>(ref T @object, bool undo = false) where T : Object
+        {
+            if (@object == null) return;
+            Destroy(@object, undo);
+            @object = null;
+        }
+
+        /// <summary>
+        /// Destroy the object's GameObject.
+        /// </summary>
+        /// <inheritdoc cref="Destroy(Object, bool)" />
+        public static void DestroyGameObject(Component @object, bool undo = false)
+        {
+            if (@object == null) return;
+            Clear(@object);
+            Destroy(@object.gameObject, undo);
+        }
+
+        /// <summary>
+        /// Destroy the object's GameObject and null its reference.
+        /// </summary>
+        /// <inheritdoc cref="Destroy(Object, bool)" />
+        public static void DestroyGameObject<T>(ref T @object, bool undo = false) where T : Component
+        {
+            if (@object == null) return;
+            DestroyGameObject(@object, undo);
+            @object = null;
+        }
+
+        /// <summary>
+        /// Release resources and null the reference.
+        /// </summary>
+        public static void Destroy(ref CommandBuffer buffer)
+        {
+            buffer?.Release();
+            buffer = null;
+        }
+
+        /// <inheritdoc cref="Destroy(ref CommandBuffer)" />
+        public static void Destroy(ref ComputeBuffer buffer)
+        {
+            // We could check IsValid to detect if released, but there is no benefit.
+            buffer?.Release();
+            buffer = null;
+        }
+
+        public static void CalculateFrustumPoints(Camera camera, Vector3[] points)
+        {
+            var fov = camera.fieldOfView;
+            var near = camera.nearClipPlane;
+            var far = camera.farClipPlane;
+            var aspect = camera.aspect;
+
+            var halfHeightNear = Mathf.Tan(fov * Mathf.Deg2Rad * 0.5f) * near;
+            var halfHeightFar = Mathf.Tan(fov * Mathf.Deg2Rad * 0.5f) * far;
+
+            var halfWidthNear = halfHeightNear * aspect;
+            var halfWidthFar = halfHeightFar * aspect;
+
+            if (camera.orthographic)
+            {
+                halfHeightNear = halfHeightFar = camera.orthographicSize;
+                halfWidthNear = halfWidthFar = halfHeightNear * aspect;
+            }
+
+            // View space points.
+            points[0] = new(-halfWidthNear, halfHeightNear, near);
+            points[1] = new(halfWidthNear, halfHeightNear, near);
+            points[2] = new(halfWidthNear, -halfHeightNear, near);
+            points[3] = new(-halfWidthNear, -halfHeightNear, near);
+            points[4] = new(-halfWidthFar, halfHeightFar, far);
+            points[5] = new(halfWidthFar, halfHeightFar, far);
+            points[6] = new(halfWidthFar, -halfHeightFar, far);
+            points[7] = new(-halfWidthFar, -halfHeightFar, far);
+
+            var transform = camera.transform;
+            var matrix = Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one);
+
+            // World space points.
+            for (var i = 0; i < points.Length; i++)
+            {
+                points[i] = matrix.MultiplyPoint3x4(points[i]);
+            }
+        }
+
+        public static void CalculateFrustumPlanesAndPoints(Camera camera, Plane[] planes, Vector3[] points)
+        {
+            GeometryUtility.CalculateFrustumPlanes(camera, planes);
+            CalculateFrustumPoints(camera, points);
+        }
+
+        // https://iquilezles.org/articles/frustumcorrect/
+        public static bool TestPointsAABB(Vector3[] points, Bounds bounds)
+        {
+            int @out;
+            @out = 0; for (var i = 0; i < 8; i++) @out += (points[i].x > bounds.max.x) ? 1 : 0; if (@out == 8) return false;
+            @out = 0; for (var i = 0; i < 8; i++) @out += (points[i].x < bounds.min.x) ? 1 : 0; if (@out == 8) return false;
+            @out = 0; for (var i = 0; i < 8; i++) @out += (points[i].y > bounds.max.y) ? 1 : 0; if (@out == 8) return false;
+            @out = 0; for (var i = 0; i < 8; i++) @out += (points[i].y < bounds.min.y) ? 1 : 0; if (@out == 8) return false;
+            @out = 0; for (var i = 0; i < 8; i++) @out += (points[i].z > bounds.max.z) ? 1 : 0; if (@out == 8) return false;
+            @out = 0; for (var i = 0; i < 8; i++) @out += (points[i].z < bounds.min.z) ? 1 : 0; if (@out == 8) return false;
+            return true;
+        }
+
+        public static bool TestPlanesAndPointsAABB(Plane[] planes, Vector3[] points, Bounds bounds)
+        {
+            return GeometryUtility.TestPlanesAABB(planes, bounds) && TestPointsAABB(points, bounds);
         }
 
         static readonly Matrix4x4 s_ScaleMatrix = Matrix4x4.Scale(new(1f, 1f, -1f));
@@ -734,25 +941,44 @@ namespace WaveHarmonic.Crest
 
         public static bool GetGlobalBoolean(int id)
         {
-            return Shader.GetGlobalInteger(id) == 1;
+            return Shader.GetGlobalFloat(id) != 0f;
         }
 
         public static void SetGlobalBoolean(int id, bool value)
         {
-            Shader.SetGlobalInteger(id, value ? 1 : 0);
+            Shader.SetGlobalFloat(id, value ? 1f : 0f);
+        }
+
+        public static void RenderCamera(Camera camera)
+        {
+            RenderPipelineHelper.s_SkipRenderPipelineChange = true;
+
+#if d_UnityURP
+            if (RenderPipelineHelper.IsUniversal)
+            {
+                RenderCameraWithoutCustomPasses(camera);
+            }
+            else
+#endif
+            {
+                camera.Render();
+            }
+
+            RenderPipelineHelper.s_SkipRenderPipelineChange = false;
         }
 
 #if d_UnityURP
         static readonly List<bool> s_RenderFeatureActiveStates = new();
-        static readonly FieldInfo s_RenderDataListField = typeof(UniversalRenderPipelineAsset)
-                        .GetField("m_RendererDataList", BindingFlags.NonPublic | BindingFlags.Instance);
-        static readonly FieldInfo s_DefaultRendererIndex = typeof(UniversalRenderPipelineAsset)
-                        .GetField("m_DefaultRendererIndex", BindingFlags.NonPublic | BindingFlags.Instance);
         static readonly FieldInfo s_RendererIndex = typeof(UniversalAdditionalCameraData)
                         .GetField("m_RendererIndex", BindingFlags.NonPublic | BindingFlags.Instance);
 
-        internal static ScriptableRendererData[] UniversalRendererData(UniversalRenderPipelineAsset asset) =>
-                    (ScriptableRendererData[])s_RenderDataListField.GetValue(asset);
+        internal static ScriptableRendererData[] UniversalRendererData(UniversalRenderPipelineAsset asset) => asset.m_RendererDataList;
+
+#if UNITY_EDITOR
+        static readonly System.Type s_PlayModeViewType = typeof(UnityEditor.EditorWindow).Assembly.GetType("UnityEditor.PlayModeView");
+        static readonly FieldInfo s_RenderingViewField = s_PlayModeViewType.GetField("s_RenderingView", BindingFlags.Static | BindingFlags.NonPublic);
+        static readonly FieldInfo s_ShowGizmosField = s_PlayModeViewType.GetField("m_ShowGizmos", BindingFlags.NonPublic | BindingFlags.Instance);
+#endif
 
         internal static int GetRendererIndex(Camera camera)
         {
@@ -760,7 +986,7 @@ namespace WaveHarmonic.Crest
 
             if (rendererIndex < 0)
             {
-                rendererIndex = (int)s_DefaultRendererIndex.GetValue(UniversalRenderPipeline.asset);
+                rendererIndex = UniversalRenderPipeline.asset.m_DefaultRendererIndex;
             }
 
             return rendererIndex;
@@ -769,7 +995,7 @@ namespace WaveHarmonic.Crest
         internal static bool IsSSAOEnabled(Camera camera)
         {
             // Get this every time as it could change.
-            var renderers = (ScriptableRendererData[])s_RenderDataListField.GetValue(UniversalRenderPipeline.asset);
+            var renderers = UniversalRenderPipeline.asset.m_RendererDataList;
             var rendererIndex = GetRendererIndex(camera);
 
             foreach (var feature in renderers[rendererIndex].rendererFeatures)
@@ -785,6 +1011,28 @@ namespace WaveHarmonic.Crest
 
         internal static void UniversalRenderCamera(ScriptableRenderContext context, Camera camera, int slice)
         {
+#if UNITY_EDITOR
+            // Fixes when using Render Graph:
+            // Attempting to render to a depth only surface with no dummy color attachment
+
+            var sceneView = UnityEditor.SceneView.currentDrawingSceneView;
+            var drawGizmos = false;
+
+            if (sceneView != null)
+            {
+                drawGizmos = sceneView.drawGizmos;
+                sceneView.drawGizmos = false;
+            }
+
+            var gameView = s_RenderingViewField.GetValue(null);
+
+            if (gameView != null)
+            {
+                drawGizmos = (bool)s_ShowGizmosField.GetValue(gameView);
+                s_ShowGizmosField.SetValue(gameView, false);
+            }
+#endif
+
 #if UNITY_6000_0_OR_NEWER
             // SingleCameraRequest does not render the full camera stack, thus should exclude
             // overlays which is likely desirable. Alternative approach worth investigating:
@@ -798,12 +1046,24 @@ namespace WaveHarmonic.Crest
             UniversalRenderPipeline.RenderSingleCamera(context, camera);
 #pragma warning restore CS0618 // Type or member is obsolete
 #endif
+
+#if UNITY_EDITOR
+            if (sceneView != null)
+            {
+                sceneView.drawGizmos = drawGizmos;
+            }
+
+            if (gameView != null)
+            {
+                s_ShowGizmosField.SetValue(gameView, drawGizmos);
+            }
+#endif
         }
 
         internal static void UniversalRenderCamera(ScriptableRenderContext context, Camera camera, int slice, bool noRenderFeatures)
         {
             // Get this every time as it could change.
-            var renderers = (ScriptableRendererData[])s_RenderDataListField.GetValue(UniversalRenderPipeline.asset);
+            var renderers = UniversalRenderPipeline.asset.m_RendererDataList;
             var renderer = (UniversalRendererData)renderers[GetRendererIndex(camera)];
 
             // On Unity 6.3, got exceptions if this was auto with SSAO enabled.
@@ -838,7 +1098,7 @@ namespace WaveHarmonic.Crest
         internal static void RenderCameraWithoutCustomPasses(Camera camera)
         {
             // Get this every time as it could change.
-            var renderers = (ScriptableRendererData[])s_RenderDataListField.GetValue(UniversalRenderPipeline.asset);
+            var renderers = UniversalRenderPipeline.asset.m_RendererDataList;
             var rendererIndex = GetRendererIndex(camera);
 
             foreach (var feature in renderers[rendererIndex].rendererFeatures)
@@ -957,7 +1217,7 @@ namespace WaveHarmonic.Crest
 
     namespace Internal
     {
-        static class Extensions
+        static partial class Extensions
         {
             // Swizzle
             public static Vector2 XZ(this Vector3 v) => new(v.x, v.z);
@@ -1066,6 +1326,33 @@ namespace WaveHarmonic.Crest
                 return GeometryUtility.CalculateBounds(s_BoundsPoints, transform.localToWorldMatrix);
             }
 
+            public static Bounds Rotate(this Bounds bounds, Quaternion rotation)
+            {
+                var center = rotation * bounds.center;
+
+                // Rotation each axis separately gets closer to Unity's, but the difference is only
+                // epsilon in magnitude.
+                var extents = rotation * bounds.extents * 2f;
+
+                // Rotation can produce negatives.
+                return new(center, new(Mathf.Abs(extents.x), Mathf.Abs(extents.y), Mathf.Abs(extents.z)));
+            }
+
+            public static bool ContainsXZ(this Bounds bounds, Bounds other)
+            {
+                return
+                    other.min.x >= bounds.min.x &&
+                    other.min.z >= bounds.min.z &&
+                    other.max.x <= bounds.max.x &&
+                    other.max.z <= bounds.max.z;
+            }
+
+            public static bool ContainsXZ(this Bounds bounds, Vector3 position)
+            {
+                return position.x >= bounds.min.x && position.x <= bounds.max.x &&
+                       position.z >= bounds.min.z && position.z <= bounds.max.z;
+            }
+
             public static bool IntersectsXZ(this Bounds a, Bounds b)
             {
                 return a.min.x <= b.max.x && a.max.x >= b.min.x &&
@@ -1146,24 +1433,17 @@ namespace WaveHarmonic.Crest
 
             public static bool GetBoolean(this Material material, int id)
             {
-                return (material.HasInteger(id) ? material.GetInteger(id) : material.GetInt(id)) != 0;
+                return material.GetFloat(id) != 0f;
             }
 
             public static void SetBoolean(this Material material, int id, bool value)
             {
-                if (material.HasInteger(id))
-                {
-                    material.SetInteger(id, value ? 1 : 0);
-                }
-                else
-                {
-                    material.SetInt(id, value ? 1 : 0);
-                }
+                material.SetFloat(id, value ? 1f : 0f);
             }
 
             public static void SetGlobalBoolean(this CommandBuffer buffer, int id, bool value)
             {
-                buffer.SetGlobalInteger(id, value ? 1 : 0);
+                buffer.SetGlobalFloat(id, value ? 1f : 0f);
             }
 
             public static bool IsEmpty(this UnityEngine.Events.UnityEvent @event)
@@ -1182,25 +1462,22 @@ namespace WaveHarmonic.Crest
             }
         }
 
-        namespace Compatibility
+        static partial class Extensions
         {
-            static partial class Extensions
-            {
 #if !UNITY_6000_3_OR_NEWER
-                internal static int GetEntityId(this Object @this)
-                {
-                    return @this.GetInstanceID();
-                }
+            internal static int GetEntityId(this Object @this)
+            {
+                return @this.GetInstanceID();
+            }
 #endif
 
-                internal static ulong GetRawSceneHandle(this UnityEngine.SceneManagement.Scene @this)
-                {
+            internal static ulong GetRawSceneHandle(this UnityEngine.SceneManagement.Scene @this)
+            {
 #if UNITY_6000_4_OR_NEWER
-                    return @this.handle.GetRawData();
+                return @this.handle.GetRawData();
 #else
-                    return (ulong)@this.handle;
+                return (ulong)@this.handle;
 #endif
-                }
             }
         }
     }

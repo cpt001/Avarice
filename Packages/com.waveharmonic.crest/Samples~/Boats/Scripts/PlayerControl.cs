@@ -1,7 +1,7 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
-#if d_Unity_InputSystem && ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM
 #define d_InputSystem
 #endif
 
@@ -14,9 +14,6 @@ namespace WaveHarmonic.Crest.Watercraft.Examples
 {
     sealed class PlayerControl : Control
     {
-        [SerializeField, HideInInspector]
-        int _Version = 0;
-
 #if d_InputSystem
         [SerializeField]
         Key _DriveForward = Key.W;
@@ -84,11 +81,6 @@ namespace WaveHarmonic.Crest.Watercraft.Examples
         [Tooltip("Whether to allow submerge control.")]
         [SerializeField]
         bool _Submersible;
-
-#pragma warning disable UNT0001
-        // Here to force the checkbox to show.
-        void Start() { }
-#pragma warning restore UNT0001
 
         public override Vector3 Input
         {

@@ -25,7 +25,7 @@ namespace WaveHarmonic.Crest
         public void SetVectorArray(int param, Vector4[] value) => Commands.SetGlobalVectorArray(param, value);
         public void SetMatrix(int param, Matrix4x4 value) => Commands.SetGlobalMatrix(param, value);
         public void SetInteger(int param, int value) => Commands.SetGlobalInteger(param, value);
-        public void SetBoolean(int param, bool value) => Commands.SetGlobalInteger(param, value ? 1 : 0);
+        public void SetBoolean(int param, bool value) => Commands.SetGlobalFloat(param, value ? 1f : 0f);
 
         public void GetBlock() { }
         public void SetBlock() { }
@@ -73,7 +73,7 @@ namespace WaveHarmonic.Crest
         public void SetVectorArray(int param, Vector4[] value) => Commands.SetGlobalVectorArray(param, value);
         public void SetMatrix(int param, Matrix4x4 value) => Commands.SetGlobalMatrix(param, value);
         public void SetInteger(int param, int value) => Commands.SetGlobalInteger(param, value);
-        public void SetBoolean(int param, bool value) => Commands.SetGlobalInteger(param, value ? 1 : 0);
+        public void SetBoolean(int param, bool value) => Commands.SetGlobalFloat(param, value ? 1f : 0f);
 
         public void GetBlock() { }
         public void SetBlock() { }

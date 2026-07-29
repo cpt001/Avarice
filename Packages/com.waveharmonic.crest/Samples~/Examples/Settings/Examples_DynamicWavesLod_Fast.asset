@@ -18,3 +18,4 @@ MonoBehaviour:
   _HorizontalDisplace: 9.66
   _DisplaceClamp: 0.3
   _GravityMultiplier: 4
+  _VerticalDisplacementCullingContributions: 5

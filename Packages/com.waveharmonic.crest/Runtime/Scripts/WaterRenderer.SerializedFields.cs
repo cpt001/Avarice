@@ -80,6 +80,25 @@ namespace WaveHarmonic.Crest
         Never,
     }
 
+    [InspectorOrder(InspectorSort.ByName)]
+    [UnityEngine.Rendering.GenerateHLSL(sourcePath = "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings/Visualize.Crest")]
+    enum VisualizeDataTypes
+    {
+        Albedo,
+        Displacement,
+        DynamicWaves,
+        Level,
+        Flow,
+        Foam,
+        Shadow,
+        Depth,
+        Clip,
+        ShorelineDistance,
+        Absorption,
+        Scattering,
+        Cascades,
+    }
+
     partial class WaterRenderer
     {
         internal const float k_MaximumWindSpeedKPH = 150f;
@@ -100,45 +119,60 @@ namespace WaveHarmonic.Crest
 
         [@Group("Environment", Group.Style.Accordian)]
 
+#if d_UnityModuleWind
         [Tooltip("Uses a provided WindZone as the source of global wind.\n\nIt must be directional. Wind speed units are presumed to be in m/s.")]
-        [@GenerateAPI]
+        [@GenerateAPI(symbol: "d_UnityModuleWind")]
         [@DecoratedField, SerializeField]
         WindZone _WindZone;
 
         [Tooltip("Whether to override the given wind zone's wind speed.")]
-        [@Predicated(nameof(_WindZone), hide: true)]
+        [@Show(nameof(_WindZone))]
+        [@GenerateAPI(symbol: "d_UnityModuleWind")]
         [@InlineToggle, SerializeField]
         bool _OverrideWindZoneWindSpeed;
+#endif
 
         [Tooltip("Base wind speed in km/h.\n\nControls wave conditions. Can be overridden on Shape* components.")]
-        [@Predicated(typeof(WaterRenderer), nameof(WindSpeedOverriden), inverted: true, hide: true)]
+#if d_UnityModuleWind
+        [@Show(typeof(WaterRenderer), nameof(WindSpeedOverriden))]
         [@ShowComputedProperty(nameof(WindSpeed))]
+#endif
         [@Range(0, k_MaximumWindSpeedKPH, scale: 2f)]
         [@GenerateAPI(Getter.Custom)]
         [SerializeField]
         internal float _WindSpeed = 10f;
 
+#if d_UnityModuleWind
         [Tooltip("Whether to override the given wind zone's wind direction.")]
-        [@Predicated(nameof(_WindZone), hide: true)]
+        [@Show(nameof(_WindZone))]
+        [@GenerateAPI(symbol: "d_UnityModuleWind")]
         [@InlineToggle, SerializeField]
         bool _OverrideWindZoneWindDirection;
+#endif
 
         [Tooltip("Base wind direction in degrees.\n\nControls wave conditions. Can be overridden on Shape* components.")]
-        [@Predicated(typeof(WaterRenderer), nameof(WindDirectionOverriden), inverted: true, hide: true)]
+#if d_UnityModuleWind
+        [@Show(typeof(WaterRenderer), nameof(WindDirectionOverriden))]
         [@ShowComputedProperty(nameof(WindDirection))]
+#endif
         [@Range(-180, 180)]
         [@GenerateAPI(Getter.Custom)]
         [SerializeField]
         internal float _WindDirection;
 
+#if d_UnityModuleWind
         [Tooltip("Whether to override the given wind zone's wind turbulence.")]
-        [@Predicated(nameof(_WindZone), hide: true)]
+        [@Show(nameof(_WindZone))]
+        [@GenerateAPI(symbol: "d_UnityModuleWind")]
         [@InlineToggle, SerializeField]
         bool _OverrideWindZoneWindTurbulence;
+#endif
 
         [Tooltip("Base wind turbulence.\n\nControls wave conditions. Can be overridden on ShapeFFT components.")]
-        [@Predicated(typeof(WaterRenderer), nameof(WindTurbulenceOverriden), inverted: true, hide: true)]
+#if d_UnityModuleWind
+        [@Show(typeof(WaterRenderer), nameof(WindTurbulenceOverriden))]
         [@ShowComputedProperty(nameof(WindTurbulence))]
+#endif
         [@Range(0, 1)]
         [@GenerateAPI(Getter.Custom)]
         [SerializeField]
@@ -153,7 +187,7 @@ namespace WaveHarmonic.Crest
 
         [@Label("Gravity")]
         [Tooltip("Gravity for all wave calculations.")]
-        [@Predicated(nameof(_OverrideGravity))]
+        [@Enable(nameof(_OverrideGravity))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _GravityOverride = -9.8f;
@@ -191,14 +225,14 @@ namespace WaveHarmonic.Crest
 
         [@Label("Color Texture")]
         [Tooltip("Whether to write the water surface color to the color/opaque texture.\n\nThis is likely only beneficial if the water injection point is before transparency, and there are shaders which need it (like refraction).")]
-        [@Predicated(nameof(_InjectionPoint), inverted: false, nameof(WaterInjectionPoint.Default))]
+        [@Disable(nameof(_InjectionPoint), nameof(WaterInjectionPoint.Default))]
         [@GenerateAPI(Getter.Custom)]
         [@DecoratedField, SerializeField]
         internal bool _WriteToColorTexture = true;
 
         [@Label("Depth Texture")]
         [Tooltip("Whether to write the water surface depth to the depth texture.\n\nThe water surface writes to the depth buffer, but Unity does not copy it to the depth texture for post-processing effects like Depth of Field (or refraction). This will copy the depth buffer to the depth texture.\n\nIf the water injection point is in the transparent pass, be wary that it will include all transparent objects that write to depth. Furthermore, other third parties may already be doing this, and we do not check whether it is necessary to copy or not.\n\nThis feature has a considerable overhead if using the built-in render pipeline, as it requires rendering the surface depth another time.")]
-        [@Predicated(nameof(_Surface) + "." + nameof(SurfaceRenderer._Enabled))]
+        [@Enable(nameof(_Surface) + "." + nameof(SurfaceRenderer._Enabled))]
         [@GenerateAPI(Getter.Custom)]
         [@DecoratedField, SerializeField]
         internal bool _WriteToDepthTexture = true;
@@ -206,7 +240,7 @@ namespace WaveHarmonic.Crest
         [@Label("Motion Vectors")]
         [Tooltip("Whether to enable motion vector support.")]
 #if !UNITY_6000_0_OR_NEWER
-        [@Predicated(RenderPipeline.Universal, inverted: true, hide: true)]
+        [@Hide(RenderPipeline.Universal)]
 #endif
         [@GenerateAPI(Getter.Custom)]
         [@DecoratedField, SerializeField]
@@ -215,14 +249,14 @@ namespace WaveHarmonic.Crest
         [@Space(10)]
 
         [Tooltip("Whether to override the automatic detection of framebuffer HDR rendering (BIRP only).\n\nRendering using HDR formats is optional, but there is no way for us to determine if HDR rendering is enabled in the Graphics Settings. We make an educated based on which platform is the target. If you see rendering issues, try disabling this.\n\n This has nothing to do with having an HDR monitor.")]
-        [@Predicated(RenderPipeline.Legacy, hide: true)]
+        [@Show(RenderPipeline.Legacy)]
         [@GenerateAPI]
         [@InlineToggle, SerializeField]
         bool _OverrideRenderHDR;
 
         [Tooltip("Force HDR format usage (BIRP only).\n\nIf enabled, we assume the framebuffer is an HDR format, otherwise an LDR format.")]
-        [@Predicated(RenderPipeline.Legacy, hide: true)]
-        [@Predicated(nameof(_OverrideRenderHDR))]
+        [@Show(RenderPipeline.Legacy)]
+        [@Enable(nameof(_OverrideRenderHDR))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _RenderHDR = true;
@@ -269,13 +303,13 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("How much of the water shape gets tessellated by geometry.\n\nFor example, if set to four, every geometry quad will span 4x4 LOD data texels. a value of 2 will generate one vert per 2x2 LOD data texels. A value of 1 means a vert is generated for every LOD data texel. Larger values give lower fidelity surface shape with higher performance.")]
         [@Delayed]
-        [@GenerateAPI]
+        [@GenerateAPI(Setter.Custom)]
         [SerializeField]
         internal int _GeometryDownSampleFactor = 2;
 
         [Tooltip("Applied to the extents' far vertices to make them larger.\n\nIncrease if the extents do not reach the horizon or you see the underwater effect at the horizon.")]
         [@Delayed]
-        [@GenerateAPI]
+        [@GenerateAPI(Setter.Custom)]
         [SerializeField]
         internal float _ExtentsSizeMultiplier = 100f;
 
@@ -283,27 +317,27 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Whether to support multiple center-of-detail (per camera).")]
 #if !UNITY_6000_0_OR_NEWER
-        [@Predicated(RenderPipeline.HighDefinition, inverted: true, hide: true)]
+        [@Hide(RenderPipeline.HighDefinition)]
 #endif
         [@DecoratedField]
         [SerializeField]
         bool _MultipleViewpoints;
 
         [Tooltip("The viewpoint which drives the water detail - the center of the LOD system.\n\nSetting this is optional. Defaults to the camera.")]
-        [@Predicated(nameof(_MultipleViewpoints), inverted: true)]
+        [@Disable(nameof(_MultipleViewpoints))]
         [@GenerateAPI(Getter.Custom)]
         [@DecoratedField, SerializeField]
         Transform _Viewpoint;
 
         [Tooltip("Rules to exclude cameras from being a center-of-detail.\n\nThese are exclusion rules, so for all cameras, select Nothing.")]
-        [@Predicated(nameof(_MultipleViewpoints))]
+        [@Enable(nameof(_MultipleViewpoints))]
         [@DecoratedField]
         [@GenerateAPI]
         [SerializeField]
         WaterCameraExclusion _CameraExclusions = WaterCameraExclusion.Everything;
 
         [Tooltip("The background rendering mode when a camera does not render.\n\nWhen switching between multiple cameras, simulations will not progress for cameras which do not render for that frame. This setting tells the system when it should continue to progress the simulations.")]
-        [@Predicated(nameof(_MultipleViewpoints))]
+        [@Enable(nameof(_MultipleViewpoints))]
         [@GenerateAPI]
         [@DecoratedField]
         [SerializeField]
@@ -316,13 +350,13 @@ namespace WaveHarmonic.Crest
         bool _CenterOfDetailDisplacementCorrection = true;
 
         [Tooltip("Also checks terrain height when determining the scale.\n\nThe scale is changed based on the viewer's height above the water surface. This can be a problem with varied water level, as the viewer may not be directly over the higher water level leading to a height difference, and thus incorrect scale.")]
-        [Predicated(nameof(_Viewpoint), inverted: true)]
+        [@Disable(nameof(_Viewpoint))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _SampleTerrainHeightForScale = true;
 
         [Tooltip("Forces smoothing for scale changes.\n\nWhen water level varies, smoothing scale change can prevent pops when the viewer's height above water sharply changes. Smoothing is disabled when terrain sampling is enabled or the water level simulation is disabled.")]
-        [Predicated(nameof(_Viewpoint), inverted: true)]
+        [@Disable(nameof(_Viewpoint))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _ForceScaleChangeSmoothing;
@@ -439,6 +473,15 @@ namespace WaveHarmonic.Crest
         internal Portals.PortalRenderer _Portals = new();
 
 
+        [@Group("Overrides", Group.Style.Accordian)]
+
+        [Tooltip("What aspects of water should be excluded by default.\n\nExcludes aspects of water globally. Local Overrides will need to be used to add the water.")]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [@SerializeField]
+        WaterBodyAffects _DefaultExcludes = WaterBodyAffects.Nothing;
+
+
         [@Group("Edit Mode", Group.Style.Accordian)]
 
 #pragma warning disable 414
@@ -446,13 +489,13 @@ namespace WaveHarmonic.Crest
         internal bool _ShowWaterProxyPlane;
 
         [Tooltip("Move water with Scene view camera if Scene window is focused.")]
-        [@Predicated(nameof(_ShowWaterProxyPlane), true)]
+        [@Disable(nameof(_ShowWaterProxyPlane))]
         [@DecoratedField, SerializeField]
         internal bool _FollowSceneCamera = true;
 
         [Tooltip("Each scene view will have its own viewpoint.")]
 #if !UNITY_6000_0_OR_NEWER
-        [@Predicated(RenderPipeline.HighDefinition, inverted: true, hide: true)]
+        [@Hide(RenderPipeline.HighDefinition)]
 #endif
         [@DecoratedField]
         [SerializeField]
@@ -472,6 +515,35 @@ namespace WaveHarmonic.Crest
         [System.Serializable]
         internal sealed class DebugFields
         {
+            [@Space(10)]
+
+#if !CREST_DEBUG
+            [HideInInspector]
+#endif
+            [@DecoratedField]
+            [@SerializeField]
+            public bool _VisualizeData;
+
+            [@Show(nameof(_VisualizeData))]
+            [@DecoratedField]
+            [@SerializeField]
+            public VisualizeDataTypes _VisualizeDataType;
+
+            [@Show(nameof(_VisualizeData))]
+            [@Range(-16, 16)]
+            [@SerializeField]
+            public float _VisualizeDataExposure;
+
+            [@Show(nameof(_VisualizeData))]
+            [@Range(1, 100)]
+            [@SerializeField]
+            public float _VisualizeDataRange = 10f;
+
+            [@Show(nameof(_VisualizeData))]
+            [@DecoratedField]
+            [@SerializeField]
+            public bool _VisualizeDataSaturate = true;
+
             [@Space(10)]
 
 #if !CREST_DEBUG
@@ -543,7 +615,7 @@ namespace WaveHarmonic.Crest
 #if !CREST_DEBUG
             [HideInInspector]
 #endif
-            [@Predicated(nameof(_OverrideScale))]
+            [@Enable(nameof(_OverrideScale))]
             [@Range(1, 256, Range.Clamp.Minimum, power: true, step: 2)]
             [SerializeField]
             public int _ScaleOverride;

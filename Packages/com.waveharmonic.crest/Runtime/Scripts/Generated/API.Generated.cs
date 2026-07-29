@@ -323,6 +323,14 @@ namespace WaveHarmonic.Crest
         public UnityEngine.LayerMask Layers { get => _Layers; set => SetDirty(_Layers, _Layers = value); }
 
         /// <summary>
+        /// Where the Depth Probe is placed.
+        /// </summary>
+        /// <remarks>
+        /// The default performs the best.
+        /// </remarks>
+        public Placement Placement { get => GetPlacement(); set => _Placement = value; }
+
+        /// <summary>
         /// Overrides global quality settings.
         /// </summary>
         public QualitySettingsOverride QualitySettingsOverride => _QualitySettingsOverride;
@@ -333,7 +341,7 @@ namespace WaveHarmonic.Crest
         /// <remarks>
         /// Call Populate() if scripting.
         /// </remarks>
-        public DepthProbeRefreshMode RefreshMode { get => _RefreshMode; set => _RefreshMode = value; }
+        public DepthProbeRefreshMode RefreshMode { get => GetRefreshMode(); set => _RefreshMode = value; }
 
         /// <summary>
         /// The resolution of the probe.
@@ -425,6 +433,14 @@ namespace WaveHarmonic.Crest
         /// Induce horizontal displacements to sharpen simulated waves.
         /// </summary>
         public float HorizontalDisplace { get => _HorizontalDisplace; set => _HorizontalDisplace = value; }
+
+        /// <summary>
+        /// Adds padding to water chunk bounds.
+        /// </summary>
+        /// <remarks>
+        /// Dynamic Waves displaces the surface which can push vertices outside of the chunk bounds leading to culling issues. This value adds padding to the chunk bounds to mitigate this.
+        /// </remarks>
+        public float VerticalDisplacementCullingContributions { get => _VerticalDisplacementCullingContributions; set => _VerticalDisplacementCullingContributions = value; }
     }
 }
 
@@ -669,7 +685,7 @@ namespace WaveHarmonic.Crest
         /// Enable if blurring is desired or intolerable artifacts are present.
         /// The blur is optimized to only run on inner LODs and at lower scales.
         /// </remarks>
-        public bool Blur { get => _Blur; set => _Blur = value; }
+        public bool Blur { get => _Blur; set => SetDirty(_Blur, _Blur = value); }
 
         /// <summary>
         /// Number of blur iterations.
@@ -1077,6 +1093,11 @@ namespace WaveHarmonic.Crest
     partial class ShapeFFT
     {
         /// <summary>
+        /// Whether to apply the options shown when "Show Advanced Controls" is active.
+        /// </summary>
+        public bool ApplyAdvancedSpectrumControls { get => _ApplyAdvancedSpectrumControls; set => _ApplyAdvancedSpectrumControls = value; }
+
+        /// <summary>
         /// Maximum amount a point on the surface will be displaced horizontally by waves from its rest position.
         /// </summary>
         /// <remarks>
@@ -1137,6 +1158,11 @@ namespace WaveHarmonic.Crest
         public bool ManualGeneration { get => _ManualGeneration; set => _ManualGeneration = value; }
 
         /// <summary>
+        /// Whether to randomize amplitudes and phases.
+        /// </summary>
+        public bool Randomize { get => _Randomize; set => _Randomize = value; }
+
+        /// <summary>
         /// Change to get a different set of waves.
         /// </summary>
         public int RandomSeed { get => _RandomSeed; set => _RandomSeed = value; }
@@ -1163,6 +1189,14 @@ namespace WaveHarmonic.Crest
 {
     partial class ShapeWaves
     {
+        /// <summary>
+        /// Whether to use bicubic sampling to reduce artifacts.
+        /// </summary>
+        /// <remarks>
+        /// This is only needed when using gerstner waves without normal maps or small waves to hide artifacts.
+        /// </remarks>
+        public bool BicubicSampling { get => _BicubicSampling; set => _BicubicSampling = value; }
+
         /// <summary>
         /// Whether to evaluate the spectrum every frame.
         /// </summary>
@@ -1376,6 +1410,14 @@ namespace WaveHarmonic.Crest
         public UnityEngine.Material Material { get => _Material; set => _Material = value; }
 
         /// <summary>
+        /// Whether to support using the surface material with other renderers.
+        /// </summary>
+        /// <remarks>
+        /// Also requires enabling Custom Mesh on the material.
+        /// </remarks>
+        public bool SupportCustomRenderers { get => _SupportCustomRenderers; set => _SupportCustomRenderers = value; }
+
+        /// <summary>
         /// How many frames to distribute the chunk bounds calculation.
         /// </summary>
         /// <remarks>
@@ -1397,6 +1439,7 @@ namespace WaveHarmonic.Crest
         /// <remarks>
         /// Disable if you want to use the 'Material Override' feature and still have an ocean.
         /// </remarks>
+        [System.Obsolete("This setting no longer has any effect. Please use WaterRenderer.ExcludeEverythingByDefault instead.")]
         public bool WaterBodyCulling { get => _WaterBodyCulling; set => _WaterBodyCulling = value; }
     }
 }
@@ -1458,6 +1501,11 @@ namespace WaveHarmonic.Crest
         public float CullLimit { get => _CullLimit; set => _CullLimit = value; }
 
         /// <summary>
+        /// Whether to enable culling of water chunks when below water.
+        /// </summary>
+        public bool EnableChunkCulling { get => _EnableChunkCulling; set => _EnableChunkCulling = value; }
+
+        /// <summary>
         /// Whether the underwater effect is enabled.
         /// </summary>
         /// <remarks>
@@ -1503,25 +1551,59 @@ namespace WaveHarmonic.Crest
     partial class WaterBody
     {
         /// <summary>
-        /// Overrides the property on the Water Renderer with the same name when the camera is inside the bounds.
-        /// </summary>
-        public UnityEngine.Material BelowSurfaceMaterial { get => _BelowSurfaceMaterial; set => _BelowSurfaceMaterial = value; }
-
-        /// <summary>
-        /// Makes sure this water body is not clipped.
-        /// </summary>
-        /// <remarks>
-        /// If clipping is enabled and set to clip everywhere by default, this option will register this water body to ensure its area does not get clipped.
-        /// </remarks>
-        public bool Clipped { get => _Clip; set => _Clip = value; }
-
-        /// <summary>
         /// Water chunks that overlap this waterbody area will be assigned this material.
         /// </summary>
         /// <remarks>
         /// This is useful for varying water appearance across different water bodies. If no override material is specified, the default material assigned to the WaterRenderer component will be used.
         /// </remarks>
-        public UnityEngine.Material AboveSurfaceMaterial { get => _Material; set => _Material = value; }
+        public UnityEngine.Material AboveSurfaceMaterial { get => _AboveSurfaceMaterial; set => _AboveSurfaceMaterial = value; }
+
+        /// <summary>
+        /// What aspects of water does this area affect.
+        /// </summary>
+        public WaterBodyAffects Affects { get => _Affects; set => SetAffects(_Affects, _Affects = value); }
+
+        /// <summary>
+        /// Overrides the property on the Water Renderer with the same name when the camera is inside the bounds.
+        /// </summary>
+        public UnityEngine.Material BelowSurfaceMaterial { get => _BelowSurfaceMaterial; set => _BelowSurfaceMaterial = value; }
+
+        /// <summary>
+        /// Whether exclusion tests are conservative.
+        /// </summary>
+        /// <remarks>
+        /// This is only useful for removing chunks for performance. It is conservative, as a water body must contain a chunk completely rather than overlap.
+        /// </remarks>
+        public bool Conservative { get => _Conservative; set => _Conservative = value; }
+
+        /// <summary>
+        /// Whether to exclude or include this area as water.
+        /// </summary>
+        public WaterBodyExclusion Exclusion { get => _Exclusion; set => SetExclusion(_Exclusion, _Exclusion = value); }
+
+        /// <summary>
+        /// Whether this area overrides materials.
+        /// </summary>
+        /// <remarks>
+        /// If enabled and no materials are set, then the global materials are used.
+        /// </remarks>
+        public bool OverrideMaterials { get => _OverrideMaterials; set => _OverrideMaterials = value; }
+
+        /// <summary>
+        /// Affects the surface more precisely.
+        /// </summary>
+        /// <remarks>
+        /// Uses the clip surface to more precisely include/exclude the surface. All other aspects are already precise.
+        /// </remarks>
+        public bool Precise { get => _Precise; set => SetPrecise(_Precise, _Precise = value); }
+
+        /// <summary>
+        /// Whether to take the vertical size and position into account.
+        /// </summary>
+        /// <remarks>
+        /// This will only affect the volume and physics. The surface will only consider the XZ values.
+        /// </remarks>
+        public bool Vertical { get => _Vertical; set => SetVertical(_Vertical, _Vertical = value); }
 
         /// <summary>
         /// Overrides the Water Renderer's volume material when the camera is inside the bounds.
@@ -1618,7 +1700,7 @@ namespace WaveHarmonic.Crest
         /// <summary>
         /// Disables shadows.
         /// </summary>
-        public bool DisableShadows { get => _DisableShadows; set => _DisableShadows = value; }
+        public bool DisableShadows { get => _DisableShadows; set => SetDisableShadows(_DisableShadows, _DisableShadows = value); }
 
         /// <summary>
         /// Whether planar reflections are enabled.
@@ -1646,7 +1728,7 @@ namespace WaveHarmonic.Crest
         /// <summary>
         /// What side of the water surface to render planar reflections for.
         /// </summary>
-        public WaterReflectionSide ReflectionSide { get => _Mode; set => _Mode = value; }
+        public WaterReflectionSide ReflectionSide { get => _Mode; set => SetReflectionSide(_Mode, _Mode = value); }
 
         /// <summary>
         /// Planar relfections using an oblique frustum for better performance.
@@ -1673,6 +1755,11 @@ namespace WaveHarmonic.Crest
         /// Overrides global quality settings.
         /// </summary>
         public QualitySettingsOverride QualitySettingsOverride { get => _QualitySettingsOverride; set => _QualitySettingsOverride = value; }
+
+        /// <summary>
+        /// Renderer index for the reflection camera.
+        /// </summary>
+        public int RendererIndex { get => _RendererIndex; set => SetRendererIndex(_RendererIndex, _RendererIndex = value); }
 
         /// <summary>
         /// Whether to render to the viewer camera only.
@@ -1782,6 +1869,14 @@ namespace WaveHarmonic.Crest
         public WaterDataBackgroundMode DataBackgroundMode { get => _DataBackgroundMode; set => _DataBackgroundMode = value; }
 
         /// <summary>
+        /// What aspects of water should be excluded by default.
+        /// </summary>
+        /// <remarks>
+        /// Excludes aspects of water globally. Local Overrides will need to be used to add the water.
+        /// </remarks>
+        public WaterBodyAffects DefaultExcludes { get => _DefaultExcludes; set => _DefaultExcludes = value; }
+
+        /// <summary>
         /// Water depth information used for shallow water, shoreline foam, wave attenuation, among others.
         /// </summary>
         public DepthLod DepthLod => _DepthLod;
@@ -1805,7 +1900,7 @@ namespace WaveHarmonic.Crest
         /// <remarks>
         /// Increase if the extents do not reach the horizon or you see the underwater effect at the horizon.
         /// </remarks>
-        public float ExtentsSizeMultiplier { get => _ExtentsSizeMultiplier; set => _ExtentsSizeMultiplier = value; }
+        public float ExtentsSizeMultiplier { get => _ExtentsSizeMultiplier; set => SetExtentsSizeMultiplier(_ExtentsSizeMultiplier, _ExtentsSizeMultiplier = value); }
 
         /// <summary>
         /// Horizontal motion of water body, akin to water currents.
@@ -1831,7 +1926,7 @@ namespace WaveHarmonic.Crest
         /// <remarks>
         /// For example, if set to four, every geometry quad will span 4x4 LOD data texels. a value of 2 will generate one vert per 2x2 LOD data texels. A value of 1 means a vert is generated for every LOD data texel. Larger values give lower fidelity surface shape with higher performance.
         /// </remarks>
-        public int GeometryDownSampleFactor { get => _GeometryDownSampleFactor; set => _GeometryDownSampleFactor = value; }
+        public int GeometryDownSampleFactor { get => _GeometryDownSampleFactor; set => SetGeometryDownSampleFactor(_GeometryDownSampleFactor, _GeometryDownSampleFactor = value); }
 
         /// <summary>
         /// Multiplier for physics gravity.
@@ -1885,6 +1980,27 @@ namespace WaveHarmonic.Crest
         /// Rendering using HDR formats is optional, but there is no way for us to determine if HDR rendering is enabled in the Graphics Settings. We make an educated based on which platform is the target. If you see rendering issues, try disabling this.
         /// </remarks>
         public bool OverrideRenderHDR { get => _OverrideRenderHDR; set => _OverrideRenderHDR = value; }
+
+#if d_UnityModuleWind
+        /// <summary>
+        /// Whether to override the given wind zone's wind direction.
+        /// </summary>
+        public bool OverrideWindZoneWindDirection { get => _OverrideWindZoneWindDirection; set => _OverrideWindZoneWindDirection = value; }
+#endif
+
+#if d_UnityModuleWind
+        /// <summary>
+        /// Whether to override the given wind zone's wind speed.
+        /// </summary>
+        public bool OverrideWindZoneWindSpeed { get => _OverrideWindZoneWindSpeed; set => _OverrideWindZoneWindSpeed = value; }
+#endif
+
+#if d_UnityModuleWind
+        /// <summary>
+        /// Whether to override the given wind zone's wind turbulence.
+        /// </summary>
+        public bool OverrideWindZoneWindTurbulence { get => _OverrideWindZoneWindTurbulence; set => _OverrideWindZoneWindTurbulence = value; }
+#endif
 
         /// <summary>
         /// The portal renderer.
@@ -2031,6 +2147,7 @@ namespace WaveHarmonic.Crest
         /// </remarks>
         public float WindTurbulence { get => GetWindTurbulence(); set => _WindTurbulence = value; }
 
+#if d_UnityModuleWind
         /// <summary>
         /// Uses a provided WindZone as the source of global wind.
         /// </summary>
@@ -2038,6 +2155,7 @@ namespace WaveHarmonic.Crest
         /// It must be directional. Wind speed units are presumed to be in m/s.
         /// </remarks>
         public UnityEngine.WindZone WindZone { get => _WindZone; set => _WindZone = value; }
+#endif
 
         /// <summary>
         /// Whether to enable motion vector support.

@@ -4,11 +4,10 @@
 // Guard against missing uniforms.
 #ifdef SHADERPASS
 
-#define m_Properties \
+#define m_Properties(iomod) \
     const float2 i_UndisplacedXZ, \
     float i_LodAlpha, \
     const half i_WaterLevelOffset, \
-    const float2 i_WaterLevelDerivatives, \
     const half2 i_Flow, \
     const half3 i_ViewDirectionWS, \
     const bool i_Facing, \
@@ -18,20 +17,20 @@
     const float4 i_ScreenPositionRaw, \
     const float3 i_PositionWS, \
     const float3 i_PositionVS, \
+    const half3 i_NormalWS, \
     const float2 i_StaticLightMapUV, \
-    inout half3 o_Albedo, \
-    inout half3 o_NormalWS, \
-    inout half3 o_Specular, \
-    inout half3 o_Emission, \
-    inout half o_Smoothness, \
-    inout half o_Occlusion, \
-    inout half o_Alpha
+    iomod half3 o_Albedo, \
+    iomod half3 o_NormalWS, \
+    iomod half3 o_Specular, \
+    iomod half3 o_Emission, \
+    iomod half o_Smoothness, \
+    iomod half o_Occlusion, \
+    iomod half o_Alpha
 
 #define m_Parameters \
     i_UndisplacedXZ, \
     i_LodAlpha, \
     i_WaterLevelOffset, \
-    i_WaterLevelDerivatives, \
     i_Flow, \
     i_ViewDirectionWS, \
     i_Facing, \
@@ -41,6 +40,7 @@
     i_ScreenPositionRaw, \
     i_PositionWS, \
     i_PositionVS, \
+    i_NormalWS, \
     i_StaticLightMapUV, \
     o_Albedo, \
     o_NormalWS, \
@@ -63,7 +63,6 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
 
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Cascade.hlsl"
-#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Geometry.hlsl"
 
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Depth.hlsl"
 
@@ -106,7 +105,7 @@ static const TiledTexture _Crest_CausticsDistortionTiledTexture =
 
 void Fragment
 (
-    m_Properties,
+    m_Properties(inout),
     const uint i_LodIndex0,
     const uint i_LodIndex1,
     const float2 i_PositionSS,
@@ -134,25 +133,28 @@ void Fragment
     const uint slice0 = i_LodIndex0;
     const uint slice1 = i_LodIndex1;
 
-#if d_Crest_FlowLod
-    const Flow flow = Flow::Make(i_Flow, g_Crest_Time);
-#endif
-
     const Cascade cascade0 = Cascade::Make(slice0);
     const Cascade cascade1 = Cascade::Make(slice1);
 
     const float sceneZ = Utility::CrestLinearEyeDepth(i_SceneZRaw);
     const float pixelZ = -i_PositionVS.z;
 
-    const bool isLastLod = slice0 == (uint)g_Crest_LodCount - 1;
+    const bool isLastLod = slice0 == (g_Crest_LodCount - 1);
     const float weight0 = (1.0 - i_LodAlpha) * cascade0._Weight;
     const float weight1 = (1.0 - weight0) * cascade1._Weight;
 
     // Data that fades towards the edge.
-    half foam = 0.0; half _determinant = 0.0; half4 albedo = 0.0; half2 shadow = 0.0; half waterDepth = i_WaterLevelOffset; half shorelineDistance = 0.0;
+    half foam = 0.0; half _determinant = 0.0; half4 albedo = 0.0; half2 shadow = 0.0; half waterDepth = i_WaterLevelOffset; half shorelineDistance = 0.0; half2 flowData = 0.0;
     if (weight0 > m_CrestSampleLodThreshold)
     {
-        Cascade::MakeAnimatedWaves(slice0).SampleNormals(i_UndisplacedXZ, weight0, o_NormalWS.xz, _determinant);
+        if (_Crest_ApplyDisplacementNormals)
+        {
+            Cascade::MakeAnimatedWaves(slice0).SampleDisplacementNormal(i_UndisplacedXZ, weight0, o_NormalWS.xz, _determinant);
+        }
+
+#if d_Crest_CustomMesh && d_Crest_FlowLod
+        Cascade::MakeFlow(slice0).SampleFlow(i_UndisplacedXZ, weight0, flowData);
+#endif
 
         if (_Crest_FoamEnabled)
         {
@@ -185,7 +187,14 @@ void Fragment
 
     if (weight1 > m_CrestSampleLodThreshold)
     {
-        Cascade::MakeAnimatedWaves(slice1).SampleNormals(i_UndisplacedXZ, weight1, o_NormalWS.xz, _determinant);
+        if (_Crest_ApplyDisplacementNormals)
+        {
+            Cascade::MakeAnimatedWaves(slice1).SampleDisplacementNormal(i_UndisplacedXZ, weight1, o_NormalWS.xz, _determinant);
+        }
+
+#if d_Crest_CustomMesh && d_Crest_FlowLod
+        Cascade::MakeFlow(slice1).SampleFlow(i_UndisplacedXZ, weight1, flowData);
+#endif
 
         if (_Crest_FoamEnabled)
         {
@@ -278,6 +287,13 @@ void Fragment
     }
 #endif
 
+#if d_Crest_FlowLod
+#if !d_Crest_CustomMesh
+    flowData = i_Flow;
+#endif
+    const Flow flow = Flow::Make(flowData, g_Crest_Flow);
+#endif
+
     // Determinant needs to be one when no waves.
     if (isLastLod)
     {
@@ -307,20 +323,8 @@ void Fragment
         lightDirection
     );
 
-    const half3 ambientLight = AmbientLight();
-    const half3 additionalLight = AdditionalLighting(i_PositionWS, i_ScreenPositionRaw, i_StaticLightMapUV);
-
     // Normal.
     {
-        WaterNormal
-        (
-            i_WaterLevelDerivatives,
-            i_ViewDirectionWS,
-            _Crest_MinimumReflectionDirectionY,
-            i_Underwater,
-            o_NormalWS
-        );
-
 #if d_Crest_NormalMap
         if (_Crest_NormalMapEnabled)
         {
@@ -359,28 +363,27 @@ void Fragment
         }
 #endif // d_Crest_NormalMap
 
-        o_NormalWS = normalize(o_NormalWS);
-
+        // Handles normalization.
         WaterNormal
         (
-            i_WaterLevelDerivatives,
-            i_ViewDirectionWS,
-            _Crest_MinimumReflectionDirectionY,
+            _Crest_NormalsStrengthOverall,
             i_Underwater,
             o_NormalWS
         );
-
-        o_NormalWS = normalize(o_NormalWS);
-
-        o_NormalWS.xz *= _Crest_NormalsStrengthOverall;
-        o_NormalWS.y = lerp(1.0, o_NormalWS.y, _Crest_NormalsStrengthOverall);
-
-        if (i_Underwater)
-        {
-            // Flip when underwater.
-            o_NormalWS.xyz *= -1.0;
-        }
     }
+
+    const half3 ambientLight = AmbientLight();
+    half3 additionalLight = 0.0;
+#if d_Crest_AdditionalLights
+    additionalLight = AdditionalLighting(i_PositionWS, i_ScreenPositionRaw, i_StaticLightMapUV, i_PositionSS, o_NormalWS);
+#endif
+
+#if CREST_BIRP
+#ifndef USING_DIRECTIONAL_LIGHT
+    // BIRP additional lights are the main light.
+    lightIntensity *= max(k_Crest_AdditionalLightLerp, dot(o_NormalWS, lightDirection));
+#endif
+#endif
 
     // Default for opaque render type.
     float sceneDistance = 1000.0;
@@ -442,12 +445,14 @@ void Fragment
 #endif // d_Transparent
 #endif // d_Crest_SimpleTransparency
 
+#if d_Crest_OutScattering
     // Out-scattering.
     if (!i_Underwater)
     {
         // Account for extinction of light as it travels down through volume.
         o_Emission *= exp(-extinction * max(0.0, i_PositionWS.y - scenePositionWS.y));
     }
+#endif
 
 #if d_Transparent
 #ifndef d_SkipRefraction
@@ -528,8 +533,10 @@ void Fragment
         lightDirection,
         lightIntensity,
         additionalLight,
+        _Crest_AdditionalLightsBlend,
         _Crest_AmbientTerm,
         _Crest_DirectTerm,
+        _Crest_DirectTermAdditional,
         sss,
         _Crest_ShadowsAffectsAmbientFactor
     );
@@ -546,6 +553,7 @@ void Fragment
             1.0, // air
             _Crest_RefractiveIndexOfWater,
             _Crest_TotalInternalReflectionIntensity,
+            _Crest_Fresnel,
             transmitted,
             reflected
         );
@@ -559,7 +567,11 @@ void Fragment
         {
             o_Emission *= 1.0 - volumeOpacity;
             o_Emission += volumeLight * volumeOpacity;
-            o_Emission *= transmitted;
+
+            if (_Crest_ApplyFresnelToVolumeLighting)
+            {
+                o_Emission *= transmitted;
+            }
         }
     }
 
@@ -592,7 +604,6 @@ void Fragment
             _Crest_PlanarReflectionsIntensity,
             o_Smoothness,
             _Crest_PlanarReflectionsRoughness,
-            _Crest_MinimumReflectionDirectionY,
             pixelZ,
             o_NormalWS,
             _Crest_PlanarReflectionsDistortion,
@@ -634,13 +645,13 @@ void Fragment
 #endif
             _Crest_FoamTiledTexture,
             _Crest_FoamFeather,
-            _Crest_FoamNormalStrength,
             foam,
-            albedo.x,
             cascade0,
             cascade1,
             i_LodAlpha,
             i_UndisplacedXZ,
+            _Crest_FoamNormalStrength,
+            albedo.x,
             pixelZ
         );
 
@@ -734,6 +745,11 @@ void Fragment
         o_Alpha = min(o_Alpha, 1.0);
     }
 
+    if (!i_Underwater && _Crest_MinimumReflectionDirectionY > -1.0)
+    {
+        o_NormalWS = ApplyMinimumReflectionDirectionY(_Crest_MinimumReflectionDirectionY, i_ViewDirectionWS, o_NormalWS);
+    }
+
     SetUpFog
     (
         i_Underwater,
@@ -745,11 +761,17 @@ void Fragment
     );
 }
 
+#if d_Crest_CustomMesh
+// Handles the last slice logic differently to match the mesh.
+// Clip surface for quad will not match chunks mesh at last LOD as collateral.
+#define PositionToSliceIndices MeshPositionToSliceIndices
+#endif
+
 // IMPORTANT!
 // Do not branch on o_Alpha, as it is not robust. Rendering will break on stereo
 // rendering in the form of losing additional lighting and/or broken reflection
 // probe sampling. This is an issue with the shader compiler it seems.
-void Fragment(m_Properties)
+void Fragment(m_Properties(inout))
 {
     const float2 positionSS = i_ScreenPosition.xy * _ScreenSize.xy;
 
@@ -779,7 +801,7 @@ void Fragment(m_Properties)
     float alpha;
 
 #if d_Crest_AlphaTest || d_Crest_CustomMesh
-    PosToSliceIndices(i_PositionWS.xz, 0.0, g_Crest_LodCount - 1.0, g_Crest_WaterScale, slice0, slice1, alpha);
+    PositionToSliceIndices(i_PositionWS.xz, 0, g_Crest_LodCount - 1, g_Crest_WaterScale, slice0, slice1, alpha);
 #endif
 
 #if d_Crest_AlphaTest
@@ -831,17 +853,21 @@ void Fragment(m_Properties)
     }
 }
 
+#ifdef PosToSliceIndices
+#undef PosToSliceIndices
+#endif
+
 m_CrestNameSpaceEnd
 
 #endif // SHADERGRAPH_PREVIEW
 
-void Fragment_float(m_Properties)
+void Fragment_float(m_Properties(out))
 {
     o_Albedo = 0.0;
-    o_NormalWS = half3(0.0, 1.0, 0.0);
+    o_NormalWS = i_NormalWS;
     o_Specular = 0.0;
     o_Emission = 0.0;
-    o_Smoothness = 0.7;
+    o_Smoothness = 0.9;
     o_Occlusion = 1.0;
     o_Alpha = 1.0;
 

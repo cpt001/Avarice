@@ -18,7 +18,7 @@ namespace WaveHarmonic.Crest
         internal override string ID => "Albedo";
         internal override Color GizmoColor => s_GizmoColor;
         private protected override Color ClearColor => Color.clear;
-        private protected override bool NeedToReadWriteTextureData => false;
+        private protected override bool NeedToReadWriteTextureData => Blur;
         internal override bool SkipEndOfFrame => true;
 
         private protected override GraphicsFormat RequestedTextureFormat => _TextureFormatMode switch

@@ -14,11 +14,6 @@ namespace WaveHarmonic.Crest
     [AddComponentMenu(Constants.k_MenuPrefixDebug + "Collision Area Visualizer")]
     sealed class CollisionAreaVisualizer : ManagedBehaviour<WaterRenderer>
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [Tooltip(ICollisionProvider.k_LayerTooltip)]
         [SerializeField]
         internal CollisionLayer _Layer;

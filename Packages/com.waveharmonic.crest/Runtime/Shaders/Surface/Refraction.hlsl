@@ -6,7 +6,7 @@
 
 #if !d_Crest_SimpleTransparency
 
-#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings.Crest.hlsl"
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Keywords.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Depth.hlsl"
 
@@ -121,7 +121,7 @@ void RefractedScene
 #endif
 
 #if (CREST_PORTALS != 0)
-#if _ALPHATEST_ON
+#if d_Crest_AlphaTest
     Portal::EvaluateRefraction(uv, i_SceneZRaw, i_Underwater, deviceDepth, o_Caustics);
 #endif
 #endif

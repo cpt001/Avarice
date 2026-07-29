@@ -4,17 +4,18 @@
 // Guard against missing uniforms.
 #ifdef SHADERPASS
 
-#define m_Properties \
+#define m_Properties(iomod) \
     const float3 i_PositionWS, \
+    const half3 i_Normal, \
     const float3 i_ObjectPosition, \
     const float3 i_CameraPosition, \
     const float i_Time, \
-    out float3 o_PositionWS, \
-    out float2 o_UndisplacedXZ, \
-    out float o_LodAlpha, \
-    out half o_WaterLevelOffset, \
-    out float2 o_WaterLevelDerivatives, \
-    out half2 o_Flow
+    iomod float3 o_PositionWS, \
+    iomod half3 o_Normal, \
+    iomod float2 o_UndisplacedXZ, \
+    iomod float o_LodAlpha, \
+    iomod half o_WaterLevelOffset, \
+    iomod half2 o_Flow
 
 // Guard against Shader Graph preview.
 #ifndef SHADERGRAPH_PREVIEW
@@ -24,14 +25,13 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Globals.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
+#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Helpers.hlsl"
 
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Cascade.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Geometry.hlsl"
 
-#include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Depth.hlsl"
-
 #if d_Crest_MotionVectors
-#define m_Slice clamp((int)_Crest_LodIndex + (isMotionVectors ? g_Crest_LodChange : 0), 0, g_Crest_LodCount)
+#define m_Slice ComputeSlice(_Crest_LodIndex, isMotionVectors ? g_Crest_LodChange : 0, g_Crest_LodCount)
 #define m_Make(slice) Make(slice, isMotionVectors)
 #else
 #define m_Slice _Crest_LodIndex
@@ -40,19 +40,14 @@
 
 m_CrestNameSpace
 
-void Vertex(m_Properties)
+#if !d_Crest_CustomMesh
+void Vertex(m_Properties(inout))
 {
+    // Chunk mesh has no normals.
+    o_Normal = half3(0.0, 1.0, 0.0);
+
     // This will get called twice.
     // With current and previous time respectively.
-
-    o_PositionWS = i_PositionWS;
-    o_UndisplacedXZ = i_PositionWS.xz;
-    o_LodAlpha = 0.0;
-    o_WaterLevelOffset = 0.0;
-    o_WaterLevelDerivatives = 0.0;
-    o_Flow = 0.0;
-
-#if !d_Crest_CustomMesh
     const bool isMotionVectors = i_Time < _Time.y;
 
     const float slice0 = m_Slice;
@@ -70,20 +65,7 @@ void Vertex(m_Properties)
         o_LodAlpha
     );
 
-    // Fix precision errors at edges.
-    {
-        // Scale up by small "epsilon" to solve numerical issues. Expand slightly about tile center.
-        // :WaterGridPrecisionErrors
-        const float2 tileCenterXZ = i_ObjectPosition.xz;
-        const float2 cameraPositionXZ = abs(i_CameraPosition.xz);
-        // Scale "epsilon" by distance from zero. There is an issue where overlaps can cause SV_IsFrontFace
-        // to be flipped (needs to be investigated). Gaps look bad from above surface, and overlaps look bad
-        // from below surface. We want to close gaps without introducing overlaps. A fixed "epsilon" will
-        // either not solve gaps at large distances or introduce too many overlaps at small distances. Even
-        // with scaling, there are still unsolvable overlaps underwater (especially at large distances).
-        // 100,000 (0.00001) is the maximum position before Unity warns the user of precision issues.
-        o_PositionWS.xz = lerp(tileCenterXZ, o_PositionWS.xz, lerp(1.0, 1.01, max(cameraPositionXZ.x, cameraPositionXZ.y) * 0.00001));
-    }
+    PatchVerticeLayout(i_ObjectPosition.xz, i_CameraPosition.xz, o_PositionWS.xz);
 
     o_UndisplacedXZ = o_PositionWS.xz;
 
@@ -91,18 +73,20 @@ void Vertex(m_Properties)
     const float weight0 = (1.0 - o_LodAlpha) * cascade0._Weight;
     const float weight1 = (1.0 - weight0) * cascade1._Weight;
 
+    half2 derivatives = 0.0;
+
     // Data that needs to be sampled at the undisplaced position.
     if (weight0 > m_CrestSampleLodThreshold)
     {
 #if d_Crest_MotionVectors
         if (isMotionVectors)
         {
-            Cascade::MakeAnimatedWavesSource(slice0).SampleDisplacement(o_UndisplacedXZ, weight0, o_PositionWS, o_WaterLevelDerivatives, o_WaterLevelOffset);
+            Cascade::MakeAnimatedWavesSource(slice0).SampleDisplacement(o_UndisplacedXZ, weight0, o_PositionWS);
         }
         else
 #endif
         {
-            Cascade::MakeAnimatedWaves(slice0).SampleDisplacement(o_UndisplacedXZ, weight0, o_PositionWS, o_WaterLevelDerivatives, o_WaterLevelOffset);
+            Cascade::MakeAnimatedWaves(slice0).SampleDisplacement(o_UndisplacedXZ, weight0, o_PositionWS, derivatives, o_WaterLevelOffset);
         }
     }
 
@@ -111,29 +95,32 @@ void Vertex(m_Properties)
 #if d_Crest_MotionVectors
         if (isMotionVectors)
         {
-            Cascade::MakeAnimatedWavesSource(slice1).SampleDisplacement(o_UndisplacedXZ, weight1, o_PositionWS, o_WaterLevelDerivatives, o_WaterLevelOffset);
+            Cascade::MakeAnimatedWavesSource(slice1).SampleDisplacement(o_UndisplacedXZ, weight1, o_PositionWS);
         }
         else
 #endif
         {
-            Cascade::MakeAnimatedWaves(slice1).SampleDisplacement(o_UndisplacedXZ, weight1, o_PositionWS, o_WaterLevelDerivatives, o_WaterLevelOffset);
+            Cascade::MakeAnimatedWaves(slice1).SampleDisplacement(o_UndisplacedXZ, weight1, o_PositionWS, derivatives, o_WaterLevelOffset);
         }
     }
 
+    // Account for water level changes which change angle of water surface, impacting normal.
+    // true = normalize.
+    o_Normal.xz += -derivatives;
+    o_Normal = TransformWorldToObjectNormal(o_Normal, true);
+
+#if d_Crest_FlowLod
     // Data that needs to be sampled at the displaced position.
     if (weight0 > m_CrestSampleLodThreshold)
     {
-#if d_Crest_FlowLod
         Cascade::MakeFlow(slice0).SampleFlow(o_UndisplacedXZ, weight0, o_Flow);
-#endif
     }
 
     if (weight1 > m_CrestSampleLodThreshold)
     {
-#if d_Crest_FlowLod
         Cascade::MakeFlow(slice1).SampleFlow(o_UndisplacedXZ, weight1, o_Flow);
-#endif
     }
+#endif // d_Crest_FlowLod
 
 #if d_Crest_MotionVectors
     if (isMotionVectors)
@@ -144,37 +131,40 @@ void Vertex(m_Properties)
         o_PositionWS.xz += g_Crest_WaterCenterDelta;
     }
 #endif
-#endif
 }
+#endif
 
 m_CrestNameSpaceEnd
 
 #endif // SHADERGRAPH_PREVIEW
 
-void Vertex_float(m_Properties)
+void Vertex_float(m_Properties(out))
 {
-#if SHADERGRAPH_PREVIEW
-    o_PositionWS = 0.0;
-    o_UndisplacedXZ = 0.0;
+    o_Normal = i_Normal;
+    o_PositionWS = i_PositionWS;
+    o_UndisplacedXZ = i_PositionWS.xz;
     o_LodAlpha = 0.0;
     o_WaterLevelOffset = 0.0;
-    o_WaterLevelDerivatives = 0.0;
     o_Flow = 0.0;
-#else // SHADERGRAPH_PREVIEW
+
+#if !d_Crest_CustomMesh
+#if !SHADERGRAPH_PREVIEW
     m_Crest::Vertex
     (
         i_PositionWS,
+        i_Normal,
         i_ObjectPosition,
         i_CameraPosition,
         i_Time,
         o_PositionWS,
+        o_Normal,
         o_UndisplacedXZ,
         o_LodAlpha,
         o_WaterLevelOffset,
-        o_WaterLevelDerivatives,
         o_Flow
     );
 #endif // SHADERGRAPH_PREVIEW
+#endif // d_Crest_CustomMesh
 }
 
 #undef m_Properties

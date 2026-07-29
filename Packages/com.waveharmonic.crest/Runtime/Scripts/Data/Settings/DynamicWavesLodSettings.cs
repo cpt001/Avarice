@@ -9,14 +9,9 @@ namespace WaveHarmonic.Crest
     /// Settings for fine tuning the <see cref="DynamicWavesLod"/>.
     /// </summary>
     [CreateAssetMenu(fileName = "DynamicWavesSettings", menuName = "Crest/Simulation Settings/Dynamic Waves")]
-    [@HelpURL("Manual/Waves.html#dynamic-waves-settings")]
+    [@HelpURL("Manual/Simulation/Ripples.html#simulation-settings")]
     public sealed partial class DynamicWavesLodSettings : LodSettings
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [Header("Simulation")]
 
         [Tooltip("How much energy is dissipated each frame.\n\nHelps simulation stability, but limits how far ripples will propagate. Set this as large as possible/acceptable. Default is 0.05.")]
@@ -52,5 +47,14 @@ namespace WaveHarmonic.Crest
         [@GenerateAPI]
         [SerializeField]
         internal float _GravityMultiplier = 1f;
+
+
+        [@Heading("Culling")]
+
+        [Tooltip("Adds padding to water chunk bounds.\n\nDynamic Waves displaces the surface which can push vertices outside of the chunk bounds leading to culling issues. This value adds padding to the chunk bounds to mitigate this.")]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [@SerializeField]
+        internal float _VerticalDisplacementCullingContributions = 5f;
     }
 }

@@ -26,22 +26,16 @@ namespace WaveHarmonic.Crest
     /// Emits events (UnityEvents) based on the sampled water data.
     /// </summary>
     [AddComponentMenu(Constants.k_MenuPrefixScripts + "Query Events")]
-    [@HelpURL("Manual/Events.html#query-events")]
+    [@HelpURL("Manual/Basics/Events.html#query-events")]
     public sealed partial class QueryEvents : ManagedBehaviour<WaterRenderer>
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
-
         [Tooltip("What transform should the queries be based on.\n\n\"Viewer\" will reuse queries already performed by the Water Renderer")]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         QuerySource _Source;
 
         [Tooltip("The viewer as the source of the queries.\n\nOnly needs to be set if using multiple viewpoints on the Water Renderer.")]
-        [@Predicated(nameof(_Source), inverted: false, nameof(QuerySource.Viewer), hide: true)]
+        [@Show(nameof(_Source), nameof(QuerySource.Viewer))]
         [@GenerateAPI]
         [@DecoratedField]
         [SerializeField]
@@ -56,14 +50,14 @@ namespace WaveHarmonic.Crest
         [Header("Distance From Water Surface")]
 
         [Tooltip("The minimum wavelength for queries.\n\nThe higher the value, the more smaller waves will be ignored when sampling the water surface.")]
-        [@Predicated(nameof(_Source), inverted: true, nameof(QuerySource.Transform))]
+        [@Enable(nameof(_Source), nameof(QuerySource.Transform))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _MinimumWavelength = 1f;
 
         [@Label("Signed")]
         [Tooltip("Whether to keep the sign of the value (ie positive/negative).\n\nA positive value means the query point is above the surface, while a negative means it below the surface.")]
-        [@Predicated(nameof(_DistanceFromSurfaceUseCurve), inverted: true)]
+        [@Disable(nameof(_DistanceFromSurfaceUseCurve))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _DistanceFromSurfaceSigned;
@@ -84,7 +78,7 @@ namespace WaveHarmonic.Crest
 
         [@Label("Curve")]
         [Tooltip("Apply a curve to the distance.\n\nValues towards \"one\" means closer to the water surface.")]
-        [@Predicated(nameof(_DistanceFromSurfaceUseCurve))]
+        [@Enable(nameof(_DistanceFromSurfaceUseCurve))]
         [@GenerateAPI]
         [UnityEngine.Serialization.FormerlySerializedAs("_DistanceCurve")]
         [@DecoratedField, SerializeField]
@@ -95,7 +89,7 @@ namespace WaveHarmonic.Crest
 
         [@Label("Signed")]
         [Tooltip("Whether to keep the sign of the value (ie positive/negative).\n\nA positive value means the query point is over water, while a negative means it is over land.")]
-        [@Predicated(nameof(_DistanceFromEdgeUseCurve), inverted: true)]
+        [@Disable(nameof(_DistanceFromEdgeUseCurve))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _DistanceFromEdgeSigned;
@@ -114,7 +108,7 @@ namespace WaveHarmonic.Crest
 
         [@Label("Curve")]
         [Tooltip("Apply a curve to the distance.\n\nValues towards \"one\" means closer to the water's edge.")]
-        [@Predicated(nameof(_DistanceFromEdgeUseCurve))]
+        [@Enable(nameof(_DistanceFromEdgeUseCurve))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         AnimationCurve _DistanceFromEdgeCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);

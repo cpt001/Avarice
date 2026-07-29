@@ -44,6 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 002f2642204d348f3a2fab18595c44cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 3
   _Mode: 5
   _Weight: 1
   _Queue: 0
@@ -53,6 +54,7 @@ MonoBehaviour:
   _Data:
     rid: -2
   _DrawBounds: 0
+  _BicubicSampling: 0
   _Spectrum: {fileID: 11400000, guid: 6b50b5218dbe2488fb5d00db49d15dae, type: 2}
   _EvaluateSpectrumAtRunTimeEveryFrame: 0
   _RespectShallowWaterAttenuation: 1
@@ -68,9 +70,9 @@ MonoBehaviour:
   _Swell: 0
   _ReverseWaveWeight: 0
   _ComponentsPerOctave: 8
+  _Randomize: 1
   _RandomSeed: 0
   _ManualGeneration: 0
-  _Version: 3
   references:
     version: 2
     RefIds:

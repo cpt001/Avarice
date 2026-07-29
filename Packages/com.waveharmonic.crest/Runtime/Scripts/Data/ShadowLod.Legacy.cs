@@ -8,68 +8,81 @@ namespace WaveHarmonic.Crest
 {
     partial class ShadowLod
     {
+        internal bool ShouldRender(Camera camera)
+        {
+            if (!_Enabled)
+            {
+                return false;
+            }
+
+            // Even though volume also uses shadows, it only makes sense with a surface.
+            if (!_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Surface))
+            {
+                return false;
+            }
+
+            // Only sample shadows for the main camera.
+            if (_Water.IsSingleViewpointMode && _Water.Viewer != camera)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
         {
             // TODO: refactor this similar to MaskRenderer.
-            if (!RenderPipelineHelper.IsLegacy)
-            {
 #if d_UnityURP
-                if (RenderPipelineHelper.IsUniversal)
-                {
-                    SampleShadowsURP.EnqueuePass(context, camera);
-                }
-#endif
-
+            if (RenderPipelineHelper.IsUniversal)
+            {
+                SampleShadowsURP.EnqueuePass(context, camera);
                 return;
             }
+#endif
+
+            if (!RenderPipelineHelper.IsLegacy)
+            {
+                return;
+            }
+
+            _CopyShadowMapBuffer?.Clear();
 
 #if UNITY_EDITOR
             // Do not execute when editor is not active to conserve power and prevent possible leaks.
             if (!UnityEditorInternal.InternalEditorUtility.isApplicationActive)
             {
-                CopyShadowMapBuffer?.Clear();
                 return;
             }
 #endif
 
-            var water = _Water;
-
-            if (water == null)
-            {
-                return;
-            }
-
-            if (!WaterRenderer.ShouldRender(camera, water.Surface.Layer))
-            {
-                return;
-            }
-
-            if (_Water.Reflections.ReflectionCamera == camera)
-            {
-                return;
-            }
-
-            if (CopyShadowMapBuffer != null)
+            if (_CopyShadowMapBuffer != null)
             {
                 if (_Light != null)
                 {
                     // Calling this in OnPreRender was too late to be executed in the same frame.
-                    _Light.RemoveCommandBuffer(LightEvent.BeforeScreenspaceMask, CopyShadowMapBuffer);
-                    _Light.AddCommandBuffer(LightEvent.BeforeScreenspaceMask, CopyShadowMapBuffer);
+                    _Light.RemoveCommandBuffer(LightEvent.BeforeScreenspaceMask, _CopyShadowMapBuffer);
+                    _Light.AddCommandBuffer(LightEvent.BeforeScreenspaceMask, _CopyShadowMapBuffer);
                 }
 
                 // Disable for XR SPI otherwise input will not have correct world position.
-                Rendering.BIRP.DisableXR(CopyShadowMapBuffer, camera);
+                Rendering.BIRP.DisableXR(_CopyShadowMapBuffer, camera);
 
-                BuildCommandBuffer(water, CopyShadowMapBuffer);
+                BuildCommandBuffer(_Water, _CopyShadowMapBuffer);
 
                 // Restore XR SPI as we cannot rely on remaining pipeline to do it for us.
-                Rendering.BIRP.EnableXR(CopyShadowMapBuffer, camera);
+                Rendering.BIRP.EnableXR(_CopyShadowMapBuffer, camera);
             }
         }
 
         internal void OnEndCameraRendering(Camera camera)
         {
+            // Method is only called for either single viewpoint mode or separate viewpoints.
+            if (_Water.IsMultipleViewpointMode)
+            {
+                StoreCameraData(camera);
+            }
+
             if (!RenderPipelineHelper.IsLegacy)
             {
                 return;
@@ -79,7 +92,7 @@ namespace WaveHarmonic.Crest
             // Do not execute when editor is not active to conserve power and prevent possible leaks.
             if (!UnityEditorInternal.InternalEditorUtility.isApplicationActive)
             {
-                CopyShadowMapBuffer?.Clear();
+                _CopyShadowMapBuffer?.Clear();
                 return;
             }
 #endif
@@ -88,9 +101,9 @@ namespace WaveHarmonic.Crest
             // supports a single camera. Removing the CB after the camera renders restricts the
             // CB to one camera. Careful of recursive rendering for planar reflections, as it
             // executes a camera within this camera's frame.
-            if (_Light != null && CopyShadowMapBuffer != null)
+            if (_Light != null && _CopyShadowMapBuffer != null)
             {
-                _Light.RemoveCommandBuffer(LightEvent.BeforeScreenspaceMask, CopyShadowMapBuffer);
+                _Light.RemoveCommandBuffer(LightEvent.BeforeScreenspaceMask, _CopyShadowMapBuffer);
             }
         }
     }

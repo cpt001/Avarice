@@ -1,6 +1,7 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+using System.Collections.Generic;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -11,11 +12,6 @@ namespace WaveHarmonic.Crest.Editor
 #endif
     sealed class RenderPipelineTerrainPatcher : RenderPipelinePatcher
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [SerializeField]
         Material _Material;
 
@@ -25,8 +21,10 @@ namespace WaveHarmonic.Crest.Editor
         [SerializeField]
         Material _MaterialURP;
 
+        static readonly List<Terrain> s_Terrains = new();
+
 #if UNITY_EDITOR
-        protected override void OnEnable()
+        private protected override void OnEnable()
         {
             base.OnEnable();
             OnActiveRenderPipelineTypeChanged();
@@ -45,7 +43,8 @@ namespace WaveHarmonic.Crest.Editor
             }
 
 #if d_Unity_Terrain
-            foreach (var terrain in GetComponentsInChildren<Terrain>())
+            GetComponentsInChildren(s_Terrains);
+            foreach (var terrain in s_Terrains)
             {
                 terrain.materialTemplate = RenderPipelineHelper.RenderPipeline switch
                 {
@@ -55,6 +54,7 @@ namespace WaveHarmonic.Crest.Editor
                     _ => throw new System.NotImplementedException(),
                 };
             }
+            s_Terrains.Clear();
 #endif // d_Unity_Terrain
         }
 #endif

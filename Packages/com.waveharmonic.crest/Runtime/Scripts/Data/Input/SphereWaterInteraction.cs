@@ -14,14 +14,9 @@ namespace WaveHarmonic.Crest
     /// Multiple spheres can be used to model the interaction of a non-spherical shape.
     /// </remarks>
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Sphere Water Interaction")]
-    [@HelpURL("Manual/Waves.html#adding-interaction-forces")]
+    [@HelpURL("Manual/Simulation/Ripples.html#adding-interaction-forces")]
     public sealed partial class SphereWaterInteraction : ManagedBehaviour<WaterRenderer>
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [Tooltip("Radius of the sphere that is modelled from which the interaction forces are calculated.")]
         [@Range(0.01f, 50f)]
         [@GenerateAPI]

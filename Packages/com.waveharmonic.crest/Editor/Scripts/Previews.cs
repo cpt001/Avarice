@@ -59,6 +59,9 @@ namespace WaveHarmonic.Crest.Editor
         {
             var texture = (RenderTexture)OriginalTexture;
             var descriptor = texture.descriptor;
+#if UNITY_6000_4_OR_NEWER
+            RenderTexture.ReleaseTemporary(_TemporaryTexture);
+#endif
             _TemporaryTexture = RenderTexture.GetTemporary(descriptor);
             _TemporaryTexture.name = texture.name;
             Graphics.CopyTexture(texture, _TemporaryTexture);

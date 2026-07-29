@@ -30,6 +30,8 @@ namespace WaveHarmonic.Crest.Editor
     // Holds the shared list for messages
     static class ValidatedHelper
     {
+        static readonly List<Material> s_SharedMaterials = new();
+
         public enum MessageType
         {
             Error,
@@ -192,11 +194,11 @@ namespace WaveHarmonic.Crest.Editor
                 return false;
             }
 
-            var materials = renderer.sharedMaterials;
-            for (var i = 0; i < materials.Length; i++)
+            renderer.GetSharedMaterials(s_SharedMaterials);
+            for (var i = 0; i < s_SharedMaterials.Count; i++)
             {
                 // Empty material slots is a user error. Unity complains about it so we should too.
-                if (materials[i] == null)
+                if (s_SharedMaterials[i] == null)
                 {
                     showMessage
                     (
@@ -206,6 +208,7 @@ namespace WaveHarmonic.Crest.Editor
                     );
                 }
             }
+            s_SharedMaterials.Clear();
 
             if (renderer is MeshRenderer)
             {

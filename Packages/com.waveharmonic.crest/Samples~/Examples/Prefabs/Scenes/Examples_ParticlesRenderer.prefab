@@ -4902,6 +4902,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67bc7f0b9724d44ab9f0ddf0b1b5a773, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 0
   _Mode: 3
   _Weight: 1
   _Queue: 0
@@ -4911,13 +4912,13 @@ MonoBehaviour:
   _Data:
     rid: 9154139389720788993
   _DrawBounds: 0
-  _Version: 0
   references:
     version: 2
     RefIds:
     - rid: 9154139389720788993
       type: {class: FoamRendererLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 7982559133766518504}
         _Renderer: {fileID: 4772028070266665312}
         _DisableRenderer: 1

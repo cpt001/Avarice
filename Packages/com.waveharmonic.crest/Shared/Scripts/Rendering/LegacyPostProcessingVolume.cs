@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest.Examples
 {
@@ -13,22 +14,19 @@ namespace WaveHarmonic.Crest.Examples
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
-    [ExecuteAlways, RequireComponent(typeof(PostProcessVolume))]
-    sealed class LegacyPostProcessingVolume : MonoBehaviour
+    [@ExecuteDuringEditMode, RequireComponent(typeof(PostProcessVolume))]
+    sealed partial class LegacyPostProcessingVolume : CustomBehaviour
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [@Layer]
         [SerializeField]
         int _Layer;
 
         readonly List<PostProcessVolume> _QuickVolumes = new();
 
-        void OnEnable()
+        private protected override void OnEnable()
         {
+            base.OnEnable();
+
             if (!RenderPipelineHelper.IsLegacy)
             {
                 return;
@@ -48,16 +46,18 @@ namespace WaveHarmonic.Crest.Examples
             }
         }
 
-        void OnDisable()
+        private protected override void OnDisable()
         {
+            base.OnDisable();
+
             foreach (var volume in _QuickVolumes)
             {
                 if (volume == null) continue;
                 Helpers.Destroy(volume.profile);
-                var gameObject = volume.gameObject;
-                Helpers.Destroy(volume);
-                Helpers.Destroy(gameObject);
+                Helpers.DestroyGameObject(volume);
             }
+
+            _QuickVolumes.Clear();
         }
     }
 }

@@ -1,6 +1,7 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -25,7 +26,9 @@ namespace WaveHarmonic.Crest.Editor
         const string k_NoneQueryProviderFlowFloatingObjects = "The floating objects in the scene will not receive motion from flow.";
 
         internal static WaterRenderer Water => Utility.Water;
-        static readonly System.Collections.Generic.List<Terrain> s_Terrains = new();
+        static readonly List<Terrain> s_Terrains = new();
+        static readonly List<Material> s_SharedMaterials = new();
+        static readonly List<Renderer> s_Renderers = new();
         static readonly ShaderTagId s_RenderPipelineShaderTagID = new("RenderPipeline");
 
         [Validator(typeof(LodInput))]
@@ -98,10 +101,10 @@ namespace WaveHarmonic.Crest.Editor
 
             var isPersistent = target is FoamLodInput or DynamicWavesLodInput or ShadowLodInput;
 
-            var materials = data._Renderer.sharedMaterials;
-            for (var i = 0; i < materials.Length; i++)
+            data._Renderer.GetSharedMaterials(s_SharedMaterials);
+            for (var i = 0; i < s_SharedMaterials.Count; i++)
             {
-                var material = materials[i];
+                var material = s_SharedMaterials[i];
                 if (material == null) continue;
                 if (material.shader == null) continue;
 
@@ -146,6 +149,8 @@ namespace WaveHarmonic.Crest.Editor
                 }
 #endif
             }
+
+            s_SharedMaterials.Clear();
 
             return isValid;
         }
@@ -256,6 +261,17 @@ namespace WaveHarmonic.Crest.Editor
             {
                 return isValid;
             }
+
+#if d_Crest_SimpleTransparency
+            messenger
+            (
+                "Currently the underwater effect will force enable both the opaque and depth texture which negates most of the benefit of simple transparency.",
+                "Disable underwater.",
+                MessageType.Info, water,
+                (x, y) => y.boolValue = false,
+                nameof(WaterRenderer._Underwater) + "." + nameof(UnderwaterRenderer._Enabled)
+            );
+#endif
 
             if (target.Material != null)
             {
@@ -440,7 +456,7 @@ namespace WaveHarmonic.Crest.Editor
                 ValidateMaterialParent(target.Surface.VolumeMaterial, target.Surface.Material, messenger);
             }
 
-            if (Object.FindObjectsByType<WaterRenderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length > 1)
+            if (Helpers.FindObjectsByType<WaterRenderer>().Length > 1)
             {
                 messenger
                 (
@@ -684,7 +700,7 @@ namespace WaveHarmonic.Crest.Editor
 
             var water = Water;
 
-            if (Object.FindObjectsByType<WaterRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length == 0)
+            if (Helpers.FindObjectsByType<WaterRenderer>(FindObjectsInactive.Include).Length == 0)
             {
                 messenger
                 (
@@ -708,27 +724,27 @@ namespace WaveHarmonic.Crest.Editor
                 isValid = false;
             }
 
-            if (target._Material != null)
+            if (target.AboveSurfaceMaterial != null)
             {
-                isValid = ValidateWaterMaterial(target, messenger, Water, target._Material) && isValid;
-                ValidateMaterialParent(target._BelowSurfaceMaterial, target._Material, messenger);
+                isValid = ValidateWaterMaterial(target, messenger, Water, target.AboveSurfaceMaterial) && isValid;
+                ValidateMaterialParent(target.BelowSurfaceMaterial, target.AboveSurfaceMaterial, messenger);
             }
 
             isValid = isValid && ValidateNoRotation(target, target.transform, messenger);
 
-            if (target.Clipped && water != null)
+            if (target.Precise && water != null)
             {
                 // Validate main material, then overriden material.
-                ValidateLod(OptionalLod.Get(typeof(ClipLod)), messenger, water, material: target._Material, context: target);
+                ValidateLod(OptionalLod.Get(typeof(ClipLod)), messenger, water, material: target.AboveSurfaceMaterial, context: target);
 
-                if (water.ClipLod.DefaultClippingState == DefaultClippingState.NothingClipped)
+                if (water.ClipLod.DefaultClippingState == DefaultClippingState.NothingClipped && water.DefaultExcludes.HasFlag(WaterBodyAffects.Surface))
                 {
                     messenger
                     (
-                        $"The {nameof(ClipLod.DefaultClippingState)} on the {nameof(WaterRenderer)} is set to {DefaultClippingState.NothingClipped}. " +
-                        $"The {nameof(WaterBody.Clipped)} option will have no effect.",
-                        $"Disable {nameof(WaterBody.Clipped)} or set {nameof(ClipLod.DefaultClippingState)} to {DefaultClippingState.NothingClipped}.",
-                        MessageType.Warning,
+                        $"The {nameof(ClipLod.DefaultClippingState).Pretty().Italic()} on the {nameof(WaterRenderer).Pretty().Italic()} is set to {DefaultClippingState.NothingClipped.ToString().Pretty().Italic()}, but {nameof(WaterRenderer.DefaultExcludes).Pretty().Italic()} is set to {nameof(WaterBodyAffects.Surface).Italic()}. " +
+                        $"This is not typical when using the {nameof(WaterBody.Precise)} option, as it may not have the desired effect.",
+                        $"Disable {nameof(WaterBody.Precise).Pretty().Italic()} or set {nameof(ClipLod.DefaultClippingState).Pretty().Italic()} to {DefaultClippingState.NothingClipped.ToString().Pretty().Italic()}.",
+                        MessageType.Info,
                         water,
                         caller: target
                     );
@@ -923,12 +939,14 @@ namespace WaveHarmonic.Crest.Editor
 
             var water = Object.FindAnyObjectByType<WaterRenderer>(FindObjectsInactive.Include);
 
-            if (!target.OverrideGlobalWindSpeed && water != null && water.WindSpeedKPH < WaterRenderer.k_MaximumWindSpeedKPH)
+            var windSpeedSource = target.GetWindSpeedSource();
+
+            if (windSpeedSource != ShapeWaves.WindSpeedSource.None)
             {
                 messenger
                 (
-                    $"The wave spectrum is limited by the <i>Global Wind Speed</i> on the <i>Water Renderer</i> to {water.WindSpeedKPH} KPH.",
-                    $"If you want fully developed waves, either override the wind speed on this component or increase the <i>Global Wind Speed</i>.",
+                    WaveSpectrumEditor.GetWindSpeedText(target, windSpeedSource),
+                    WaveSpectrumEditor.GetWindSpeedFixText(windSpeedSource),
                     MessageType.Info,
                     caller: target
                 );
@@ -952,6 +970,23 @@ namespace WaveHarmonic.Crest.Editor
             }
 
             return isValid;
+        }
+
+        [Validator(typeof(ShapeFFT))]
+        static bool Validate(ShapeFFT target, ShowMessage messenger)
+        {
+            if (target.Spectrum != null && target.Spectrum._ShowAdvancedControls && !target.ApplyAdvancedSpectrumControls)
+            {
+                messenger
+                (
+                    $"{nameof(ShapeFFT.ApplyAdvancedSpectrumControls).Pretty().Italic()} needs to be enabled for anything exposed by {nameof(target.Spectrum._ShowAdvancedControls).Pretty().Italic()} to apply.",
+                    string.Empty,
+                    MessageType.Info,
+                    caller: target
+                );
+            }
+
+            return true;
         }
 
         [Validator(typeof(SphereWaterInteraction))]
@@ -1195,6 +1230,16 @@ namespace WaveHarmonic.Crest.Editor
                 }
             }
 
+            var water = Water;
+
+            if (water == null)
+            {
+                return isValid;
+            }
+
+            ValidateDisplacementPrecisionIssues(water, target, messenger);
+            ValidateWaterLevelPrecisionIssues(water, target, messenger);
+
             return isValid;
         }
 
@@ -1275,18 +1320,6 @@ namespace WaveHarmonic.Crest.Editor
                     }
                 }
 #endif // d_Unity_Terrain
-
-                if (target._Debug._ForceAlwaysUpdateDebug)
-                {
-                    messenger
-                    (
-                        $"<i>Force Always Update Debug</i> option is enabled on depth probe <i>{target.gameObject.name}</i>, which means it will render every frame instead of running from the probe.",
-                        "Disable the <i>Force Always Update Debug</i> option.",
-                        MessageType.Warning, target,
-                        (_, y) => y.boolValue = false,
-                        $"{nameof(DepthProbe._Debug)}.{nameof(DepthProbe._Debug._ForceAlwaysUpdateDebug)}"
-                    );
-                }
 
                 if (target._Resolution < 4)
                 {
@@ -1394,10 +1427,10 @@ namespace WaveHarmonic.Crest.Editor
 #endif
 
             // Check that there are no renderers in descendants.
-            var renderers = target.GetComponentsInChildren<Renderer>();
-            if (renderers.Length > 0)
+            target.GetComponentsInChildren(s_Renderers);
+            if (s_Renderers.Count > 0)
             {
-                foreach (var renderer in renderers)
+                foreach (var renderer in s_Renderers)
                 {
                     messenger
                     (
@@ -1414,6 +1447,7 @@ namespace WaveHarmonic.Crest.Editor
 
                 isValid = false;
             }
+            s_Renderers.Clear();
 
             var water = Water;
 
@@ -1534,6 +1568,22 @@ namespace WaveHarmonic.Crest.Editor
             return isValid;
         }
 
+        [Validator(typeof(LevelLod))]
+        static bool Validate(LevelLod target, ShowMessage messenger)
+        {
+            var water = Water;
+
+            if (water == null)
+            {
+                return true;
+            }
+
+            ValidateDisplacementPrecisionIssues(water, water, messenger);
+            ValidateWaterLevelPrecisionIssues(water, water, messenger);
+
+            return true;
+        }
+
         [Validator(typeof(FlowLod))]
         static bool Validate(FlowLod target, ShowMessage messenger)
         {
@@ -1640,6 +1690,19 @@ namespace WaveHarmonic.Crest.Editor
                     "Several features require absorption like underwater culling and lighting.",
                     $"Assign a valid water material.",
                     MessageType.Warning, target
+                );
+            }
+
+            if (water.RenderBeforeTransparency && !SurfaceRenderer.IsTransparent(material))
+            {
+                messenger
+                (
+                    $"The {nameof(WaterRenderer.InjectionPoint).Pretty()} on the {nameof(WaterRenderer).Pretty()} is set to {nameof(WaterInjectionPoint.BeforeTransparent).Pretty()}, but it requires the water surface material to be set to transparent. " +
+                    "The water will not render.",
+                    $"Set to transparent or set {nameof(WaterRenderer.InjectionPoint).Pretty()} to {nameof(WaterInjectionPoint.Default).Pretty()}.",
+                    MessageType.Warning,
+                    material,
+                    caller: water
                 );
             }
 
@@ -1791,6 +1854,40 @@ namespace WaveHarmonic.Crest.Editor
                 (_, y) => y.boolValue = true,
                 dependencyPropertyPath
             );
+        }
+
+        static void ValidateWaterLevelPrecisionIssues(WaterRenderer water, Object caller, ShowMessage messenger)
+        {
+            if (water.LevelLod.Enabled && !water.LevelLod.Blur)
+            {
+                messenger
+                (
+                    $"If you are seeing bump artifacts on the water surface, try enabling {nameof(Lod.Blur)} on the {water.LevelLod.Name} simulation.",
+                    "Enable blur.",
+                    MessageType.Info,
+                    water,
+                    (x, y) => y.boolValue = true,
+                    nameof(water._LevelLod) + "." + Lod.k_BlurField,
+                    caller
+                );
+            }
+        }
+
+        static void ValidateDisplacementPrecisionIssues(WaterRenderer water, Object caller, ShowMessage messenger)
+        {
+            if (water.AnimatedWavesLod.Enabled && water.AnimatedWavesLod.TextureFormatMode != LodTextureFormatMode.Precision)
+            {
+                messenger
+                (
+                    $"If you are seeing bump artifacts on the water surface, try setting {nameof(AnimatedWavesLod.TextureFormatMode)} to {LodTextureFormatMode.Precision} in {nameof(AnimatedWavesLod)}.",
+                    $"Set {nameof(AnimatedWavesLod.TextureFormatMode)} to {LodTextureFormatMode.Precision}.",
+                    MessageType.Info,
+                    water,
+                    (x, y) => y.intValue = (int)LodTextureFormatMode.Precision,
+                    nameof(water._AnimatedWavesLod) + "." + Lod.k_TextureFormatModeField,
+                    caller
+                );
+            }
         }
     }
 }

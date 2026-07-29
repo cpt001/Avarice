@@ -34,7 +34,10 @@ namespace WaveHarmonic.Crest
 
         internal override void RecalculateBounds()
         {
-            throw new System.NotImplementedException();
+            var transform = _Input.transform;
+            var scale = transform.lossyScale.XZ();
+            scale = Helpers.RotateAndEncapsulateXZ(scale, transform.rotation.eulerAngles.y);
+            _Bounds = new(_Input.transform.position, scale.XNZ());
         }
 
         internal override void Draw(Lod lod, Component component, CommandBuffer buffer, RenderTargetIdentifier target, int slices)
@@ -72,6 +75,11 @@ namespace WaveHarmonic.Crest
         }
 
         internal override void OnDisable()
+        {
+            // Empty.
+        }
+
+        internal override void OnDestroy()
         {
             // Empty.
         }

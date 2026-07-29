@@ -1,15 +1,22 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
-#if ENABLE_VR && d_UnityModuleVR
+#if ENABLE_VR
+#if UNITY_6000_5_OR_NEWER
+#if d_UnityModuleXR
 #define _XR_ENABLED
+#endif
+#else
+#if d_UnityModuleVR
+#define _XR_ENABLED
+#endif
+#endif
 #endif
 
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.XR;
 
 namespace WaveHarmonic.Crest
@@ -82,13 +89,20 @@ namespace WaveHarmonic.Crest
         // URP_COMPATIBILITY_MODE = URP + UE < 6.4
         public static bool IsRenderGraph => RenderPipelineHelper.IsUniversal
 #if URP_COMPATIBILITY_MODE
-#if !UNITY_6000_0_OR_NEWER
+#if !UNITY_6000_0_OR_NEWER || !d_UnityURP
             && false
 #else
-            && !GraphicsSettings.GetRenderPipelineSettings<RenderGraphSettings>().enableRenderCompatibilityMode
+            && !GraphicsSettings.GetRenderPipelineSettings<UnityEngine.Rendering.Universal.RenderGraphSettings>().enableRenderCompatibilityMode
 #endif
 #endif
             ;
+
+        /// <inheritdoc cref="Helpers.Destroy(ref CommandBuffer)" />
+        public static void Destroy(ref RTHandle handle)
+        {
+            handle?.Release();
+            handle = null;
+        }
 
         public static partial class BIRP
         {

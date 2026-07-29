@@ -10,10 +10,19 @@ namespace WaveHarmonic.Crest.Editor.Settings
 {
     static class ScriptingSymbols
     {
+        // Too lazy to add separate calls just to provide a NamedBuildTarget.
+        internal static bool s_OverrideCurrentNamedBuildTarget;
+        internal static NamedBuildTarget s_CurrentNamedBuildTargetOverride;
+
         internal static NamedBuildTarget CurrentNamedBuildTarget
         {
             get
             {
+                if (s_OverrideCurrentNamedBuildTarget)
+                {
+                    return s_CurrentNamedBuildTargetOverride;
+                }
+
 #if UNITY_SERVER
                 return NamedBuildTarget.Server;
 #else

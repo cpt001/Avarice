@@ -44,6 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4edd034314af4679ba066d79580dc1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _Version: 1
   _Mode: 7
   _Weight: 1
   _Queue: 0
@@ -55,13 +56,13 @@ MonoBehaviour:
   _DrawBounds: 0
   _OverrideHeight: 0
   _HeightRange: {x: -100, y: 100}
-  _Version: 1
   references:
     version: 2
     RefIds:
     - rid: 5498492890225574320
       type: {class: LevelGeometryLodInputData, ns: WaveHarmonic.Crest, asm: WaveHarmonic.Crest}
       data:
+        _Version: 0
         _Input: {fileID: 6591046838509233045}
         _Geometry: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1001 &7308845132527536165

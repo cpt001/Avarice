@@ -8,14 +8,14 @@
 
 m_CrestNameSpace
 
-float CalculateFresnelReflectionCoefficient(const float i_CosineTheta, const float i_RefractiveIndexOfAir, const float i_RefractiveIndexOfWater)
+float CalculateFresnelReflectionCoefficient(const float i_CosineTheta, const float i_RefractiveIndexOfAir, const float i_RefractiveIndexOfWater, const float i_Fresnel)
 {
     // Fresnel calculated using Schlick's approximation.
     // See: http://www.cs.virginia.edu/~jdl/bib/appearance/analytic%20models/schlick94b.pdf
     // Reflectance at facing angle.
     float R_0 = (i_RefractiveIndexOfAir - i_RefractiveIndexOfWater) / (i_RefractiveIndexOfAir + i_RefractiveIndexOfWater);
     R_0 *= R_0;
-    const float R_theta = R_0 + (1.0 - R_0) * pow(max(0., 1.0 - i_CosineTheta), 5.0);
+    const float R_theta = R_0 + (1.0 - R_0) * pow(max(0., 1.0 - i_CosineTheta), i_Fresnel);
     return R_theta;
 }
 
@@ -24,6 +24,7 @@ void ApplyReflectionUnderwater(
     const half3 i_NormalWS,
     const float i_RefractiveIndexOfAir,
     const float i_RefractiveIndexOfWater,
+    const float i_Fresnel,
     out float o_LightTransmitted,
     out float o_LightReflected
 ) {
@@ -35,7 +36,7 @@ void ApplyReflectionUnderwater(
         // Have to calculate the incident angle of incoming light to water.
         // Surface based on how it would be refracted so as to hit the camera.
         const float cosIncomingAngle = cos(asin(clamp((i_RefractiveIndexOfWater * sin(acos(cosOutgoingAngle))) / i_RefractiveIndexOfAir, -1.0, 1.0)));
-        const float reflectionCoefficient = CalculateFresnelReflectionCoefficient(cosIncomingAngle, i_RefractiveIndexOfAir, i_RefractiveIndexOfWater);
+        const float reflectionCoefficient = CalculateFresnelReflectionCoefficient(cosIncomingAngle, i_RefractiveIndexOfAir, i_RefractiveIndexOfWater, i_Fresnel);
         o_LightTransmitted = (1.0 - reflectionCoefficient);
         o_LightTransmitted = max(o_LightTransmitted, 0.0);
     }
@@ -44,7 +45,7 @@ void ApplyReflectionUnderwater(
     {
         // Angle of incident is angle of reflection.
         const float cosIncomingAngle = cosOutgoingAngle;
-        const float reflectionCoefficient = CalculateFresnelReflectionCoefficient(cosIncomingAngle, i_RefractiveIndexOfAir, i_RefractiveIndexOfWater);
+        const float reflectionCoefficient = CalculateFresnelReflectionCoefficient(cosIncomingAngle, i_RefractiveIndexOfAir, i_RefractiveIndexOfWater, i_Fresnel);
         o_LightReflected = reflectionCoefficient;
     }
 }
@@ -57,15 +58,14 @@ void ApplyFresnel
     const float i_RefractiveIndexOfAir,
     const float i_RefractiveIndexOfWater,
     const float i_TirIntensity,
+    const float i_Fresnel,
     out float o_LightTransmitted,
     out float o_LightReflected
 )
 {
-    o_LightTransmitted = 1.0;
-
     if (i_IsUnderwater)
     {
-        ApplyReflectionUnderwater(i_ViewDirectionWS, i_NormalWS, i_RefractiveIndexOfAir, i_RefractiveIndexOfWater, o_LightTransmitted, o_LightReflected);
+        ApplyReflectionUnderwater(i_ViewDirectionWS, i_NormalWS, i_RefractiveIndexOfAir, i_RefractiveIndexOfWater, i_Fresnel, o_LightTransmitted, o_LightReflected);
         // Limit how strong TIR is. Not sure if this is the best way but it seems to work gracefully.
         o_LightTransmitted = max(o_LightTransmitted, 1.0 - i_TirIntensity);
         o_LightReflected = min(o_LightReflected, i_TirIntensity);
@@ -74,7 +74,8 @@ void ApplyFresnel
     {
         const float cosAngle = max(dot(i_NormalWS, i_ViewDirectionWS), 0.0);
         // Hardcode water IOR for above surface.
-        o_LightReflected = CalculateFresnelReflectionCoefficient(cosAngle, i_RefractiveIndexOfAir, 1.33);
+        o_LightReflected = CalculateFresnelReflectionCoefficient(cosAngle, i_RefractiveIndexOfAir, 1.33, i_Fresnel);
+        o_LightTransmitted = 1.0 - o_LightReflected;
     }
 }
 

@@ -69,13 +69,6 @@ namespace WaveHarmonic.Crest
             properties.SetInteger(ShaderIDs.s_MinimumWavesSlice, Settings.FilterWaves);
         }
 
-        private protected override void GetSubstepData(float timeToSimulate, out int substeps, out float delta)
-        {
-            substeps = Mathf.FloorToInt(timeToSimulate * _SimulationFrequency);
-
-            delta = substeps > 0 ? (1f / _SimulationFrequency) : 0f;
-        }
-
         internal FoamLod()
         {
             _Enabled = true;

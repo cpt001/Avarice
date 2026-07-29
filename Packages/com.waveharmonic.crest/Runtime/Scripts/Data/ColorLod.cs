@@ -41,19 +41,19 @@ namespace WaveHarmonic.Crest
         internal ShorelineVolumeColorSource _ShorelineColorSource;
 
         [Tooltip("Color of the shoreline color.")]
-        [@Predicated(nameof(_ShorelineColorSource), inverted: false, nameof(ShorelineVolumeColorSource.None), hide: true)]
+        [@Hide(nameof(_ShorelineColorSource), nameof(ShorelineVolumeColorSource.None))]
         [@GenerateAPI(Setter.Custom)]
         [@DecoratedField, SerializeField]
         private protected Color _ShorelineColor;
 
         [Tooltip("The maximum distance of the shoreline color.\n\nIf using Depth, then it is maximum depth.")]
-        [@Predicated(nameof(_ShorelineColorSource), inverted: false, nameof(ShorelineVolumeColorSource.None), hide: true)]
+        [@Hide(nameof(_ShorelineColorSource), nameof(ShorelineVolumeColorSource.None))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _ShorelineColorMaximumDistance = 10f;
 
         [Tooltip("Shoreline color falloff value.")]
-        [@Predicated(nameof(_ShorelineColorSource), inverted: false, nameof(ShorelineVolumeColorSource.None), hide: true)]
+        [@Hide(nameof(_ShorelineColorSource), nameof(ShorelineVolumeColorSource.None))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _ShorelineColorFalloff = 2f;

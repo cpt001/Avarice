@@ -60,7 +60,7 @@ namespace WaveHarmonic.Crest
     /// Base class for scripts that register inputs to the various LOD data types.
     /// </summary>
     [@ExecuteDuringEditMode]
-    [@HelpURL("Manual/WaterInputs.html")]
+    [@HelpURL("Manual/Basics/WaterInputs.html")]
     public abstract partial class LodInput : ManagedBehaviour<WaterRenderer>
     {
         [Tooltip("The mode for this input.\n\nSee the manual for more details about input modes. Use AddComponent(LodInputMode) to set the mode via scripting. The mode cannot be changed after creation.")]
@@ -74,9 +74,9 @@ namespace WaveHarmonic.Crest
         // For others it is a case of only supporting unsupported mode(s).
 
         [Tooltip("Scales the input.")]
-        [@Predicated(typeof(AlbedoLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(ClipLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(DepthLodInput), inverted: true, hide: true)]
+        [@Hide(typeof(AlbedoLodInput))]
+        [@Hide(typeof(ClipLodInput))]
+        [@Hide(typeof(DepthLodInput))]
         [@Range(0f, 1f)]
         [@GenerateAPI]
         [SerializeField]
@@ -88,17 +88,17 @@ namespace WaveHarmonic.Crest
         int _Queue;
 
         [Tooltip("How this input blends into existing data.\n\nSimilar to blend operations in shaders. For inputs which have materials, use the blend functionality on the shader/material.")]
-        [@Predicated(typeof(AbsorptionLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(AlbedoLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(AnimatedWavesLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(ClipLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(DepthLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(DynamicWavesLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(ScatteringLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(ShadowLodInput), inverted: true, hide: true)]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Global))]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Primitive))]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Renderer))]
+        [@Hide(typeof(AbsorptionLodInput))]
+        [@Hide(typeof(AlbedoLodInput))]
+        [@Hide(typeof(AnimatedWavesLodInput))]
+        [@Hide(typeof(ClipLodInput))]
+        [@Hide(typeof(DepthLodInput))]
+        [@Hide(typeof(DynamicWavesLodInput))]
+        [@Hide(typeof(ScatteringLodInput))]
+        [@Hide(typeof(ShadowLodInput))]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Global))]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Primitive))]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Renderer))]
         [@Filtered]
         [@GenerateAPI]
         [SerializeField]
@@ -106,35 +106,35 @@ namespace WaveHarmonic.Crest
 
         [@Label("Feather")]
         [Tooltip("The width of the feathering to soften the edges to blend inputs.\n\nInputs that do not support feathering will have this field disabled or hidden in UI.")]
-        [@Predicated(typeof(AlbedoLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(AnimatedWavesLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(ClipLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(DepthLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(DynamicWavesLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(LevelLodInput), inverted: true, hide: true)]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Renderer))]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Global))]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Primitive))]
+        [@Hide(typeof(AlbedoLodInput))]
+        [@Hide(typeof(AnimatedWavesLodInput))]
+        [@Hide(typeof(ClipLodInput))]
+        [@Hide(typeof(DepthLodInput))]
+        [@Hide(typeof(DynamicWavesLodInput))]
+        [@Hide(typeof(LevelLodInput))]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Renderer))]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Global))]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Primitive))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _FeatherWidth = 0.1f;
 
         [Tooltip("How this input responds to horizontal displacement.\n\nIf false, data will not move horizontally with the waves. Has a small performance overhead when disabled. Only suitable for inputs of small size.")]
-        [@Predicated(typeof(ClipLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(FlowLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(LevelLodInput), inverted: true, hide: true)]
-        [@Predicated(typeof(ShapeWaves), inverted: true, hide: true)]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Global))]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Spline))]
+        [@Hide(typeof(ClipLodInput))]
+        [@Hide(typeof(FlowLodInput))]
+        [@Hide(typeof(LevelLodInput))]
+        [@Hide(typeof(ShapeWaves))]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Global))]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Spline))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         private protected bool _FollowHorizontalWaveMotion = false;
 
         [@Heading("Mode")]
 
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Unset), hide: true)]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Primitive), hide: true)]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Global), hide: true)]
+        [@Hide(nameof(_Mode), nameof(LodInputMode.Unset))]
+        [@Hide(nameof(_Mode), nameof(LodInputMode.Primitive))]
+        [@Hide(nameof(_Mode), nameof(LodInputMode.Global))]
         [@Stripped]
         [SerializeReference]
         internal LodInputData _Data;
@@ -144,7 +144,7 @@ namespace WaveHarmonic.Crest
 
         [@Group("Debug", order = k_DebugGroupOrder)]
 
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Global))]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Global))]
         [@DecoratedField, SerializeField]
         internal bool _DrawBounds;
 
@@ -261,6 +261,12 @@ namespace WaveHarmonic.Crest
             base.OnDisable();
             Detach();
             Data?.OnDisable();
+        }
+
+        private protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            Data?.OnDestroy();
         }
 
         private protected override Action<WaterRenderer> OnUpdateMethod => OnUpdate;
@@ -403,7 +409,7 @@ namespace WaveHarmonic.Crest
                     break;
                 case nameof(_Blend):
                     // TODO: Make compatible with disabled.
-                    if (isActiveAndEnabled) Data.OnChange($"../{propertyPath}", previousValue);
+                    if (isActiveAndEnabled) Data?.OnChange($"../{propertyPath}", previousValue);
                     break;
             }
         }

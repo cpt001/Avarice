@@ -1,17 +1,32 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace WaveHarmonic.Crest.Editor.Settings
 {
+    [System.Flags]
+    enum SamplingMethod
+    {
+        Nothing = 0,
+
+        [InspectorName("Multi-Scale")]
+        MultiScale = 1 << 0,
+
+        Stochastic = 1 << 1,
+
+        Everything = ~0,
+    }
+
     [System.Serializable]
-    class PlatformSettings
+    sealed partial class PlatformSettings
     {
         const string k_OverrideTooltip = "Override the feature for this platform";
 
@@ -23,7 +38,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
         [@Heading("Simulations", alwaysVisible: true)]
 
         [Tooltip(k_OverrideTooltip)]
-        [@Predicated(nameof(_Default), inverted: true, hide: true)]
+        [@Hide(nameof(_Default))]
         [@InlineToggle]
         [SerializeField]
         internal bool _OverrideAlbedoSimulation;
@@ -34,7 +49,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
         internal bool _AlbedoSimulation = true;
 
         [Tooltip(k_OverrideTooltip)]
-        [@Predicated(nameof(_Default), inverted: true, hide: true)]
+        [@Hide(nameof(_Default))]
         [@InlineToggle]
         [SerializeField]
         internal bool _OverrideAbsorptionSimulation;
@@ -45,7 +60,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
         internal bool _AbsorptionSimulation = true;
 
         [Tooltip(k_OverrideTooltip)]
-        [@Predicated(nameof(_Default), inverted: true, hide: true)]
+        [@Hide(nameof(_Default))]
         [@InlineToggle]
         [SerializeField]
         internal bool _OverrideScatteringSimulation;
@@ -56,7 +71,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
         internal bool _ScatteringSimulation = true;
 
         [Tooltip(k_OverrideTooltip)]
-        [@Predicated(nameof(_Default), inverted: true, hide: true)]
+        [@Hide(nameof(_Default))]
         [@InlineToggle]
         [SerializeField]
         internal bool _OverrideShadowSimulation;
@@ -67,10 +82,25 @@ namespace WaveHarmonic.Crest.Editor.Settings
         internal bool _ShadowSimulation = true;
 
 
+        [@Heading("Water Material", alwaysVisible: true)]
+
+        [Tooltip(k_OverrideTooltip)]
+        [@Hide(nameof(_Default))]
+        [@InlineToggle]
+        [SerializeField]
+        internal bool _OverrideOutScattering;
+
+        [@Label("Out-Scattering")]
+        [Tooltip("Disables out-scattering for the surface and volume.\n\nOut-scattering darkens the water with depth.")]
+        [@DecoratedField]
+        [SerializeField]
+        internal bool _OutScattering = true;
+
+
         [@Heading("Surface Material", alwaysVisible: true)]
 
         [Tooltip(k_OverrideTooltip)]
-        [@Predicated(nameof(_Default), inverted: true, hide: true)]
+        [@Hide(nameof(_Default))]
         [@InlineToggle]
         [SerializeField]
         internal bool _OverrideNormalMaps;
@@ -80,7 +110,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
         internal bool _NormalMaps = true;
 
         [Tooltip(k_OverrideTooltip)]
-        [@Predicated(nameof(_Default), inverted: true, hide: true)]
+        [@Hide(nameof(_Default))]
         [@InlineToggle]
         [SerializeField]
         internal bool _OverridePlanarReflections;
@@ -90,7 +120,28 @@ namespace WaveHarmonic.Crest.Editor.Settings
         internal bool _PlanarReflections = true;
 
         [Tooltip(k_OverrideTooltip)]
-        [@Predicated(nameof(_Default), inverted: true, hide: true)]
+        [@Hide(nameof(_Default))]
+        [@InlineToggle]
+        [SerializeField]
+        internal bool _OverridePlanarReflectionsApplySmoothness;
+
+        [@DecoratedField]
+        [SerializeField]
+        internal bool _PlanarReflectionsApplySmoothness = true;
+
+        [Tooltip(k_OverrideTooltip)]
+        [@Hide(nameof(_Default))]
+        [@InlineToggle]
+        [@SerializeField]
+        internal bool _OverrideFoamSampling;
+
+        [Tooltip("Which sampling method to use for foam.\n\nThese additional sampling techniques can be used together. Be wary that this will increase texture samples significantly.\n\nNothing: Uses the sampler set on the foam texture.\n\nMulti-Scale: Scales the foam texture by LOD to make foam pattern more visible at distances and reduces repetitive patterns. Doubles the foam texture samples.\n\nStochastic: reduces repetitive patterns. Triples the foam texture samples.")]
+        [@DecoratedField]
+        [@SerializeField]
+        internal SamplingMethod _FoamSampling = SamplingMethod.MultiScale;
+
+        [Tooltip(k_OverrideTooltip)]
+        [@Hide(nameof(_Default))]
         [@InlineToggle]
         [SerializeField]
         internal bool _OverrideFoamBioluminescence;
@@ -100,7 +151,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
         internal bool _FoamBioluminescence = true;
 
         [Tooltip(k_OverrideTooltip)]
-        [@Predicated(nameof(_Default), inverted: true, hide: true)]
+        [@Hide(nameof(_Default))]
         [@InlineToggle]
         [SerializeField]
         internal bool _OverrideCausticsForceDistortion;
@@ -109,30 +160,32 @@ namespace WaveHarmonic.Crest.Editor.Settings
         [SerializeField]
         internal bool _CausticsForceDistortion = true;
 
+        [Tooltip(k_OverrideTooltip)]
+        [@Hide(nameof(_Default))]
+        [@InlineToggle]
+        [SerializeField]
+        internal bool _OverrideAdditionalLights;
+
+        [Tooltip("Whether to calculate scattering from additional lights.")]
+        [@DecoratedField]
+        [SerializeField]
+        internal bool _AdditionalLights = true;
+
 
         [@Heading("Rendering", alwaysVisible: true)]
 
         [Tooltip(k_OverrideTooltip)]
-        [@Predicated(nameof(_Default), inverted: true, hide: true)]
+        [@Hide(nameof(_Default))]
         [@InlineToggle]
         [SerializeField]
         internal bool _OverrideSimpleTransparency;
 
+        [Tooltip("Refraction like transparency without requiring the Opaque or Depth Texture.\n\nRequires a populated Water Depth Simulation to render correctly. See the Main sample for a working scene.")]
         [@DecoratedField]
         [SerializeField]
         internal bool _SimpleTransparency;
 
         PlatformSettings Default => ProjectSettings.Instance._PlatformSettings;
-
-        public bool AlbedoSimulation => _Default || _OverrideAlbedoSimulation ? _AlbedoSimulation : Default.AlbedoSimulation;
-        public bool AbsorptionSimulation => _Default || _OverrideAbsorptionSimulation ? _AbsorptionSimulation : Default.AbsorptionSimulation;
-        public bool ScatteringSimulation => _Default || _OverrideScatteringSimulation ? _ScatteringSimulation : Default.ScatteringSimulation;
-        public bool ShadowSimulation => _Default || _OverrideShadowSimulation ? _ShadowSimulation : Default.ShadowSimulation;
-        public bool NormalMaps => _Default || _OverrideNormalMaps ? _NormalMaps : Default.NormalMaps;
-        public bool PlanarReflections => _Default || _OverridePlanarReflections ? _PlanarReflections : Default.PlanarReflections;
-        public bool FoamBioluminescence => _Default || _OverrideFoamBioluminescence ? _FoamBioluminescence : Default.FoamBioluminescence;
-        public bool CausticsForceDistortion => _Default || _OverrideCausticsForceDistortion ? _CausticsForceDistortion : Default.CausticsForceDistortion;
-        public bool SimpleTransparency => _Default || _OverrideSimpleTransparency ? _SimpleTransparency : Default.SimpleTransparency;
     }
 
     [FilePath(k_Path, FilePathAttribute.Location.ProjectFolder)]
@@ -147,7 +200,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
         [@DecoratedField, SerializeField]
         bool _DebugEnableStrippingLogging;
 
-        [@Predicated(nameof(_DebugEnableStrippingLogging))]
+        [@Enable(nameof(_DebugEnableStrippingLogging))]
         [@DecoratedField, SerializeField]
         bool _DebugOnlyLogRemainingVariants;
 
@@ -167,7 +220,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
         [@DecoratedField, SerializeField]
         bool _RenderAtmosphericScatteringWhenUnderWater;
 
-        [Tooltip("Renders the underwater effect after transparency and uses the more expensive mask.\n\nYou may need this if rendering the underwater to multiple cameras. The other benefit is that transparent objects will be fogged (albeit incorrectly).\n\nThe downsides are that there can be artifacts if waves are very choppy, has a less impressive meniscus, and generally more expensive to execute.")]
+        [Tooltip("Renders the underwater effect after transparency and uses the more expensive mask.\n\nOne benefit is that transparent objects will be fogged (albeit incorrectly).\n\nThe downsides are that there can be artifacts if waves are very choppy, has a less impressive meniscus, and generally more expensive to execute.")]
         [@DecoratedField, SerializeField]
         bool _LegacyUnderwater;
 
@@ -178,37 +231,37 @@ namespace WaveHarmonic.Crest.Editor.Settings
         internal int _Platforms;
 
         [@Label("Overriden Settings for Windows, Mac and Linux")]
-        [@Predicated(nameof(_Platforms), inverted: true, (int)BuildTargetGroup.Standalone, hide: true)]
+        [@Show(nameof(_Platforms), (int)BuildTargetGroup.Standalone)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsDesktop = new();
 
         [@Label("Overriden Settings for Dedicated Server")]
-        [@Predicated(nameof(_Platforms), inverted: true, -2, hide: true)]
+        [@Show(nameof(_Platforms), -2)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsServer = new();
 
         [@Label("Overriden Settings for Android")]
-        [@Predicated(nameof(_Platforms), inverted: true, (int)BuildTargetGroup.Android, hide: true)]
+        [@Show(nameof(_Platforms), (int)BuildTargetGroup.Android)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsAndroid = new();
 
         [@Label("Overriden Settings for iOS")]
-        [@Predicated(nameof(_Platforms), inverted: true, (int)BuildTargetGroup.iOS, hide: true)]
+        [@Show(nameof(_Platforms), (int)BuildTargetGroup.iOS)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsIOS = new();
 
         [@Label("Overriden Settings for tvOS")]
-        [@Predicated(nameof(_Platforms), inverted: true, (int)BuildTargetGroup.tvOS, hide: true)]
+        [@Show(nameof(_Platforms), (int)BuildTargetGroup.tvOS)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsTVOS = new();
 
         [@Label("Overriden Settings for visionOS")]
-        [@Predicated(nameof(_Platforms), inverted: true, (int)BuildTargetGroup.VisionOS, hide: true)]
+        [@Show(nameof(_Platforms), (int)BuildTargetGroup.VisionOS)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsVisionOS = new();
@@ -216,7 +269,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
         // Web has hard limitations on number of sampled textures. Set defaults with that
         // in mind so the surface renders.
         [@Label("Overriden Settings for Web")]
-        [@Predicated(nameof(_Platforms), inverted: true, (int)BuildTargetGroup.WebGL, hide: true)]
+        [@Show(nameof(_Platforms), (int)BuildTargetGroup.WebGL)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsWeb = new()
@@ -240,13 +293,13 @@ namespace WaveHarmonic.Crest.Editor.Settings
 
         // This will show if nothing else shows.
         [@Label("Default Settings")]
-        [@Predicated(nameof(_Platforms), inverted: false, (int)BuildTargetGroup.Standalone, hide: true)]
-        [@Predicated(nameof(_Platforms), inverted: false, Reflected.BuildTargetGroup.k_Server, hide: true)]
-        [@Predicated(nameof(_Platforms), inverted: false, (int)BuildTargetGroup.Android, hide: true)]
-        [@Predicated(nameof(_Platforms), inverted: false, (int)BuildTargetGroup.iOS, hide: true)]
-        [@Predicated(nameof(_Platforms), inverted: false, (int)BuildTargetGroup.WebGL, hide: true)]
-        [@Predicated(nameof(_Platforms), inverted: false, (int)BuildTargetGroup.tvOS, hide: true)]
-        [@Predicated(nameof(_Platforms), inverted: false, (int)BuildTargetGroup.VisionOS, hide: true)]
+        [@Hide(nameof(_Platforms), (int)BuildTargetGroup.Standalone)]
+        [@Hide(nameof(_Platforms), Reflected.BuildTargetGroup.k_Server)]
+        [@Hide(nameof(_Platforms), (int)BuildTargetGroup.Android)]
+        [@Hide(nameof(_Platforms), (int)BuildTargetGroup.iOS)]
+        [@Hide(nameof(_Platforms), (int)BuildTargetGroup.WebGL)]
+        [@Hide(nameof(_Platforms), (int)BuildTargetGroup.tvOS)]
+        [@Hide(nameof(_Platforms), (int)BuildTargetGroup.VisionOS)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettings = new() { _Default = true };
@@ -290,11 +343,20 @@ namespace WaveHarmonic.Crest.Editor.Settings
 #endif
 
         internal bool _IsPlatformTabChange;
+        readonly Dictionary<NamedBuildTarget, PlatformSettings> _PlatformSettingsMap = new();
 
         void OnEnable()
         {
             // Fixes not being editable.
             hideFlags = HideFlags.HideAndDontSave & ~HideFlags.NotEditable;
+
+            _PlatformSettingsMap.Clear();
+            _PlatformSettingsMap.Add(NamedBuildTarget.Standalone, _PlatformSettingsDesktop);
+            _PlatformSettingsMap.Add(NamedBuildTarget.Server, _PlatformSettingsServer);
+            _PlatformSettingsMap.Add(NamedBuildTarget.Android, _PlatformSettingsAndroid);
+            _PlatformSettingsMap.Add(NamedBuildTarget.iOS, _PlatformSettingsIOS);
+            _PlatformSettingsMap.Add(NamedBuildTarget.tvOS, _PlatformSettingsTVOS);
+            _PlatformSettingsMap.Add(NamedBuildTarget.VisionOS, _PlatformSettingsVisionOS);
         }
 
 
@@ -326,8 +388,15 @@ namespace WaveHarmonic.Crest.Editor.Settings
 
         void UpdateScriptingSymbols()
         {
-            ScriptingSymbols.Set(ProjectSymbols.k_LegacyUnderwaterScriptingSymbol, _LegacyUnderwater);
-            ScriptingSymbols.Set(ProjectSymbols.k_SimpleTransparencyScriptingSymbol, CurrentPlatformSettings.SimpleTransparency);
+            foreach (var build in _PlatformSettingsMap.Keys)
+            {
+                ScriptingSymbols.s_OverrideCurrentNamedBuildTarget = true;
+                ScriptingSymbols.s_CurrentNamedBuildTargetOverride = build;
+                ScriptingSymbols.Set(ProjectSymbols.k_LegacyUnderwaterScriptingSymbol, _LegacyUnderwater);
+                ScriptingSymbols.Set(ProjectSymbols.k_SimpleTransparencyScriptingSymbol, _PlatformSettingsMap[build].SimpleTransparency);
+                ScriptingSymbols.Set(ProjectSymbols.k_PlanarReflectionApplySmoothnessScriptingSymbol, !_PlatformSettingsMap[build].PlanarReflectionsApplySmoothness);
+                ScriptingSymbols.s_OverrideCurrentNamedBuildTarget = false;
+            }
         }
 
         void UpdateSymbols()
@@ -338,8 +407,10 @@ namespace WaveHarmonic.Crest.Editor.Settings
 
         sealed class ProjectSymbols : AssetModificationProcessor
         {
+            // The default value should not produce a symbol.
             public const string k_LegacyUnderwaterScriptingSymbol = "d_Crest_LegacyUnderwater";
             public const string k_SimpleTransparencyScriptingSymbol = "d_Crest_SimpleTransparency";
+            public const string k_PlanarReflectionApplySmoothnessScriptingSymbol = "d_Crest_DisablePlanarReflectionApplySmoothness";
 
             static FileSystemWatcher s_Watcher;
 
@@ -370,7 +441,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
             {
                 EditorApplication.delayCall += () =>
                 {
-                    if (ProjectSettings.Instance != null && ProjectSettings.Instance._IsPlatformTabChange)
+                    if (Instance != null && Instance._IsPlatformTabChange)
                     {
                         return;
                     }
@@ -435,7 +506,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
         public override void OnDeactivate()
         {
             base.OnDeactivate();
-            Helpers.Destroy(_Editor);
+            Helpers.Destroy(ref _Editor);
             Undo.undoRedoPerformed -= OnUndoRedo;
         }
 
@@ -446,9 +517,9 @@ namespace WaveHarmonic.Crest.Editor.Settings
 
         public override void OnGUI(string searchContext)
         {
-            if (_Editor.target == null)
+            if (_Editor == null || _Editor.target == null)
             {
-                Helpers.Destroy(_Editor);
+                Helpers.Destroy(ref _Editor);
                 _Editor = UnityEditor.Editor.CreateEditor(ProjectSettings.Instance);
                 return;
             }
@@ -495,7 +566,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
     }
 
     [CustomEditor(typeof(ProjectSettings))]
-    class ProjectSettingsEditor : Inspector
+    sealed class ProjectSettingsEditor : Inspector
     {
         protected override void OnChange()
         {

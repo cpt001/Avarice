@@ -215,6 +215,7 @@ struct Cascade
     float _Count;
     float _OneOverResolution;
     float _Texel;
+    // NOTE: Currently set to Dynamic Waves, as it is only used by SphereWaterInteraction.compute.
     float _MaximumWavelength;
 
     float _Scale;
@@ -253,19 +254,25 @@ struct Cascade
     m_MakeCascadeCopy(Depth)
     m_MakeCascade(DynamicWaves)
     m_MakeCascadeCopy(DynamicWaves)
+#ifdef g_Crest_CascadeDynamicWavesSource
     m_MakeCascadePrevious(DynamicWaves)
+#endif
     m_MakeCascade(Flow)
     m_MakeCascadeCopy(Flow)
     m_MakeCascade(Foam)
     m_MakeCascadeCopy(Foam)
+#ifdef g_Crest_CascadeFoamSource
     m_MakeCascadePrevious(Foam)
+#endif
     m_MakeCascade(Level)
     m_MakeCascadeCopy(Level)
     m_MakeCascade(Scattering)
     m_MakeCascadeCopy(Scattering)
     m_MakeCascade(Shadow)
     m_MakeCascadeCopy(Shadow)
+#ifdef g_Crest_CascadeShadowSource
     m_MakeCascadePrevious(Shadow)
+#endif
 
     // Convert compute shader id to uv texture coordinates
     float3 IDToUV(const uint2 i_ID) m_ConstantReturn
@@ -362,6 +369,7 @@ struct Cascade
     m_Sample(Depth, half2, .xy)
     m_SampleWeighted(Depth, half2)
     m_Sample(DynamicWaves, half2, .xy)
+    m_SampleWeighted(DynamicWaves, half2)
     m_Sample(Flow, half2, .xy)
     m_SampleWeighted(Flow, half2)
     m_Sample(Foam, half, .x)
@@ -418,12 +426,8 @@ struct Cascade
             // Compute derivative of water level - needed to get base normal of water. Water
             // normal, normal map etc is then added to base normal.
             const float2 dd = float2(_OneOverResolution, 0.0);
-            const float xOffset = SampleAnimatedWaves(uv + dd.xyy).w;
-            const float zOffset = SampleAnimatedWaves(uv + dd.yxy).w;
-
-            // TODO: Is weight in correct position?
-            io_Derivatives.x += i_Weight * (xOffset - position.w) / _Texel;
-            io_Derivatives.y += i_Weight * (zOffset - position.w) / _Texel;
+            const float2 offset = float2(SampleAnimatedWaves(uv + dd.xyy).w, SampleAnimatedWaves(uv + dd.yxy).w);
+            io_Derivatives += ((offset - position.w) / _Texel) * i_Weight;
         }
     }
 
@@ -463,8 +467,7 @@ struct Cascade
         return normalize(xProduct).xz;
     }
 
-    // TODO: Rename
-    void SampleNormals(const float2 i_Position, const float i_Weight, inout half2 io_Normal, inout half io_Determinant) m_ConstantReturn
+    void SampleDisplacementNormal(const float2 i_Position, const float i_Weight, inout half2 io_Normal, inout half io_Determinant) m_ConstantReturn
     {
         float3 xDisplacement; float3 zDisplacement;
         half3 displacement = __SampleDisplacements(i_Position, xDisplacement, zDisplacement).xyz;
@@ -589,10 +592,11 @@ float2 DataIDToInputUV
 )
 {
     const float2 position = i_Cascade.IDToWorld(i_ID);
-    float2 uv = (position - i_Position) / i_Size;
+    float2 uv = (position - i_Position);
 
     // Clockwise transform rotation.
     uv = uv.x * float2(i_Rotation.y, -i_Rotation.x) + uv.y * i_Rotation;
+    uv /= i_Size;
     uv += 0.5;
 
     return uv;

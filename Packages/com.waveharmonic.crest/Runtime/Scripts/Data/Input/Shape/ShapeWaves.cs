@@ -12,10 +12,20 @@ namespace WaveHarmonic.Crest
     /// Base class for Shape components.
     /// </summary>
     [@ExecuteDuringEditMode(ExecuteDuringEditMode.Include.None)]
-    [@HelpURL("Manual/Waves.html#wave-conditions")]
+    [@HelpURL("Manual/Simulation/Waves.html")]
     [@FilterEnum(nameof(_Blend), Filtered.Mode.Include, (int)LodInputBlend.Off, (int)LodInputBlend.Additive, (int)LodInputBlend.Alpha, (int)LodInputBlend.AlphaClip)]
     public abstract partial class ShapeWaves : LodInput
     {
+        [@Space(10)]
+
+        [Tooltip("Whether to use bicubic sampling to reduce artifacts.\n\nThis is only needed when using gerstner waves without normal maps or small waves to hide artifacts.")]
+        [@Order(nameof(_FollowHorizontalWaveMotion), Order.Placement.Below)]
+        [@Hide(nameof(_Mode), nameof(LodInputMode.Renderer))]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [@SerializeField]
+        bool _BicubicSampling;
+
         [@Heading("Waves")]
 
         [Tooltip("The spectrum that defines the water surface shape.")]
@@ -27,8 +37,11 @@ namespace WaveHarmonic.Crest
         [Tooltip("Whether to evaluate the spectrum every frame.\n\nWhen false, the wave spectrum is evaluated once on startup in editor play mode and standalone builds, rather than every frame. This is less flexible, but it reduces the performance cost significantly.")]
         [@GenerateAPI]
         [FormerlySerializedAs("_SpectrumFixedAtRuntime")]
+        [@DecoratedField]
         [SerializeField]
-        bool _EvaluateSpectrumAtRunTimeEveryFrame;
+        private protected bool _EvaluateSpectrumAtRunTimeEveryFrame;
+
+        [@Space(10)]
 
         [Tooltip("How much these waves respect the shallow water attenuation.\n\nAttenuation is defined on the Animated Waves. Set to zero to ignore attenuation.")]
         [@Range(0f, 1f)]
@@ -37,11 +50,13 @@ namespace WaveHarmonic.Crest
         float _RespectShallowWaterAttenuation = 1f;
 
         [Tooltip("Whether global waves is applied above or below sea level.\n\nWaves are faded out to avoid hard transitionds. They are fully faded by 1m from sea level.")]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(LodInputMode.Global))]
+        [@Enable(nameof(_Mode), nameof(LodInputMode.Global))]
         [@GenerateAPI]
         [@DecoratedField]
         [SerializeField]
         bool _SeaLevelOnly = true;
+
+        [@Space(10)]
 
         [Tooltip("Whether to use the wind direction on this component rather than the global wind direction.\n\nGlobal wind direction comes from the Water Renderer component.")]
         [@GenerateAPI]
@@ -50,8 +65,8 @@ namespace WaveHarmonic.Crest
 
         [@Label("Wind Direction")]
         [Tooltip("Primary wave direction heading (degrees).\n\nThis is the angle from x axis in degrees that the waves are oriented towards. If a spline is being used to place the waves, this angle is relative to the spline.")]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Paint))]
-        [@Predicated(nameof(_OverrideGlobalWindDirection), hide: true)]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Paint))]
+        [@Show(nameof(_OverrideGlobalWindDirection))]
         [@ShowComputedProperty(nameof(WaveDirectionHeadingAngle))]
         [@Range(-180, 180)]
         [@GenerateAPI(Getter.Custom)]
@@ -65,14 +80,14 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Wind speed in km/h. Controls wave conditions.")]
         [@ShowComputedProperty(nameof(WindSpeedKPH))]
-        [@Predicated(nameof(_OverrideGlobalWindSpeed), hide: true)]
+        [@Show(nameof(_OverrideGlobalWindSpeed))]
         [@Range(0, 150f, scale: 2f)]
         [@GenerateAPI]
         [SerializeField]
         float _WindSpeed = 20f;
 
 
-        [Header("Generation Settings")]
+        [@Heading("Generation Settings")]
 
         [Tooltip("Resolution to use for wave generation buffers.\n\nLow resolutions are more efficient but can result in noticeable patterns in the shape.")]
         [@Stepped(16, 512, step: 2, power: true)]
@@ -84,7 +99,7 @@ namespace WaveHarmonic.Crest
         [@Heading("Level of Detail")]
 
         [Tooltip("Whether the maximum possible vertical displacement is used for the Drop Detail Height Based On Waves calculation.\n\nThis setting is ignored for global waves, as they always contribute. For local waves, only enable for large areas that are treated like global waves (eg a storm).")]
-        [@Predicated(nameof(_Mode), inverted: false, nameof(LodInputMode.Global))]
+        [@Disable(nameof(_Mode), nameof(LodInputMode.Global))]
         [@GenerateAPI]
         [@DecoratedField]
         [SerializeField]
@@ -111,6 +126,7 @@ namespace WaveHarmonic.Crest
             public static readonly int s_MaximumAttenuationDepth = Shader.PropertyToID("_Crest_MaximumAttenuationDepth");
             public static readonly int s_AxisX = Shader.PropertyToID("_Crest_AxisX");
             public static readonly int s_SeaLevelOnly = Shader.PropertyToID("_Crest_SeaLevelOnly");
+            public static readonly int s_WaveBufferAttenuation = Shader.PropertyToID("_Crest_WaveBufferAttenuation");
         }
 
         private protected virtual WaveSpectrum DefaultSpectrum => WindSpectrum;
@@ -180,6 +196,23 @@ namespace WaveHarmonic.Crest
             _WaveDisplacementReporter = null;
         }
 
+        internal enum WindSpeedSource
+        {
+            None, // Wind Speed is at maximum.
+            ShapeWaves,
+            WaterRenderer,
+        }
+
+        internal WindSpeedSource GetWindSpeedSource()
+        {
+            if (WindSpeedKPH >= WaterRenderer.k_MaximumWindSpeedKPH)
+            {
+                return WindSpeedSource.None;
+            }
+
+            return OverrideGlobalWindSpeed ? WindSpeedSource.ShapeWaves : WindSpeedSource.WaterRenderer;
+        }
+
         internal override void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slice = -1)
         {
             if (weight * Weight <= 0f)
@@ -194,23 +227,21 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            var lodCount = simulation.Slices;
-
-            var shape = (AnimatedWavesLod)simulation;
-
-            var wrapper = new PropertyWrapperCompute(buffer, s_TransferWavesComputeShader, 0);
-
             if (_FirstCascade < 0 || _LastCascade < 0)
             {
                 return;
             }
 
+            var lodCount = simulation.Slices;
+            var lodResolution = simulation.Resolution;
+            var shape = (AnimatedWavesLod)simulation;
+
+            var wrapper = new PropertyWrapperCompute(buffer, s_TransferWavesComputeShader, 0);
+
             // Write to per-octave _WaveBuffers (ie pre-combined). Not the same as _AnimatedWaves.
             wrapper.SetTexture(Crest.ShaderIDs.s_Target, target);
             // Input weight. Weight for each octave calculated in compute.
             wrapper.SetFloat(LodInput.ShaderIDs.s_Weight, Weight);
-
-            wrapper.SetInteger(Crest.ShaderIDs.s_Resolution, Resolution);
 
             var water = shape._Water;
 
@@ -219,7 +250,7 @@ namespace WaveHarmonic.Crest
                 _WaveBufferParameters[lodIdx] = new(-1, -2, 0, 1);
 
                 var found = false;
-                var filter = new AnimatedWavesLod.WavelengthFilter(water, lodIdx);
+                var filter = new AnimatedWavesLod.WavelengthFilter(water, lodIdx, lodResolution);
 
                 for (var i = _FirstCascade; i <= _LastCascade; i++)
                 {
@@ -254,7 +285,7 @@ namespace WaveHarmonic.Crest
             SetRenderParameters(water, wrapper);
 
             wrapper.SetFloat(ShaderIDs.s_WaveResolutionMultiplier, shape.WaveResolutionMultiplier);
-            wrapper.SetFloat(ShaderIDs.s_TransitionalWavelengthThreshold, water.MaximumWavelength(water.LodLevels - 1) * 0.5f);
+            wrapper.SetFloat(ShaderIDs.s_TransitionalWavelengthThreshold, water.MaximumWavelength(water.LodLevels - 1, simulation.Resolution) * 0.5f);
             wrapper.SetVectorArray(ShaderIDs.s_WaveBufferParameters, _WaveBufferParameters);
 
             var isTexture = Mode is LodInputMode.Paint or LodInputMode.Texture;
@@ -262,6 +293,9 @@ namespace WaveHarmonic.Crest
 
             wrapper.SetKeyword(s_KeywordTexture, isTexture && !isAlphaBlend);
             wrapper.SetKeyword(s_KeywordTextureBlend, isTexture && isAlphaBlend);
+            wrapper.SetKeyword(new LocalKeyword(s_TransferWavesComputeShader, "d_Bicubic"), _BicubicSampling);
+
+            wrapper.SetFloatArray(ShaderIDs.s_WaveBufferAttenuation, _ActiveSpectrum._Attenuation);
 
             if (isTexture)
             {
@@ -284,9 +318,12 @@ namespace WaveHarmonic.Crest
         void GraphicsDraw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass, float weight, int slice)
         {
             var lod = simulation as AnimatedWavesLod;
+            var lodResolution = simulation.Resolution;
 
             var wrapper = new PropertyWrapperBuffer(buffer);
             SetRenderParameters(simulation._Water, wrapper);
+
+            buffer.SetShaderKeyword("d_Bicubic", _BicubicSampling);
 
             var isFirst = true;
 
@@ -295,7 +332,7 @@ namespace WaveHarmonic.Crest
                 _Wavelength = MinWavelength(i) / lod.WaveResolutionMultiplier;
 
                 // Do the weight from scratch because this is the real filter.
-                weight = AnimatedWavesLod.FilterByWavelength(simulation._Water, slice, _Wavelength) * Weight;
+                weight = AnimatedWavesLod.FilterByWavelength(simulation._Water, slice, _Wavelength, lodResolution) * Weight;
                 if (weight <= 0f) continue;
 
                 var average = _Wavelength * 1.5f * lod.WaveResolutionMultiplier;
@@ -402,6 +439,7 @@ namespace WaveHarmonic.Crest
             wrapper.SetTexture(ShaderIDs.s_WaveBuffer, _WaveBuffers);
             wrapper.SetFloat(ShaderIDs.s_RespectShallowWaterAttenuation, _RespectShallowWaterAttenuation);
             wrapper.SetFloat(ShaderIDs.s_MaximumAttenuationDepth, water._AnimatedWavesLod.ShallowsMaximumDepth);
+            wrapper.SetInteger(Crest.ShaderIDs.s_Resolution, Resolution);
         }
 
         private protected override void Initialize()
@@ -478,16 +516,8 @@ namespace WaveHarmonic.Crest
                         break;
                 }
 
-                if (_Rect.Encapsulates(bounds))
-                {
-                    horizontal = nh;
-                    vertical = nv;
-                }
-                else
-                {
-                    horizontal = Mathf.Max(horizontal, nh);
-                    vertical = Mathf.Max(vertical, nv);
-                }
+                horizontal = Mathf.Max(horizontal, nh);
+                vertical = Mathf.Max(vertical, nv);
 
                 return true;
             }
@@ -556,30 +586,33 @@ namespace WaveHarmonic.Crest
             s_InstanceCount++;
         }
 
-        private protected virtual void OnDestroy()
+        private protected override void OnDestroy()
         {
+            base.OnDestroy();
+
             if (--s_InstanceCount <= 0)
             {
-                if (s_WindSpectrum != null)
-                {
-                    Helpers.Destroy(s_WindSpectrum);
-                }
+                Helpers.Destroy(ref s_WindSpectrum);
             }
         }
     }
 
     partial class ShapeWaves
     {
+        private protected override int Version => Mathf.Max(base.Version, 3);
+
         [HideInInspector, SerializeField]
         AlphaSource _AlphaSource;
         enum AlphaSource { AlwaysOne, FromZero, FromZeroNormalized }
 
-        private protected int MigrateV1(int version)
+        private protected override void OnMigrate()
         {
+            base.OnMigrate();
+
             // Version 1
             // - Merge Alpha Source into Blend.
             // - Rename and invert Spectrum Fixed at Run-Time
-            if (version < 1)
+            if (_Version < 1)
             {
                 if (_Blend == LodInputBlend.Alpha)
                 {
@@ -593,35 +626,19 @@ namespace WaveHarmonic.Crest
                 }
 
                 _EvaluateSpectrumAtRunTimeEveryFrame = !_EvaluateSpectrumAtRunTimeEveryFrame;
-
-                version = 1;
             }
 
-            return version;
-        }
-
-        private protected int MigrateV2(int version)
-        {
             // Version 2
             // - Global wind direction
-            if (version < 2)
+            if (_Version < 2)
             {
                 _OverrideGlobalWindDirection = true;
-                version = 2;
             }
 
-            return version;
-        }
-
-        private protected int MigrateV3(int version)
-        {
-            if (version < 3)
+            if (_Version < 3)
             {
                 _SeaLevelOnly = false;
-                version = 3;
             }
-
-            return version;
         }
     }
 

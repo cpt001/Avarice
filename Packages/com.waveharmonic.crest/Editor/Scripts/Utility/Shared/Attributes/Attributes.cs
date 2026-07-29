@@ -30,7 +30,7 @@ namespace WaveHarmonic.Crest.Attributes
         /// <summary>
         /// Override this method to customise the label.
         /// </summary>
-        internal virtual GUIContent BuildLabel(GUIContent label) => label;
+        internal virtual GUIContent BuildLabel(SerializedProperty property, GUIContent label, DecoratedDrawer drawer) => label;
 
         /// <summary>
         /// Override this method to make your own IMGUI based GUI for the property.
@@ -55,7 +55,7 @@ namespace WaveHarmonic.Crest.Attributes
         /// <summary>
         /// Override this method to customise the label.
         /// </summary>
-        internal virtual GUIContent BuildLabel(GUIContent label) => label;
+        internal virtual GUIContent BuildLabel(SerializedProperty property, GUIContent label, DecoratedDrawer drawer) => label;
 
         /// <summary>
         /// Override this method to additively change the appearance of a decorated field.
@@ -83,6 +83,37 @@ namespace WaveHarmonic.Crest.Attributes
 
 namespace WaveHarmonic.Crest
 {
+    sealed class CustomField : DecoratedProperty
+    {
+        internal override void OnGUI(Rect position, SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
+        {
+            if (drawer._Inspector == null)
+            {
+                return;
+            }
+
+            drawer._Inspector.OnCustomField(position, property, label, drawer);
+        }
+    }
+
+    sealed class CustomLabel : Decorator
+    {
+        public override bool AlwaysVisible => false;
+
+        internal override GUIContent BuildLabel(SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
+        {
+            label = base.BuildLabel(property, label, drawer);
+            if (drawer._Inspector == null) return label;
+            label = drawer._Inspector.OnCustomLabel(property, label, drawer);
+            return label;
+        }
+
+        internal override void Decorate(Rect position, SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
+        {
+            // Empty
+        }
+    }
+
     /// <summary>
     /// Renders the property using EditorGUI.PropertyField.
     /// </summary>
@@ -139,6 +170,28 @@ namespace WaveHarmonic.Crest
                     EditorGUILayout.Space(EditorGUIUtility.standardVerticalSpacing * 3);
                 }
             }
+        }
+    }
+
+
+    sealed class Order : Decorator
+    {
+        public override bool AlwaysVisible => true;
+
+        public readonly string _Target;
+        public readonly Placement _Placement;
+
+        public enum Placement
+        {
+            Heading,
+            Below,
+            Above,
+        }
+
+        public Order(string target, Placement placement = Placement.Heading)
+        {
+            _Target = target;
+            _Placement = placement;
         }
     }
 
@@ -262,6 +315,11 @@ namespace WaveHarmonic.Crest
 
         internal override void Decorate(Rect position, SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
         {
+            if (Inspector.s_SkipDecorators)
+            {
+                return;
+            }
+
             if (DecoratedDrawer.s_IsFoldoutOpen)
             {
                 --EditorGUI.indentLevel;
@@ -407,7 +465,7 @@ namespace WaveHarmonic.Crest
                     property.floatValue = Mathf.Max(_Minimum, property.floatValue);
                     break;
                 case SerializedPropertyType.Integer:
-                    property.floatValue = Mathf.Max((int)_Minimum, property.intValue);
+                    property.intValue = Mathf.Max((int)_Minimum, property.intValue);
                     break;
                 case SerializedPropertyType.Vector2:
                     var vector2Value = property.vector2Value;
@@ -885,9 +943,9 @@ namespace WaveHarmonic.Crest
             _Label = label;
         }
 
-        internal override GUIContent BuildLabel(GUIContent label)
+        internal override GUIContent BuildLabel(SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
         {
-            label = base.BuildLabel(label);
+            label = base.BuildLabel(property, label, drawer);
             label.text = _Label;
             return label;
         }
@@ -903,7 +961,7 @@ namespace WaveHarmonic.Crest
     /// </summary>
     sealed class Heading : Decorator
     {
-        readonly GUIContent _Text;
+        public readonly GUIContent _Text;
         readonly string _HelpLink;
         readonly Style _Style;
         readonly bool _AlwaysVisible;
@@ -928,6 +986,11 @@ namespace WaveHarmonic.Crest
 
         internal override void Decorate(Rect position, SerializedProperty property, GUIContent label, DecoratedDrawer drawer)
         {
+            if (Inspector.s_SkipDecorators)
+            {
+                return;
+            }
+
             var enabled = GUI.enabled;
             if (_AlwaysEnabled) GUI.enabled = true;
 

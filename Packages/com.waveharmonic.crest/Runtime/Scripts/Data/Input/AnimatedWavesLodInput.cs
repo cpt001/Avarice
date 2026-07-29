@@ -12,7 +12,7 @@ namespace WaveHarmonic.Crest
     /// Attach this to objects that you want to render into the displacment textures to
     /// affect the water shape.
     /// </remarks>
-    [@HelpURL("Manual/Waves.html#animated-waves-inputs")]
+    [@HelpURL("Manual/Simulation/Waves.html#animated-waves-inputs")]
     public sealed partial class AnimatedWavesLodInput : LodInput
     {
         [@Space(10)]
@@ -23,14 +23,14 @@ namespace WaveHarmonic.Crest
         DisplacementPass _DisplacementPass = DisplacementPass.LodIndependent;
 
         [Tooltip("Whether to filter this input by wavelength.\n\nIf disabled, it will render to all LODs.")]
-        [@Predicated(nameof(_DisplacementPass), inverted: true, nameof(DisplacementPass.LodDependent))]
+        [@Enable(nameof(_DisplacementPass), nameof(DisplacementPass.LodDependent))]
         [@GenerateAPI]
         [DecoratedField, SerializeField]
         bool _FilterByWavelength;
 
         [Tooltip("Which octave to render into.\n\nFor example, set this to 2 to render into the 2m-4m octave. These refer to the same octaves as the wave spectrum editor.")]
-        [@Predicated(nameof(_DisplacementPass), inverted: true, nameof(DisplacementPass.LodDependent))]
-        [@Predicated(nameof(_FilterByWavelength))]
+        [@Enable(nameof(_DisplacementPass), nameof(DisplacementPass.LodDependent))]
+        [@Enable(nameof(_FilterByWavelength))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _OctaveWavelength = 512f;
@@ -49,7 +49,7 @@ namespace WaveHarmonic.Crest
         float _MaximumDisplacementHorizontal = 0f;
 
         [Tooltip("Use the bounding box of an attached renderer component to determine the maximum vertical displacement.")]
-        [@Predicated(nameof(_Mode), inverted: true, nameof(LodInputMode.Renderer))]
+        [@Enable(nameof(_Mode), nameof(LodInputMode.Renderer))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _ReportRendererBounds = false;
@@ -78,7 +78,7 @@ namespace WaveHarmonic.Crest
 
         internal override float Filter(WaterRenderer water, int slice)
         {
-            return AnimatedWavesLod.FilterByWavelength(water, slice, _FilterByWavelength ? _OctaveWavelength : 0f);
+            return AnimatedWavesLod.FilterByWavelength(water, slice, _FilterByWavelength ? _OctaveWavelength : 0f, water.AnimatedWavesLod.Resolution);
         }
 
         bool ReportDisplacement(WaterRenderer water, ref Rect bounds, ref float horizontal, ref float vertical)
@@ -132,12 +132,9 @@ namespace WaveHarmonic.Crest
         }
     }
 
-    partial class AnimatedWavesLodInput : ISerializationCallbackReceiver
+    partial class AnimatedWavesLodInput
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 1;
-#pragma warning restore 414
+        private protected override int Version => Mathf.Max(base.Version, 1);
 
         [System.Obsolete("Please use DisplacementPass instead.")]
         [Tooltip("When to render the input into the displacement data.\n\nIf enabled, it renders into all LODs of the simulation after the combine step rather than before with filtering. Furthermore, it will also affect dynamic waves.")]
@@ -146,30 +143,25 @@ namespace WaveHarmonic.Crest
         [HideInInspector]
         bool _RenderPostCombine = true;
 
+        [System.Obsolete]
         void SetRenderPostCombine(bool previous, bool current, bool force = false)
         {
             if (previous == current && !force) return;
             _DisplacementPass = current ? DisplacementPass.LodIndependent : DisplacementPass.LodDependent;
         }
 
+#pragma warning disable CS0612 // Type or member is obsolete
 #pragma warning disable CS0618 // Type or member is obsolete
-
-        /// <inheritdoc/>
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        private protected override void OnMigrate()
         {
+            base.OnMigrate();
+
             if (_Version < 1)
             {
                 SetRenderPostCombine(_RenderPostCombine, _RenderPostCombine, force: true);
-                _Version = 1;
             }
         }
-
+#pragma warning restore CS0612 // Type or member is obsolete
 #pragma warning restore CS0618 // Type or member is obsolete
-
-        /// <inheritdoc/>
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
-        {
-
-        }
     }
 }

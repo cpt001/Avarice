@@ -37,13 +37,8 @@ namespace WaveHarmonic.Crest
     /// Renders reflections for water. Currently on planar reflections.
     /// </summary>
     [Serializable]
-    public sealed partial class WaterReflections
+    public sealed partial class WaterReflections : Versioned
     {
-        [SerializeField, HideInInspector]
-#pragma warning disable 414
-        int _Version = 0;
-#pragma warning restore 414
-
         [@Space(10)]
 
         [@Label("Enable")]
@@ -56,7 +51,7 @@ namespace WaveHarmonic.Crest
         [@Heading("Capture")]
 
         [Tooltip("What side of the water surface to render planar reflections for.")]
-        [@GenerateAPI(name: "ReflectionSide")]
+        [@GenerateAPI(Setter.Custom, name: "ReflectionSide")]
         [@DecoratedField, SerializeField]
         internal WaterReflectionSide _Mode = WaterReflectionSide.Above;
 
@@ -76,11 +71,6 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         float _Overscan = 1.5f;
 
-        [Tooltip("Whether to render to the viewer camera only.\n\nWhen disabled, reflections will render for all cameras rendering the water layer, which currently this prevents Refresh Rate from working. Enabling will unlock the Refresh Rate heading.")]
-        [@GenerateAPI]
-        [@DecoratedField, SerializeField]
-        internal bool _RenderOnlySingleCamera;
-
         [@Space(10)]
 
         [Tooltip("Whether to render the sky or fallback to default reflections.\n\nNot rendering the sky can prevent other custom shaders (like tree leaves) from being in the final output. Enable for best compatibility.")]
@@ -95,7 +85,7 @@ namespace WaveHarmonic.Crest
 
 #pragma warning disable 414
         [Tooltip("Disables shadows.")]
-        [@GenerateAPI]
+        [@GenerateAPI(Setter.Custom)]
         [@DecoratedField, SerializeField]
         bool _DisableShadows = true;
 #pragma warning restore 414
@@ -146,11 +136,11 @@ namespace WaveHarmonic.Crest
         [@Heading("Refresh Rate")]
 
         [Tooltip("Refresh reflection every x frames (one is every frame)")]
-        [@Predicated(nameof(_RenderOnlySingleCamera))]
+        [@Enable(nameof(_RenderOnlySingleCamera))]
         [@DecoratedField, SerializeField]
         int _RefreshPerFrames = 1;
 
-        [@Predicated(nameof(_RenderOnlySingleCamera))]
+        [@Enable(nameof(_RenderOnlySingleCamera))]
         [@DecoratedField, SerializeField]
         int _FrameRefreshOffset = 0;
 
@@ -164,18 +154,33 @@ namespace WaveHarmonic.Crest
         bool _UseObliqueMatrix = true;
 
         [Tooltip("Planar relfections using an oblique frustum for better performance.\n\nThis can cause depth issues for TIRs, especially near the surface.")]
-        [@Predicated(nameof(_UseObliqueMatrix))]
+        [@Enable(nameof(_UseObliqueMatrix))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _NonObliqueNearSurface;
 
         [Tooltip("If within this distance from the surface, disable the oblique matrix.")]
-        [@Predicated(nameof(_NonObliqueNearSurface))]
-        [@Predicated(nameof(_UseObliqueMatrix))]
+        [@Enable(nameof(_NonObliqueNearSurface))]
+        [@Enable(nameof(_UseObliqueMatrix))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         float _NonObliqueNearSurfaceThreshold = 0.05f;
 
+
+        [@Heading("Advanced")]
+
+        [Tooltip("Whether to render to the viewer camera only.\n\nWhen disabled, reflections will render for all cameras rendering the water layer, which currently this prevents Refresh Rate from working. Enabling will unlock the Refresh Rate heading.")]
+        [@GenerateAPI]
+        [@DecoratedField, SerializeField]
+        internal bool _RenderOnlySingleCamera;
+
+        [Tooltip("Renderer index for the reflection camera.")]
+        [@Show(RenderPipeline.Universal)]
+        [@Minimum(0)]
+        [@GenerateAPI(Setter.Custom)]
+        [@DecoratedField]
+        [@SerializeField]
+        int _RendererIndex;
 
         [@Space(10)]
 
@@ -193,18 +198,11 @@ namespace WaveHarmonic.Crest
             internal bool _DisableRecursiveRendering;
 
             [Tooltip("Whether to create a context more compatible for planar reflections camera. Try enabling this if you are getting exceptions.")]
-            [@Predicated(RenderPipeline.Universal, hide: true)]
+            [@Show(RenderPipeline.Universal)]
             [@DecoratedField]
             [SerializeField]
             internal bool _ForceCompatibility;
         }
-
-
-        /// <summary>
-        /// What side of the water surface to render planar reflections for.
-        /// </summary>
-        public WaterReflectionSide Mode { get => _Mode; set => _Mode = value; }
-
 
         static class ShaderIDs
         {
@@ -238,6 +236,9 @@ namespace WaveHarmonic.Crest
         Camera _CameraReflections;
         Skybox _CameraReflectionsSkybox;
         internal Camera ReflectionCamera => _CameraReflections;
+
+        bool SkipAbove => !_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Portal) && _Water.ViewerHeightAboveWater <= -1f;
+        bool SkipBelow => !_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Volume);
 
         int RefreshPerFrames => _RenderOnlySingleCamera ? _RefreshPerFrames : 1;
         long _LastRefreshOnFrame = -1;
@@ -287,31 +288,21 @@ namespace WaveHarmonic.Crest
 
         internal void OnDestroy()
         {
-            if (_CameraReflections)
-            {
-                Helpers.Destroy(_CameraReflections.gameObject);
-                _CameraReflections = null;
-            }
+            Helpers.DestroyGameObject(ref _CameraReflections);
 
-            if (_ColorTexture)
-            {
-                _ColorTexture.Release();
-                Helpers.Destroy(_ColorTexture);
-                _ColorTexture = null;
-            }
-
-            if (_DepthTexture)
-            {
-                _DepthTexture.Release();
-                Helpers.Destroy(_DepthTexture);
-                _DepthTexture = null;
-            }
+            Helpers.Destroy(ref _ColorTexture);
+            Helpers.Destroy(ref _DepthTexture);
         }
 
-        bool ShouldRender(Camera camera)
+        internal bool ShouldRender(Camera camera)
         {
+            if (!_Enabled)
+            {
+                return false;
+            }
+
             // If no surface, then do not execute the reflection camera.
-            if (!WaterRenderer.ShouldRender(camera, _Water.Surface.Layer))
+            if (!_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Surface))
             {
                 return false;
             }
@@ -330,16 +321,21 @@ namespace WaveHarmonic.Crest
                 return false;
             }
 
+            if (_Mode == WaterReflectionSide.Below && SkipBelow)
+            {
+                return false;
+            }
+
+            if (_Mode == WaterReflectionSide.Above && SkipAbove)
+            {
+                return false;
+            }
+
             return true;
         }
 
         internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
         {
-            if (!ShouldRender(camera))
-            {
-                return;
-            }
-
             if (SupportsRecursiveRendering)
             {
                 // This option only valid for recursive, otherwise, it is always single camera.
@@ -360,19 +356,17 @@ namespace WaveHarmonic.Crest
             }
         }
 
-        internal void OnEndCameraRendering(Camera camera)
+        internal void OnEndReflectionCameraRendering(Camera camera)
         {
             if (camera == ReflectionCamera)
             {
                 // Appears to be the only reasonable way to get camera depth separately for SRPs.
                 _CameraDepthTexture = Shader.GetGlobalTexture(Crest.ShaderIDs.Unity.s_CameraDepthTexture);
             }
+        }
 
-            if (!ShouldRender(camera))
-            {
-                return;
-            }
-
+        internal void OnEndCameraRendering(Camera camera)
+        {
             Shader.SetGlobalTexture(ShaderIDs.s_ReflectionColorTexture, Texture2D.blackTexture);
         }
 
@@ -385,7 +379,7 @@ namespace WaveHarmonic.Crest
 
             foreach (var wb in WaterBody.WaterBodies)
             {
-                CheckSurfaceMaterial(wb._Material);
+                CheckSurfaceMaterial(wb.AboveSurfaceMaterial);
             }
 
             if (SupportsRecursiveRendering)
@@ -452,11 +446,6 @@ namespace WaveHarmonic.Crest
                 Helpers.ClearRenderTexture(_DepthTexture, Color.clear, depth: true);
             }
 
-            var isActive = _Water.Surface.Root.gameObject.activeSelf;
-
-            // We do not want the water plane when rendering planar reflections.
-            _Water.Surface.Root.gameObject.SetActive(false);
-
             // Optionally disable pixel lights for reflection/refraction
             var oldPixelLightCount = QualitySettings.pixelLightCount;
             if (_DisablePixelLights)
@@ -504,8 +493,6 @@ namespace WaveHarmonic.Crest
 
                 _QualitySettingsOverride.Restore();
 
-                _Water.Surface.Root.gameObject.SetActive(isActive);
-
                 // Remember this frame as last refreshed.
                 _LastRefreshOnFrame = Time.renderedFrameCount;
             }
@@ -546,7 +533,7 @@ namespace WaveHarmonic.Crest
                 _CameraReflections.targetTexture = colorTarget;
             }
 
-            if (_Mode != WaterReflectionSide.Below)
+            if (_Mode != WaterReflectionSide.Below && !SkipAbove)
             {
                 if (_UnderWater._Enabled)
                 {
@@ -560,12 +547,12 @@ namespace WaveHarmonic.Crest
 
                 CopyTargets(colorTarget, depthTarget, 0);
 
-                _ReflectionPositionNormal[0] = ComputeHorizonPositionAndNormal(_CameraReflections, _Water.SeaLevel, 0.05f, false);
+                _ReflectionPositionNormal[0] = ComputeHorizonPositionAndNormal(_CameraReflections, _Water.SeaLevel, 0.5f / _Resolution, false);
 
                 _CameraReflections.ResetProjectionMatrix();
             }
 
-            if (_Mode != WaterReflectionSide.Above)
+            if (_Mode != WaterReflectionSide.Above && !SkipBelow)
             {
                 if (_UnderWater._Enabled)
                 {
@@ -592,11 +579,13 @@ namespace WaveHarmonic.Crest
                 if (RenderPipelineHelper.IsLegacy) RenderTexture.ReleaseTemporary(depthTarget);
             }
 
+#if !d_Crest_DisablePlanarReflectionApplySmoothness
             if (_ApplySmoothness)
             {
                 // We are only using mip-maps if applying smoothness/roughness.
                 _ColorTexture.GenerateMips();
             }
+#endif
 
             Shader.SetGlobalVectorArray(ShaderIDs.s_ReflectionPositionNormal, _ReflectionPositionNormal);
             Shader.SetGlobalMatrixArray(ShaderIDs.s_ReflectionMatrixIVP, _ReflectionMatrixIVP);
@@ -742,7 +731,7 @@ namespace WaveHarmonic.Crest
                 else
                 {
                     // Destroy otherwise skybox will not render if empty.
-                    Helpers.Destroy(_CameraViewpointSkybox);
+                    Helpers.Destroy(ref _CameraViewpointSkybox);
                 }
             }
 
@@ -810,8 +799,8 @@ namespace WaveHarmonic.Crest
             {
                 if (_ColorTexture)
                 {
-                    Helpers.Destroy(_ColorTexture);
-                    Helpers.Destroy(_DepthTexture);
+                    Helpers.Destroy(ref _ColorTexture);
+                    Helpers.Destroy(ref _DepthTexture);
                 }
 
                 var descriptor = new RenderTextureDescriptor(_Resolution, _Resolution)
@@ -820,6 +809,7 @@ namespace WaveHarmonic.Crest
                     volumeDepth = 2,
                     depthStencilFormat = depthFormat,
                     msaaSamples = 1,
+                    useMipMap = false,
                 };
 
                 _ColorTexture = new(descriptor)
@@ -827,7 +817,9 @@ namespace WaveHarmonic.Crest
                     name = "_Crest_ReflectionColor",
                     graphicsFormat = colorFormat,
                     isPowerOfTwo = true,
+#if !d_Crest_DisablePlanarReflectionApplySmoothness
                     useMipMap = true,
+#endif
                     autoGenerateMips = false,
                     filterMode = FilterMode.Trilinear,
                 };
@@ -852,21 +844,17 @@ namespace WaveHarmonic.Crest
                 _DepthTexture.Create();
             }
 
+            var create = _CameraReflections == null;
+
             // Camera for reflection
-            if (!_CameraReflections)
+            if (create)
             {
                 var go = new GameObject("_Crest_WaterReflectionCamera");
                 go.transform.SetParent(_Water.Container.transform, worldPositionStays: true);
                 _CameraReflections = go.AddComponent<Camera>();
                 _CameraReflections.enabled = false;
-                _CameraReflections.cullingMask = _Layers;
                 _CameraReflections.cameraType = CameraType.Reflection;
                 _CameraReflections.backgroundColor = Color.clear;
-
-                if (RenderPipelineHelper.IsLegacy)
-                {
-                    _CameraReflections.gameObject.AddComponent<FlareLayer>();
-                }
 
 #if d_UnityHDRP
                 if (RenderPipelineHelper.IsHighDefinition)
@@ -885,15 +873,34 @@ namespace WaveHarmonic.Crest
                 if (RenderPipelineHelper.IsUniversal)
                 {
                     var additionalCameraData = _CameraReflections.gameObject.AddComponent<UniversalAdditionalCameraData>();
-                    additionalCameraData.renderShadows = !_DisableShadows;
-                    additionalCameraData.requiresColorTexture = _Mode != WaterReflectionSide.Above; // or incur assertions
                     additionalCameraData.requiresDepthTexture = true;
                 }
 #endif
-                OnCameraAdded?.Invoke(_CameraReflections);
+
+                _UpdateCamera = true;
             }
 
-            _CameraReflections.gameObject.hideFlags = _Debug._ShowHiddenObjects ? HideFlags.DontSave : HideFlags.HideAndDontSave;
+            if (_UpdateCamera)
+            {
+                _CameraReflections.gameObject.hideFlags = _Debug._ShowHiddenObjects ? HideFlags.DontSave : HideFlags.HideAndDontSave;
+
+#if d_UnityURP
+                if (RenderPipelineHelper.IsUniversal)
+                {
+                    var additionalCameraData = _CameraReflections.GetUniversalAdditionalCameraData();
+                    additionalCameraData.SetRenderer(_RendererIndex);
+                    additionalCameraData.renderShadows = !_DisableShadows; // Does not appear to work!
+                    additionalCameraData.requiresColorTexture = _Mode != WaterReflectionSide.Above; // or incur assertions
+                }
+#endif
+
+                _UpdateCamera = false;
+            }
+
+            if (create)
+            {
+                OnCameraAdded?.Invoke(_CameraReflections);
+            }
         }
 
         // Given position/normal of the plane, calculates plane in camera space.
@@ -1051,9 +1058,16 @@ namespace WaveHarmonic.Crest
                 positionWS.Dispose();
             }
 
+            normal = normal.normalized;
+
             if (flipped)
             {
                 normal = -normal;
+            }
+            else if (position.y == 0f)
+            {
+                // Sample anywhere if pointing downwards.
+                position.y = 1f;
             }
 
             return new(position.x, position.y, normal.x, normal.y);
@@ -1079,6 +1093,26 @@ namespace WaveHarmonic.Crest
             if (_Enabled) OnEnable(); else OnDisable();
         }
 
+        bool _UpdateCamera;
+
+        void SetReflectionSide(WaterReflectionSide previous, WaterReflectionSide current)
+        {
+            if (previous == current) return;
+            _UpdateCamera = true;
+        }
+
+        void SetDisableShadows(bool previous, bool current)
+        {
+            if (previous == current) return;
+            _UpdateCamera = true;
+        }
+
+        void SetRendererIndex(int previous, int current)
+        {
+            if (previous == current) return;
+            _UpdateCamera = true;
+        }
+
 #if UNITY_EDITOR
         [@OnChange]
         void OnChange(string propertyPath, object previousValue)
@@ -1087,6 +1121,18 @@ namespace WaveHarmonic.Crest
             {
                 case nameof(_Enabled):
                     SetEnabled((bool)previousValue, _Enabled);
+                    break;
+                case nameof(_Debug) + "." + nameof(DebugFields._ShowHiddenObjects):
+                    _UpdateCamera = true;
+                    break;
+                case nameof(_Mode):
+                    SetReflectionSide((WaterReflectionSide)previousValue, _Mode);
+                    break;
+                case nameof(_DisableShadows):
+                    SetDisableShadows((bool)previousValue, _DisableShadows);
+                    break;
+                case nameof(_RendererIndex):
+                    SetRendererIndex((int)previousValue, _RendererIndex);
                     break;
             }
         }
@@ -1102,5 +1148,11 @@ namespace WaveHarmonic.Crest
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         bool _AllowMSAA;
+
+        /// <summary>
+        /// What side of the water surface to render planar reflections for.
+        /// </summary>
+        [Obsolete("Please use ReflectionSide instead.")]
+        public WaterReflectionSide Mode { get => _Mode; set => _Mode = value; }
     }
 }

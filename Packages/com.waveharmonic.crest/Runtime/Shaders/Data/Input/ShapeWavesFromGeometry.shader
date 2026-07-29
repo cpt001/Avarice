@@ -23,12 +23,17 @@ Shader "Crest/Inputs/Shape Waves/Add From Geometry"
         [Enum(UnityEngine.Rendering.BlendMode)]
         _Crest_BlendModeTarget("Target Blend Mode", Int) = 1
 
-        // Controls ramp distance over which waves grow/fade as they move forwards
-        _Crest_FeatherWaveStart( "Feather wave start (0-1)", Range( 0.0, 10 ) ) = 0.1
-
         [Toggle(d_Feather)]
         _Crest_Feather("Feather At UV Extents", Float) = 0
         _Crest_FeatherWidth("Feather Width", Range(0.001, 1)) = 0.1
+
+        [Toggle(d_FeatherDirectional)]
+        _Crest_FeatherDirectional("Feather Directional", Float) = 0
+        // Controls ramp distance over which waves grow/fade as they move forwards
+        _Crest_FeatherWaveStart( "Feather wave start (0-1)", Range( 0.0, 10 ) ) = 0.1
+
+        [Toggle(d_Bicubic)]
+        _Crest_Bicubic("Bicubic Sampling", Float) = 0
 
         [HideInInspector]
         _Crest_Version("Version", Integer) = 0
@@ -40,6 +45,10 @@ Shader "Crest/Inputs/Shape Waves/Add From Geometry"
     // #pragma enable_d3d11_debug_symbols
 
     #pragma shader_feature_local_fragment d_Feather
+    #pragma shader_feature_local_fragment d_FeatherDirectional
+    #pragma shader_feature_local_fragment d_Bicubic
+
+    #define d_Quantize 1
 
     #include "UnityCG.cginc"
 
@@ -48,8 +57,7 @@ Shader "Crest/Inputs/Shape Waves/Add From Geometry"
     #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/InputsDriven.hlsl"
     #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Cascade.hlsl"
     #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Helpers.hlsl"
-
-    Texture2DArray _Crest_WaveBuffer;
+    #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Waves.hlsl"
 
     CBUFFER_START(CrestPerWaterInput)
     float _Crest_RespectShallowWaterAttenuation;
@@ -61,6 +69,7 @@ Shader "Crest/Inputs/Shape Waves/Add From Geometry"
     half _Crest_MaximumAttenuationDepth;
     half _Crest_FeatherWidth;
     half _Crest_FeatherWaveStart;
+    uint _Crest_Resolution;
     CBUFFER_END
 
     m_CrestNameSpace
@@ -111,8 +120,10 @@ Shader "Crest/Inputs/Shape Waves/Add From Geometry"
     {
         float wt = _Crest_Weight;
 
+#if d_FeatherDirectional
         // Feature at away from shore.
         wt *= saturate(input.uv.x / _Crest_FeatherWaveStart);
+#endif
 
 #if d_Feather
         wt *= FeatherWeightFromUV(input.uv, _Crest_FeatherWidth);
@@ -131,32 +142,15 @@ Shader "Crest/Inputs/Shape Waves/Add From Geometry"
         const float attenuationAmount = _Crest_AttenuationInShallows * _Crest_RespectShallowWaterAttenuation;
         wt *= attenuationAmount * depth_wt + (1.0 - attenuationAmount);
 
-        // Quantize wave direction and interpolate waves
-        float axisHeading = atan2( input.axis.y, input.axis.x ) + 2.0 * 3.141592654;
-        const float dTheta = 0.5*0.314159265;
-        float angle0 = axisHeading;
-        const float rem = fmod( angle0, dTheta );
-        angle0 -= rem;
-        const float angle1 = angle0 + dTheta;
+        const float3 displacement = SampleWaves
+        (
+            input.worldPosScaled.xz,
+            input.axis,
+            _Crest_WaveBufferSliceIndex,
+            _Crest_Resolution
+        );
 
-        float2 axisX0; sincos( angle0, axisX0.y, axisX0.x );
-        float2 axisX1; sincos( angle1, axisX1.y, axisX1.x );
-        float2 axisZ0; axisZ0.x = -axisX0.y; axisZ0.y = axisX0.x;
-        float2 axisZ1; axisZ1.x = -axisX1.y; axisZ1.y = axisX1.x;
-
-        const float2 uv0 = float2(dot( input.worldPosScaled.xz, axisX0 ), dot( input.worldPosScaled.xz, axisZ0 ));
-        const float2 uv1 = float2(dot( input.worldPosScaled.xz, axisX1 ), dot( input.worldPosScaled.xz, axisZ1 ));
-
-        // Sample displacement, rotate into frame
-        float3 disp0 = _Crest_WaveBuffer.SampleLevel( sampler_Crest_linear_repeat, float3(uv0, _Crest_WaveBufferSliceIndex), 0 ).xyz;
-        float3 disp1 = _Crest_WaveBuffer.SampleLevel( sampler_Crest_linear_repeat, float3(uv1, _Crest_WaveBufferSliceIndex), 0 ).xyz;
-        disp0.xz = disp0.x * axisX0 + disp0.z * axisZ0;
-        disp1.xz = disp1.x * axisX1 + disp1.z * axisZ1;
-        float3 disp = lerp( disp0, disp1, rem / dTheta );
-
-        disp *= wt;
-
-        return float4(disp, alpha);
+        return float4(displacement * wt, alpha);
     }
 
     m_CrestNameSpaceEnd
