@@ -45,6 +45,7 @@ public class FutureTownPlanner : MonoBehaviour
     [SerializeField] private int numberOfWorkers;
 
     private List<GameObject> availableBeachSlots = new List<GameObject>();
+    private List<GameObject> availableStandaloneSlots = new List<GameObject>();
 
     //This sorts through all structures to get their probabilities
     public void GetPossibleStructures(Any_Town_Phenotype town_Phenotype)
@@ -567,7 +568,7 @@ public class FutureTownPlanner : MonoBehaviour
             }
         }
     }
-    public void CheckBeachSlotViability()
+    public void CheckNonTownSlotViability()
     {
         foreach (Transform t in transform.parent)
         {
@@ -579,6 +580,14 @@ public class FutureTownPlanner : MonoBehaviour
                 else { availableBeachSlots.Add(t.gameObject); }
 
                 availableBeachSlots.Sort((a, b) => Vector3.Distance(a.transform.position, transform.position).CompareTo(Vector3.Distance(b.transform.position, transform.position)));
+            }
+        }
+        foreach (Transform t in transform)
+        {
+            if (t.GetComponent<FutureTownPlanner>() && !this)
+            {
+                availableStandaloneSlots.Add(t.gameObject);
+                availableStandaloneSlots.Sort((a, b) => Vector3.Distance(a.transform.position, transform.position).CompareTo(Vector3.Distance(b.transform.position, transform.position)));
             }
         }
     }
@@ -681,13 +690,19 @@ public class FutureTownPlanner : MonoBehaviour
                     if (bldg == masterBuildingQueue[0])
                     {
                         //Debug.Log("MBQ/0: " + bldg);
-                        float rand = Random.Range(-180, 180);
-                        Quaternion randomRot = Quaternion.Euler(0, rand, 0);
-                        transform.rotation = randomRot;
-                        adjustedBuildings.Add(g);
-                        SlotBuilder slotBuilder = g.GetComponentInChildren<SlotBuilder>();
-                        slotBuilder.distanceFromCenter = 0;
-                        slotBuilder.BuildStructureSlots(true);
+                        bool centerBldgFinalized = false;
+                        if (!centerBldgFinalized)
+                        {
+                            float rand = Random.Range(-180, 180);
+                            Quaternion randomRot = Quaternion.Euler(0, rand, 0);
+                            transform.rotation = randomRot;
+                            adjustedBuildings.Add(g);
+                            SlotBuilder slotBuilder = g.GetComponentInChildren<SlotBuilder>();
+                            slotBuilder.distanceFromCenter = 0;
+                            slotBuilder.BuildStructureSlots(true);
+                            Physics.SyncTransforms();
+                            centerBldgFinalized = true;
+                        }
                     }
                     else
                     {
@@ -704,7 +719,9 @@ public class FutureTownPlanner : MonoBehaviour
                                         {
                                             if (availableBeachSlots[i].GetComponent<BuildingSlot>().slotStatus == BuildingSlot.SlotFillEnum.Available)
                                             {
-                                                g.transform.position = availableBeachSlots[i].transform.position;
+                                                g.transform.SetParent(availableBeachSlots[i].transform);
+                                                g.transform.localPosition = Vector3.zero;
+                                                g.transform.SetParent(transform);
                                                 availableBeachSlots[i].GetComponent<BuildingSlot>().slotStatus = BuildingSlot.SlotFillEnum.Occupied;
                                                 Debug.Log("Picked: " + availableBeachSlots[i], availableBeachSlots[0].gameObject);
                                                 break;
@@ -714,7 +731,7 @@ public class FutureTownPlanner : MonoBehaviour
                                                 continue;
                                             }
                                         }
-                                        //g.transform.localPosition = availableBeachSlots[0].transform.InverseTransformPoint(transform.position);
+                                        //g.transform.localPosition = availableBeachSlots[0].transform.InverseTransformPoint(transform.parent.position);
                                         //g.transform.SetLocalPositionAndRotation(availableBeachSlots[0].transform.localPosition, Quaternion.identity);
                                     }
                                     else
@@ -727,6 +744,20 @@ public class FutureTownPlanner : MonoBehaviour
                                 {
                                     //This is reserved for structures that dont belong to part of the city: forts and such
                                     //These will be spawned at another town setup location
+                                    if (availableStandaloneSlots.Count != 0)
+                                    {
+                                        for (int i = 0; i < availableStandaloneSlots.Count; i++)
+                                        {
+                                            g.transform.SetParent(availableStandaloneSlots[i].transform);
+                                            g.transform.localPosition = Vector3.zero;
+                                            g.transform.SetParent(transform);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Debug.Log("Failed to place " + g.name + ", no available standalone slot!", gameObject);
+                                    }
+
                                     break;
                                 }
                             case Town_Building.SetupCondition.CityScape:
@@ -767,10 +798,17 @@ public class FutureTownPlanner : MonoBehaviour
                                                 for (int i = 0; i < 24; i++)
                                                 {
                                                     Quaternion rotation = Quaternion.Euler(0, i * 15, 0);
-                                                    g.transform.SetLocalPositionAndRotation(trySlot.localPosition, rotation);
+                                                    Vector3 localOffset = sb.initialSlot.transform.InverseTransformPoint(g.transform.position);
+                                                    Matrix4x4 targetMatrix = Matrix4x4.TRS(trySlot.position, rotation, g.transform.localScale);
+                                                    g.transform.position = targetMatrix.MultiplyPoint3x4(localOffset);
+                                                    g.transform.rotation = rotation * Quaternion.Inverse(sb.initialSlot.transform.localRotation);
+
+                                                    Physics.SyncTransforms();
+
                                                     sb.triggerDetectingObject = false;
                                                     sb.CheckCollider();
-                                                    yield return new WaitForEndOfFrame();
+                                                    yield return new WaitForFixedUpdate();
+
                                                     if (!sb.triggerDetectingObject)
                                                     {
                                                         validRots.Add(Mathf.RoundToInt(g.transform.rotation.eulerAngles.y));
@@ -784,9 +822,16 @@ public class FutureTownPlanner : MonoBehaviour
                                                 }
                                                 if (validRots.Count != 0)
                                                 {
-                                                    int randFinalRot = Random.Range(0, validRots.Count);
-                                                    sb.initialSlot.transform.SetLocalPositionAndRotation(trySlot.localPosition, transform.rotation = Quaternion.Euler(new Vector3(0, validRots[randFinalRot], 0)));
-                                                    //This breaks the loop in a big way
+                                                    int randFinalRot = validRots[Random.Range(0, validRots.Count)];
+                                                    Quaternion finalRot = Quaternion.Euler(0, randFinalRot, 0);
+
+                                                    Vector3 localOffset = sb.initialSlot.transform.InverseTransformPoint(g.transform.position);
+                                                    Matrix4x4 targetMatrix = Matrix4x4.TRS(trySlot.position, finalRot, g.transform.localScale);
+                                                    g.transform.position = targetMatrix.MultiplyPoint3x4(localOffset);
+                                                    g.transform.rotation = finalRot * Quaternion.Inverse(sb.initialSlot.transform.localRotation);
+
+                                                    Physics.SyncTransforms();
+                                                    
                                                     adjustedBuildings.Add(g);
                                                     placementAndRotationFinalized = true;
                                                 }
@@ -795,6 +840,7 @@ public class FutureTownPlanner : MonoBehaviour
                                                     Debug.Log("No rotations ", gameObject);
                                                     //Try a different slot
                                                     slots.RemoveAt(randomSlot);
+                                                    yield return null;
                                                     continue;
                                                 }
                                             }

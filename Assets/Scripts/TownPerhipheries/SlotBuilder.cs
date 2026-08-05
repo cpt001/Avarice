@@ -17,6 +17,7 @@ public class SlotBuilder : MonoBehaviour
     private int numNodesSpawnOnX;
     private int numNodesSpawnOnY;
     private int numSides;
+    private float checkDistrance;
 
     public bool triggerDetectingObject = false;
 
@@ -168,10 +169,15 @@ public class SlotBuilder : MonoBehaviour
         {
             if (c != bldgCol)
             {
-                Debug.Log("Live trigger found: " + c.gameObject + " affecting " + gameObject, gameObject);
+                //Debug.Log("Live trigger found: " + c.gameObject + " affecting " + gameObject, gameObject);
                 triggerDetectingObject = true;
             }
         }
+
+        //Raycast from each corner
+        //If intercept terrain, placement good
+        //else, trigger detection
+
         yield return null;
     }
 }
