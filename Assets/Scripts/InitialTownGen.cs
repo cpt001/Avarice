@@ -69,7 +69,12 @@ public class InitialTownGen : MonoBehaviour
             else
             {
                 townType = islandMaster.townsOnIsland[0].townType;
-                transform.parent = islandMaster.townsOnIsland[0].transform;
+                //transform.parent = islandMaster.townsOnIsland[0].transform;
+                GameObject blank = new GameObject("StandaloneSlot", typeof(BuildingSlot));
+                blank.tag = "BuildingSpawnPoint";
+                blank.transform.SetParent(transform.parent);
+                blank.transform.position = gameObject.transform.position;
+                Debug.Log("BSP Created, checking for added component: " + blank.GetComponent<BuildingSlot>());
                 gameObject.SetActive(false);    //Just for now during diagnostics
                 //Future town planner needs to account for multiple town locations
             }

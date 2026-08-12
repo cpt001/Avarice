@@ -581,10 +581,7 @@ public class FutureTownPlanner : MonoBehaviour
 
                 availableBeachSlots.Sort((a, b) => Vector3.Distance(a.transform.position, transform.position).CompareTo(Vector3.Distance(b.transform.position, transform.position)));
             }
-        }
-        foreach (Transform t in transform)
-        {
-            if (t.GetComponent<FutureTownPlanner>() && !this)
+            if (t.name == "StandaloneSlot")
             {
                 availableStandaloneSlots.Add(t.gameObject);
                 availableStandaloneSlots.Sort((a, b) => Vector3.Distance(a.transform.position, transform.position).CompareTo(Vector3.Distance(b.transform.position, transform.position)));
@@ -699,7 +696,10 @@ public class FutureTownPlanner : MonoBehaviour
                             adjustedBuildings.Add(g);
                             SlotBuilder slotBuilder = g.GetComponentInChildren<SlotBuilder>();
                             slotBuilder.distanceFromCenter = 0;
-                            slotBuilder.BuildStructureSlots(true);
+                            if (slotBuilder.slots.Count == 0)
+                            {
+                                slotBuilder.BuildStructureSlots(true);
+                            }
                             Physics.SyncTransforms();
                             centerBldgFinalized = true;
                         }
@@ -723,7 +723,7 @@ public class FutureTownPlanner : MonoBehaviour
                                                 g.transform.localPosition = Vector3.zero;
                                                 g.transform.SetParent(transform);
                                                 availableBeachSlots[i].GetComponent<BuildingSlot>().slotStatus = BuildingSlot.SlotFillEnum.Occupied;
-                                                Debug.Log("Picked: " + availableBeachSlots[i], availableBeachSlots[0].gameObject);
+                                                //Debug.Log("Picked: " + availableBeachSlots[i], availableBeachSlots[0].gameObject);
                                                 break;
                                             }
                                             else
@@ -748,9 +748,18 @@ public class FutureTownPlanner : MonoBehaviour
                                     {
                                         for (int i = 0; i < availableStandaloneSlots.Count; i++)
                                         {
-                                            g.transform.SetParent(availableStandaloneSlots[i].transform);
-                                            g.transform.localPosition = Vector3.zero;
-                                            g.transform.SetParent(transform);
+                                            if (availableStandaloneSlots[i].GetComponent<BuildingSlot>().slotStatus == BuildingSlot.SlotFillEnum.Available)
+                                            {
+                                                g.transform.SetParent(availableStandaloneSlots[i].transform);
+                                                g.transform.localPosition = Vector3.zero;
+                                                g.transform.SetParent(transform);
+                                                availableStandaloneSlots[i].GetComponent<BuildingSlot>().slotStatus = BuildingSlot.SlotFillEnum.Occupied;
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                continue;
+                                            }
                                         }
                                     }
                                     else
@@ -768,7 +777,10 @@ public class FutureTownPlanner : MonoBehaviour
                                     {
                                         //Debug.Log("Adjusted building count: " + adjustedBuildings.Count);
                                         SlotBuilder adjStrSB = adjustedStructure.GetComponentInChildren<SlotBuilder>();
-                                        adjStrSB.BuildStructureSlots(false);
+                                        if (adjStrSB.slots.Count == 0)
+                                        {
+                                            adjStrSB.BuildStructureSlots(false);
+                                        }
                                         //access slots
                                         //for (int i = 0; i < adjStrSB.slots.Count; i++)
                                         {
@@ -789,12 +801,16 @@ public class FutureTownPlanner : MonoBehaviour
                                         List<int> validRots = new List<int>();
                                         SlotBuilder sb = null;
 
+
                                         if (slots.Count != 0)
                                         {
                                             if (g.GetComponentInChildren<SlotBuilder>())
                                             {
                                                 sb = g.GetComponentInChildren<SlotBuilder>();
-                                                sb.BuildStructureSlots(false);
+                                                if (sb.slots.Count == 0)
+                                                {
+                                                    sb.BuildStructureSlots(false);
+                                                }
                                                 for (int i = 0; i < 24; i++)
                                                 {
                                                     Quaternion rotation = Quaternion.Euler(0, i * 15, 0);

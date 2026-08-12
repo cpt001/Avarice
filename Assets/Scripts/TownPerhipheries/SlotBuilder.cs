@@ -8,7 +8,7 @@ public class SlotBuilder : MonoBehaviour
     public int distanceFromCenter;
     [SerializeField] private GameObject slotPrefab;
     private BoxCollider bldgCol => GetComponent<BoxCollider>();
-    private float roadOffset = 0.5f;
+    [SerializeField] private float roadOffset;
     private Vector3 adjustedCollider;
     public List<GameObject> slots = new List<GameObject>();
     private GameObject neCorner;
@@ -17,7 +17,6 @@ public class SlotBuilder : MonoBehaviour
     private int numNodesSpawnOnX;
     private int numNodesSpawnOnY;
     private int numSides;
-    private float checkDistrance;
 
     public bool triggerDetectingObject = false;
 
@@ -33,6 +32,10 @@ public class SlotBuilder : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public void BuildStructureSlots(bool overrideSideValue)
     {
+        if (roadOffset == 0)
+        {
+            roadOffset = 0.5f;
+        }
         adjustedCollider = new Vector3(bldgCol.size.x + roadOffset, 0, bldgCol.size.z + roadOffset);
         numNodesSpawnOnX = Mathf.RoundToInt(adjustedCollider.x * 2 / nodeThreshhold) + 1;
         numNodesSpawnOnY = Mathf.RoundToInt(adjustedCollider.z * 2 / nodeThreshhold);
@@ -161,9 +164,12 @@ public class SlotBuilder : MonoBehaviour
 
     private IEnumerator CheckCollisions()
     {
-        //triggerDetectingObject = false;
         yield return new WaitForEndOfFrame();
-        Collider[] hitColliders = Physics.OverlapBox(transform.position, transform.localScale / 2, Quaternion.identity, 1 << LayerMask.NameToLayer("TownBuilding"));
+        Vector3 worldCenter = transform.TransformPoint(bldgCol.center);
+        Vector3 halfExtents = Vector3.Scale(bldgCol.size * 0.5f, transform.lossyScale);
+        Quaternion boxRot = transform.rotation;
+
+        Collider[] hitColliders = Physics.OverlapBox(worldCenter, halfExtents, boxRot, 1 << LayerMask.NameToLayer("TownBuilding"));
 
         foreach (Collider c in hitColliders)
         {
@@ -171,13 +177,41 @@ public class SlotBuilder : MonoBehaviour
             {
                 //Debug.Log("Live trigger found: " + c.gameObject + " affecting " + gameObject, gameObject);
                 triggerDetectingObject = true;
+                break;
             }
         }
 
-        //Raycast from each corner
-        //If intercept terrain, placement good
-        //else, trigger detection
 
+        Vector3 rightOffset = transform.right * halfExtents.x;
+        Vector3 upOffset = transform.up * (halfExtents.y - 1f);
+        Vector3 forwardOffset = transform.forward * halfExtents.z;
+        Vector3 corner = Vector3.zero;
+        //Raycast from each corner
+        for (int i = 0; i < 4; i++)
+        {
+            switch (i)
+            {
+                case 0: // Front Right (Center + Right - Up + Forward)
+                    corner = worldCenter + rightOffset - upOffset + forwardOffset;
+                    break;
+                case 1: // Back Right (Center + Right - Up - Forward)
+                    corner = worldCenter + rightOffset - upOffset - forwardOffset;
+                    break;
+                case 2: // Front Left (Center - Right - Up + Forward)
+                    corner = worldCenter - rightOffset - upOffset + forwardOffset;
+                    break;
+                case 3: // Back Left (Center - Right - Up - Forward)
+                    corner = worldCenter - rightOffset - upOffset - forwardOffset;
+                    break;
+            }
+
+            //If intercept terrain, placement good
+            if (!Physics.Raycast(corner, Vector3.down, 10f, 1 << LayerMask.NameToLayer("Terrain")))
+            {
+                triggerDetectingObject = true;
+                break;
+            }
+        }
         yield return null;
     }
 }

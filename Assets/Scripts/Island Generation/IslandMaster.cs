@@ -42,8 +42,14 @@ public class IslandMaster : MonoBehaviour
 
     public List<InitialTownGen> townsOnIsland = new List<InitialTownGen>();
 
+    private Transform terrainTile;
+
     private void Start()
     {
+        Debug.Log("Targeted parent: " + transform.parent.parent);
+        terrainTile = transform.parent.parent;
+        terrainTile.Find("Main Terrain").gameObject.layer = LayerMask.NameToLayer("Terrain");
+        //Debug.Log("Tile status: " + terrainTile.GetComponent<MapMagic.Terrains.TerrainTile>().)
         //attachedTileStatus = transform.parent.parent.GetComponent<MapMagic.Terrains.TerrainTile>();
         //Not sure what to access to view changes right now -- Its in terrainTile script, but not sure what variable <-- this is related to the render status
     }

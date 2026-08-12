@@ -275,8 +275,10 @@ MonoBehaviour:
   distanceFromCenter: 0
   slotPrefab: {fileID: 6517440054968892920, guid: 0163ff9084cf9b84d89c0741cef1cd1e,
     type: 3}
+  roadOffset: 0.25
   slots: []
   triggerDetectingObject: 0
+  debuggerOverride: 0
 --- !u!65 &8571010762332344309
 BoxCollider:
   m_ObjectHideFlags: 0
