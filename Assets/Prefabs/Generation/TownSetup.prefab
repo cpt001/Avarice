@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2555087846884423114}
   - component: {fileID: 2013132949824299859}
   - component: {fileID: 9178979062447897104}
+  - component: {fileID: 6370076168041010959}
   m_Layer: 0
   m_Name: TownSetup
   m_TagString: Untagged
@@ -58,6 +59,7 @@ MonoBehaviour:
   masterBuildingQueue: []
   starterGenerationQueue: []
   constructionOrders: []
+  adjustedBuildings: []
   numberOfResidents: 0
   numberOfWorkers: 0
 --- !u!114 &9178979062447897104
@@ -74,3 +76,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InitialTownGen
   islandMaster: {fileID: 0}
   townType: 0
+--- !u!114 &6370076168041010959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2121108826663319677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6690b5108ee36ba499dc653456d7400a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MM2ModernInterlinkGrabber
+  mapMagic: {fileID: 0}
+  townCenterPlaza: {fileID: 0}
+  searchRadius: 100
+  nodeSampleStep: 4
+  capturedInterlinkNodes: []

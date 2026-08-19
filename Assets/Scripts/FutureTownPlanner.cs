@@ -572,7 +572,7 @@ public class FutureTownPlanner : MonoBehaviour
     {
         foreach (Transform t in transform.parent)
         {
-            if (t.GetComponent<BuildingSlot>())
+            if (t.GetComponent<BuildingSlot>() && t.name == "BeachBuildingTarget")
             {
                 BuildingSlot checkedSlot = t.GetComponent<BuildingSlot>();
                 checkedSlot.CheckBeachViability();

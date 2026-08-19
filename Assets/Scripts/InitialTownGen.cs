@@ -62,7 +62,25 @@ public class InitialTownGen : MonoBehaviour
         {
             //Get data from associated towns
             //Debug.Log("Islandmaster interference; Origin town " + islandMaster.townsOnIsland[0]);
-            if (islandMaster.townsOnIsland[0] == this)
+            for (int i = 0; i < islandMaster.townsOnIsland.Count; i++)
+            {
+                if (i == 0)
+                {
+                    SetTownFromPhenotype();
+                }
+                else
+                {
+                    townType = islandMaster.townsOnIsland[0].townType;
+                    GameObject blank = new GameObject("StandaloneSlot", typeof(BuildingSlot));
+                    blank.tag = "BuildingSpawnPoint";
+                    //blank.GetComponent<BuildingSlot>().
+                    blank.transform.SetParent(transform.parent);
+                    blank.transform.position = gameObject.transform.position;
+                    gameObject.SetActive(false);
+                }
+            }
+
+            /*if (islandMaster.townsOnIsland[0] == this)
             {
                 SetTownFromPhenotype();
             }
@@ -75,9 +93,9 @@ public class InitialTownGen : MonoBehaviour
                 blank.transform.SetParent(transform.parent);
                 blank.transform.position = gameObject.transform.position;
                 Debug.Log("BSP Created, checking for added component: " + blank.GetComponent<BuildingSlot>());
-                gameObject.SetActive(false);    //Just for now during diagnostics
+                //gameObject.SetActive(false);    //Just for now during diagnostics
                 //Future town planner needs to account for multiple town locations
-            }
+            }*/
         }
         else
         {
