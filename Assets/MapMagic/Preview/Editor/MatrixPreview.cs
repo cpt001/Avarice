@@ -195,7 +195,7 @@ namespace MapMagic.Previews
 			//	StopPreviewOnLoad stopScript = go.AddComponent<StopPreviewOnLoad>();
 			//	stopScript.active = true; 
 
-				previewTerrain.drawInstanced = terrain.drawInstanced; //set only if terrain data assigned
+				previewTerrain.drawInstanced = false; //preview shaders are all non-instanced //terrain.drawInstanced;
 				previewTerrain.heightmapPixelError = terrain.heightmapPixelError;
 				previewTerrain.drawTreesAndFoliage = false;
 				#if UNITY_2019_1_OR_NEWER
@@ -258,7 +258,7 @@ namespace MapMagic.Previews
 			public class PreviewWindow : BaseMatrixWindow, IPreviewWindow
 			{ 
 				public IPreview Preview { get{return preview;} set{preview = value as MatrixPreview;} }
-				public MatrixPreview preview;
+				[NonSerialized] public MatrixPreview preview;
 
 				public override Matrix Matrix => preview?.matrix;
 				public override Texture2D PreviewTexture => preview.tex;

@@ -54,12 +54,6 @@
 		_Brightness("Brightness", Float) = 0.9
     }
 
-    HLSLINCLUDE
-
-    #pragma multi_compile __ _ALPHATEST_ON
-
-    ENDHLSL
-
     SubShader
     {
         Tags { "Queue" = "Geometry-100" "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "IgnoreProjector" = "False" "TerrainCompatible" = "True"}
@@ -117,11 +111,21 @@
 
 			half4 SplatmapFragment_Preview(Varyings IN) : SV_TARGET
 			{
+				half4 src = 0.5;
+
                 #ifdef TERRAIN_GBUFFER
-				half4 src = SplatmapFragment(IN);
+					//should be right way:
+					//FragmentOutput fo = SplatmapFragment(IN);
+					//half4 src = fo.GBuffer0;
+
+					//worked previously:
+					//src = SplatmapFragment(IN);
                 #else
-                half4 src;
-                SplatmapFragment(IN, src);
+					#if UNITY_VERSION >= 60000000
+						SplatmapFragment(IN, src);
+					#else
+						src = SplatmapFragment(IN);
+					#endif
                 #endif
 
 				float2 uv = IN.uvMainAndLM;
@@ -177,19 +181,41 @@
             ColorMask 0
 
             HLSLPROGRAM
-            // Required to compile gles 2.0 with standard srp library
-            #pragma prefer_hlslcc gles
-            #pragma exclude_renderers d3d11_9x
-            #pragma target 2.0
+            #pragma exclude_renderers gles gles3 glcore
+            #pragma target 4.5
 
             #pragma vertex DepthOnlyVertex
             #pragma fragment DepthOnlyFragment
 
             #pragma multi_compile_instancing
-            #pragma instancing_options assumeuniformscaling nomatrices nolightprobe nolightmap
+            #pragma multi_compile _ DOTS_INSTANCING_ON
 
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/Terrain/TerrainLitInput.hlsl"
-            #include "Packages/com.unity.render-pipelines.universal/Shaders/Terrain/TerrainLitPasses.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/UnlitInput.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl"
+            ENDHLSL
+        }
+
+		Pass
+        {
+            Name "DepthNormalsOnly"
+            Tags{"LightMode" = "DepthNormalsOnly"}
+
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma exclude_renderers gles gles3 glcore
+            #pragma target 4.5
+
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+
+            #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT // forward-only variant
+
+            #pragma multi_compile_instancing
+            #pragma multi_compile _ DOTS_INSTANCING_ON
+
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/UnlitInput.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/Shaders/UnlitDepthNormalsPass.hlsl"
             ENDHLSL
         }
 

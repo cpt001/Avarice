@@ -25,6 +25,7 @@ namespace WaveHarmonic.Crest
             public static readonly int s_AmbientLighting = Shader.PropertyToID("_Crest_AmbientLighting");
             public static readonly int s_ExtinctionMultiplier = Shader.PropertyToID("_Crest_ExtinctionMultiplier");
             public static readonly int s_UnderwaterEnvironmentalLightingWeight = Shader.PropertyToID("_Crest_UnderwaterEnvironmentalLightingWeight");
+            public static readonly int s_IsOverlayCamera = Shader.PropertyToID("_Crest_IsOverlayCamera");
 
             public static readonly int s_OutScatteringFactor = Shader.PropertyToID("_Crest_OutScatteringFactor");
             public static readonly int s_OutScatteringExtinctionFactor = Shader.PropertyToID("_Crest_OutScatteringExtinctionFactor");
@@ -231,7 +232,7 @@ namespace WaveHarmonic.Crest
             Shader.SetGlobalInteger(ShaderIDs.s_DataSliceOffset, source.GetInteger(ShaderIDs.s_DataSliceOffset));
         }
 
-        internal void UpdateEffectMaterial(Camera camera)
+        internal void UpdateEffectMaterial(Camera camera, bool overlay = false)
         {
             // Copy water material parameters to underwater material.
             // WBs can change the material per camera, so disable optimization.
@@ -273,22 +274,24 @@ namespace WaveHarmonic.Crest
                 // Fix case where surface is culled, but we are within 2m range, resulting in
                 // volume rendering everywhere above surface.
                 if (_Water.Surface.Enabled && _Water._ViewerHeightAboveWaterPerCamera is > -8f and < 2f) forceFullShader = false;
-                _VolumeMaterial.SetKeyword("d_Crest_NoMaskColor", forceFullShader);
+                _VolumeMaterial.SetKeyword("d_Crest_NoMaskColor", !overlay && forceFullShader);
                 _VolumeMaterial.SetKeyword("d_Crest_NoMaskDepth", !_MaskRead || RenderBeforeTransparency);
             }
 
             // Compute ambient lighting SH.
             {
-                // We could pass in a renderer which would prime this lookup. However it doesnt make sense to use an existing render
-                // at different position, as this would then thrash it and negate the priming functionality. We could create a dummy invis GO
+                // We could pass in a renderer which would prime this lookup. However it doesn't make sense to use an existing render
+                // at different position, as this would then thrash it and negate the priming functionality. We could create a dummy invisible GO
                 // with a dummy Renderer which might be enough, but this is hacky enough that we'll wait for it to become a problem
-                // rather than add a pre-emptive hack.
+                // rather than add a preemptive hack.
                 s_SampleSphericalHarmonicsMarker.Begin(_Water);
                 LightProbes.GetInterpolatedProbe(camera.transform.position, null, out var sphericalHarmonicsL2);
                 sphericalHarmonicsL2.Evaluate(_SphericalHarmonicsData._DirectionsSH, _SphericalHarmonicsData._AmbientLighting);
                 Helpers.SetShaderVector(_VolumeMaterial, ShaderIDs.s_AmbientLighting, _SphericalHarmonicsData._AmbientLighting[0], RenderBeforeTransparency);
                 s_SampleSphericalHarmonicsMarker.End();
             }
+
+            _VolumeMaterial.SetBoolean(ShaderIDs.s_IsOverlayCamera, overlay);
         }
     }
 }

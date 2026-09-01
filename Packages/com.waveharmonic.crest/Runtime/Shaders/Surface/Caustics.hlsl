@@ -10,7 +10,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Texture.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Flow.hlsl"
 
-#if (CREST_SHIFTING_ORIGIN != 0)
+#if d_Crest_PackageShiftingOrigin
 #include "Packages/com.waveharmonic.crest.shifting-origin/Runtime/Shaders/ShiftingOrigin.hlsl"
 #endif
 
@@ -50,10 +50,10 @@ half3 Caustics
 
     float3 cuv1 = 0.0; float3 cuv2 = 0.0;
     {
-        float2 surfacePosXZ = i_ScenePositionWS.xz;
+        float2 surfacePosXZ = i_ScenePositionWS.xz - g_Crest_DataOffset.xz;
         float surfacePosScale = 1.37;
 
-#if (CREST_SHIFTING_ORIGIN != 0)
+#if d_Crest_PackageShiftingOrigin
         // Apply tiled floating origin offset. Always needed.
         surfacePosXZ -= ShiftingOriginOffset(i_CausticsTexture);
         // Scale was causing popping.
@@ -82,7 +82,7 @@ half3 Caustics
     {
         float2 surfacePosXZ = i_ScenePositionWS.xz;
 
-#if (CREST_SHIFTING_ORIGIN != 0)
+#if d_Crest_PackageShiftingOrigin
         // Apply tiled floating origin offset. Always needed.
         surfacePosXZ -= ShiftingOriginOffset(i_DistortionTexture);
 #endif

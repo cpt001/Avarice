@@ -9,6 +9,7 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// FFT wave shape.
     /// </summary>
+    [@HelpURL(typeof(ShapeFFT))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Shape FFT")]
     public sealed partial class ShapeFFT : ShapeWaves
     {
@@ -47,7 +48,7 @@ namespace WaveHarmonic.Crest
 
         // Generation
 
-        [Tooltip("FFT waves will loop with a period of this many seconds.")]
+        [Tooltip("FFT waves will loop with a period of this many seconds.\n\nFor baked data (CPU queries): smaller values decrease data size, but can make waves visibly repetitive; and this value will clamped at 128 regardless of what the UI allows.")]
         [@Order("Generation Settings")]
         [@Range(4f, 128f, Range.Clamp.Minimum)]
         [@GenerateAPI]
@@ -75,54 +76,7 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         float _MaximumHorizontalDisplacement = 15f;
 
-
-        [@Heading("Collision Data Baking")]
-
-#if !d_WaveHarmonic_Crest_CPUQueries
-        [HideInInspector]
-#endif
-
-        [Tooltip("Enable running this FFT with baked data.\n\nThis makes the FFT periodic (repeating in time).")]
-        [@Show(nameof(_Mode), nameof(LodInputMode.Global))]
-        [@DecoratedField, SerializeField]
-        internal bool _EnableBakedCollision = false;
-
-#if !d_WaveHarmonic_Crest_CPUQueries
-        [HideInInspector]
-#endif
-
-        [Tooltip("Frames per second of baked data.\n\nLarger values may help the collision track the surface closely at the cost of more frames and increase baked data size.")]
-        [@Enable(nameof(_EnableBakedCollision))]
-        [@Show(nameof(_Mode), nameof(LodInputMode.Global))]
-        [@DecoratedField, SerializeField]
-        internal int _TimeResolution = 4;
-
-#if !d_WaveHarmonic_Crest_CPUQueries
-        [HideInInspector]
-#endif
-
-        [Tooltip("Smallest wavelength required in collision.\n\nTo preview the effect of this, disable power sliders in spectrum for smaller values than this number. Smaller values require more resolution and increase baked data size.")]
-        [@Enable(nameof(_EnableBakedCollision))]
-        [@Show(nameof(_Mode), nameof(LodInputMode.Global))]
-        [@DecoratedField, SerializeField]
-        internal float _SmallestWavelengthRequired = 2f;
-
-#if !d_WaveHarmonic_Crest_CPUQueries
-        [HideInInspector]
-#endif
-
-        [Tooltip("FFT waves will loop with a period of this many seconds.\n\nSmaller values decrease data size but can make waves visibly repetitive.")]
-        [@Enable(nameof(_EnableBakedCollision))]
-        [@Show(nameof(_Mode), nameof(LodInputMode.Global))]
-        [@Range(4f, 128f)]
-        [SerializeField]
-        internal float _BakedTimeLoopLength = 32f;
-
-        internal float LoopPeriod =>
-#if d_WaveHarmonic_Crest_CPUQueries
-            _EnableBakedCollision ? _BakedTimeLoopLength :
-#endif
-            _TimeLoopLength;
+        internal float LoopPeriod => _TimeLoopLength;
 
         // WebGPU will crash above at 128.
         private protected override int MinimumResolution => 16;
@@ -170,7 +124,7 @@ namespace WaveHarmonic.Crest
             _OldFFTParameters = parameters;
         }
 
-        internal override void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1)
+        internal override void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1, int offset = 0)
         {
             if (_LastGenerateFrameCount != Time.frameCount)
             {
@@ -254,16 +208,6 @@ namespace WaveHarmonic.Crest
         {
             return _OverrideGlobalWindTurbulence || WaterRenderer.Instance == null ? _WindTurbulence : WaterRenderer.Instance.WindTurbulence;
         }
-
-#if UNITY_EDITOR
-        void OnGUI()
-        {
-            if (_DrawSlicesInEditor)
-            {
-                _FFTCompute?.OnGUI();
-            }
-        }
-#endif
     }
 
     partial class ShapeFFT
@@ -312,6 +256,14 @@ namespace WaveHarmonic.Crest
             if (_Mode != LodInputMode.Global)
             {
                 _OverrideGlobalWindTurbulence = true;
+            }
+        }
+
+        void OnGUI()
+        {
+            if (_DrawSlicesInEditor)
+            {
+                _FFTCompute?.OnGUI();
             }
         }
     }

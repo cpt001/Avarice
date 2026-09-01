@@ -16,6 +16,9 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("A single quad.\n\nOptimal for demanding platforms like mobile. Displacement will only contribute to normals.")]
         Quad,
+
+        [Tooltip("Custom geometry only.\n\nUse Mesh Renderers with Custom Mesh enabled on the surface material.\n\nDo note that the other mesh types also support custom geometry, but the difference is that this type only supports custom geometry.")]
+        Custom,
     }
 
     /// <summary>
@@ -65,7 +68,7 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         internal Material _Material = null;
 
-        [Tooltip("Underwater will copy from this material if set.\n\nUseful for overriding properties for the underwater effect. To see what properties can be overriden, see the disabled properties on the underwater material. This does not affect the surface.")]
+        [Tooltip("Underwater will copy from this material if set.\n\nUseful for overriding properties for the underwater effect. To see what properties can be overridden, see the disabled properties on the underwater material. This does not affect the surface.")]
         [@AttachMaterialEditor(order: 1)]
         [@MaterialField("Crest/Water", name: "Water (Below)", title: "Create Water Material", parent: "_Material")]
         [@GenerateAPI]
@@ -95,7 +98,7 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         internal WaterCameraExclusion _CameraExclusions = WaterCameraExclusion.Hidden | WaterCameraExclusion.Reflection;
 
-        [Tooltip("How to handle self-intersections of the water surface.\n\nThey can be caused by choppy waves which can cause a flipped underwater effect. When not using the portals/volumes, this fix is only applied when within 2 metres of the water surface. Automatic will disable the fix if portals/volumes are used which is the recommend setting.")]
+        [Tooltip("How to handle self-intersections of the water surface.\n\nThey can be caused by choppy waves which can cause a flipped underwater effect. When not using the portals/volumes, this fix is only applied when within 2 meters of the water surface. Automatic will disable the fix if portals/volumes are used which is the recommend setting.")]
         [@DecoratedField, SerializeField]
         internal SurfaceSelfIntersectionFixMode _SurfaceSelfIntersectionFixMode = SurfaceSelfIntersectionFixMode.Automatic;
 
@@ -104,6 +107,13 @@ namespace WaveHarmonic.Crest
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
         internal bool _AllowRenderQueueSorting;
+
+        [Tooltip("Adds an LPPV for indirect lighting.\n\nLighting from light probes can have minor tiling when not using an LPPV. This LPPV follows the camera.")]
+        [@Show(RenderPipeline.Legacy)]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [@SerializeField]
+        bool _ManageLightProbeProxyVolume;
 
         [@Space(10)]
 
@@ -146,6 +156,7 @@ namespace WaveHarmonic.Crest
         internal List<WaterChunkRenderer> Chunks { get; } = new();
         internal bool _Rebuild;
         Renderer _RendererTemplate;
+        internal bool _MaybeTransparent;
 
 
         //
@@ -181,9 +192,11 @@ namespace WaveHarmonic.Crest
 
 
         internal Material _MotionVectorMaterial;
+        int _ForwardPass;
 
         internal Material AboveOrBelowSurfaceMaterial => _VolumeMaterial == null ? _Material : _VolumeMaterial;
         internal bool IsQuadMesh => _MeshType == WaterMeshType.Quad;
+        internal bool IsChunkMesh => _MeshType == WaterMeshType.Chunks;
 
 
         //
@@ -231,6 +244,11 @@ namespace WaveHarmonic.Crest
             public static readonly int s_ChunkNormalScrollSpeed = Shader.PropertyToID("_Crest_ChunkNormalScrollSpeed");
             public static readonly int s_NormalMapParameters = Shader.PropertyToID("_Crest_NormalMapParameters");
 
+            public static readonly int s_BoundsXZ = Shader.PropertyToID("_Crest_BoundsXZ");
+            public static readonly int s_HasBoundsXZ = Shader.PropertyToID("_Crest_HasBoundsXZ");
+            public static readonly int s_InvertBoundsXZ = Shader.PropertyToID("_Crest_InvertBoundsXZ");
+            public static readonly int s_DataFromUVs = Shader.PropertyToID("_Crest_DataFromUVs");
+
             // Visualizer
             public static readonly int s_DataType = Shader.PropertyToID("_Crest_DataType");
             public static readonly int s_Exposure = Shader.PropertyToID("_Crest_Exposure");
@@ -247,12 +265,13 @@ namespace WaveHarmonic.Crest
             {
                 _ForceRenderingOff = value;
 
-                if (_Enabled && !IsQuadMesh)
+                if (_Enabled && IsChunkMesh)
                 {
                     foreach (var chunk in Chunks)
                     {
                         // Do not override WB culled.
                         if (chunk._Culled) continue;
+                        if (chunk._Duplicate) continue;
                         chunk.Rend.forceRenderingOff = _ForceRenderingOff;
                     }
                 }
@@ -275,21 +294,36 @@ namespace WaveHarmonic.Crest
 
         internal void Initialize()
         {
-            _Root = Builder.GenerateMesh(_Water, this, Chunks, _Water.LodResolution, _Water._GeometryDownSampleFactor, _Water.LodLevels);
+            if (IsChunkMesh)
+            {
+                var root = new GameObject("Root");
+                Debug.Assert(root != null, "Crest: The water Root transform could not be immediately constructed. Please report this issue to us.");
+                root.hideFlags = _Water._Debug._ShowHiddenObjects ? HideFlags.DontSave : HideFlags.HideAndDontSave;
+                root.transform.parent = _Water.Container.transform;
+                root.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+                root.transform.localScale = Vector3.one;
+                _Root = root.transform;
+
+                Builder.GenerateMesh(_Water, this);
+
+                Root.position = _Water.Position;
+                Root.localScale = new(_Water.Scale, 1f, _Water.Scale);
+            }
 
             if (_ChunkTemplate != null)
             {
                 _RendererTemplate = _ChunkTemplate.GetComponent<Renderer>();
             }
 
-            Root.position = _Water.Position;
-            Root.localScale = new(_Water.Scale, 1f, _Water.Scale);
-
             // Populate MPBs with defaults. Protects against null exceptions etc.
             PerCascadeMPB = _PerCascadeMPB;
             NormalMapParameters = _NormalMapParameters;
             _PreviousObjectToWorld = new Matrix4x4[Chunks.Count];
             PreviousObjectToWorld = _PreviousObjectToWorld;
+            _CustomGeometryMPB = new();
+            _CustomGeometryWithDataMPB = new();
+            _CustomGeometryMaterial = new(_Material);
+            CustomGeometryMaterial = _CustomGeometryMaterial;
             InitializeProperties();
 
             // Resolution is 4 tiles across.
@@ -335,10 +369,19 @@ namespace WaveHarmonic.Crest
 
             Helpers.Destroy(ref _BeforeRenderingCommands);
 
+            Helpers.Destroy(ref _CustomGeometryMaterial);
+
             // Clear camera data.
             _PerCameraPerCascadeMPB.Clear();
             _PerCameraNormalMapParameters.Clear();
             _PerCameraPreviousObjectToWorld.Clear();
+
+            foreach (var (_, item) in _PerCameraCustomGeometryMaterial)
+            {
+                var material = item;
+                Helpers.Destroy(ref material);
+            }
+            _PerCameraCustomGeometryMaterial.Clear();
 
             Helpers.DestroyGameObject(ref _Root);
 
@@ -358,7 +401,7 @@ namespace WaveHarmonic.Crest
 
         internal void UpdateChunkVisibility(Camera camera)
         {
-            if (IsQuadMesh)
+            if (!IsChunkMesh)
             {
                 return;
             }
@@ -374,7 +417,7 @@ namespace WaveHarmonic.Crest
                 // Can happen in edit mode.
                 if (renderer == null) continue;
                 chunk._Visible = Helpers.TestPlanesAndPointsAABB(_Water._CameraFrustumPlanes, _Water._CameraFrustumPoints, renderer.bounds);
-                chunk.Rend.forceRenderingOff = chunk._Culled || !chunk._Visible;
+                chunk.Rend.forceRenderingOff = chunk._Culled || chunk._Duplicate || !chunk._Visible;
             }
         }
 
@@ -382,7 +425,7 @@ namespace WaveHarmonic.Crest
         {
             foreach (var chunk in Chunks)
             {
-                chunk.Rend.forceRenderingOff = chunk._Culled || !chunk._Visible || chunk._CulledByVolume;
+                chunk.Rend.forceRenderingOff = chunk._Culled || chunk._Duplicate || !chunk._Visible || chunk._CulledByVolume;
             }
         }
 
@@ -459,7 +502,7 @@ namespace WaveHarmonic.Crest
                 if (!chunk.Rend.forceRenderingOff) return false;
             }
 
-            return true;
+            return IsChunkMesh;
         }
 
         internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
@@ -517,8 +560,10 @@ namespace WaveHarmonic.Crest
 
             foreach (var chunk in Chunks)
             {
-                PreviousObjectToWorld[chunk._SiblingIndex] = chunk.transform.localToWorldMatrix;
+                PreviousObjectToWorld[chunk._SiblingIndex] = chunk.Transform.localToWorldMatrix;
             }
+
+            _CustomGeometryWithDataMPB.SetBoolean(ShaderIDs.s_DataFromUVs, true);
         }
 
         void WritePerCameraMaterialParameters(Camera camera)
@@ -585,10 +630,13 @@ namespace WaveHarmonic.Crest
 
             LoadCameraData(_Water.CurrentCamera);
 
-            Root.position = _Water.Position;
-            Root.localScale = new(_Water.Scale, 1f, _Water.Scale);
+            UpdateLightProbeProxyVolume(_Water.CurrentCamera);
 
-            Root.gameObject.SetActive(!IsQuadMesh);
+            if (IsChunkMesh)
+            {
+                Root.position = _Water.Position;
+                Root.localScale = new(_Water.Scale, 1f, _Water.Scale);
+            }
 
 #if CREST_DEBUG
             if (_Water._Debug._VisualizeData)
@@ -616,11 +664,13 @@ namespace WaveHarmonic.Crest
 
             WritePerCascadeInstanceData();
 
-            if (IsQuadMesh || _SupportCustomRenderers)
+            if (!IsChunkMesh || _SupportCustomRenderers)
             {
                 // For simple and custom meshes.
                 Shader.SetGlobalVectorArray(ShaderIDs.s_NormalMapParameters, NormalMapParameters);
             }
+
+            RenderMaximumLOD();
 
             if (IsQuadMesh)
             {
@@ -628,8 +678,16 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
+            var allowMixedMaterialTypes = !RenderPipelineHelper.IsHighDefinition;
+            _MaybeTransparent = _Water.RenderBeforeTransparency;
+
             foreach (var chunk in Chunks)
             {
+                if (allowMixedMaterialTypes && !_MaybeTransparent && chunk.MaterialOverridden)
+                {
+                    _MaybeTransparent = IsTransparent(chunk.Rend.sharedMaterial);
+                }
+
                 chunk.UpdateMeshBounds(_Water, this);
             }
 
@@ -638,6 +696,17 @@ namespace WaveHarmonic.Crest
             LateUpdateMotionVectors();
 
             UpdateMaterial(_Material, ref _MotionVectorMaterial);
+
+#if d_UnityHDRP
+            if (RenderPipelineHelper.IsHighDefinition && _Material != null)
+            {
+                _ForwardPass = _Material.FindPass("Forward");
+            }
+            else
+            {
+                _ForwardPass = 0;
+            }
+#endif
 
             foreach (var body in WaterBody.WaterBodies)
             {
@@ -720,6 +789,7 @@ namespace WaveHarmonic.Crest
                 // No need to skip based on visibility, as this happens before.
 
                 tile._Culled = false;
+                tile._Duplicate = false;
                 tile.MaterialOverridden = false;
 
                 var oldExclusion = defaultExclusion;
@@ -746,8 +816,8 @@ namespace WaveHarmonic.Crest
                         continue;
                     }
 
-                    // No point overriding the material if excluding.
-                    var hasMaterial = body.OverrideMaterials && body.Exclusion != WaterBodyExclusion.Exclude;
+                    // No point overriding the material if excluding. Precise handled elsewhere.
+                    var hasMaterial = body.OverrideMaterials && !body.Precise && body.Exclusion != WaterBodyExclusion.Exclude;
                     var hasExclusion = body.Exclusion != WaterBodyExclusion.None;
 
                     // Prioritize conservative.
@@ -761,6 +831,15 @@ namespace WaveHarmonic.Crest
                         }
 
                         continue;
+                    }
+
+                    if (body.OverrideMaterials && body.Precise && body.Exclusion != WaterBodyExclusion.Exclude)
+                    {
+                        // Aggressively cull duplicate chunks. Already comes with a small buffer.
+                        if (body.AABB.RectXZ().Encapsulates(chunkUndisplacedBoundsXZ))
+                        {
+                            tile._Duplicate = true;
+                        }
                     }
 
                     // Nothing to do!
@@ -780,7 +859,7 @@ namespace WaveHarmonic.Crest
 
                     var bounds = body.AABB;
 
-                    if (bounds.IntersectsXZ(chunkBounds))
+                    if (body.Precise && body.Exclusion == WaterBodyExclusion.Exclude ? bounds.ContainsXZ(chunkBounds) : bounds.IntersectsXZ(chunkBounds))
                     {
                         // Inclusion always wins. Precise will refine it further.
                         if (hasExclusion && oldExclusion != WaterBodyExclusion.Include)
@@ -788,7 +867,7 @@ namespace WaveHarmonic.Crest
                             oldExclusion = body.Exclusion;
                         }
 
-                        // No point overridding a material if excluding. Do not check old, as it could be
+                        // No point overriding a material if excluding. Do not check old, as it could be
                         // included later.
                         if (hasMaterial)
                         {
@@ -828,6 +907,11 @@ namespace WaveHarmonic.Crest
                 }
 
                 tile.Rend.forceRenderingOff = tile._Culled = oldExclusion == WaterBodyExclusion.Exclude;
+
+                if (tile._Duplicate)
+                {
+                    tile.Rend.forceRenderingOff = true;
+                }
             }
 
             // Can skip culling next time around if water body count stays at 0
@@ -845,11 +929,11 @@ namespace WaveHarmonic.Crest
 
             if (IsQuadMesh)
             {
-                buffer.DrawMesh(Helpers.QuadMesh, Matrix4x4.TRS(Root.position, Quaternion.Euler(90f, 0, 0), new(10000, 10000, 1)), noMaterial ? Material : material, 0, shaderPass: pass, mpb);
+                buffer.DrawMesh(Helpers.QuadMesh, Matrix4x4.TRS(_Water.Position, Quaternion.Euler(90f, 0, 0), new(10000, 10000, 1)), noMaterial ? Material : material, 0, shaderPass: pass, mpb);
                 return;
             }
 
-            // Spends approx 0.2-0.3ms here on 2018 Dell XPS 15.
+            // Spends approximately 0.2-0.3ms here on 2018 Dell XPS 15.
             foreach (var chunk in Chunks)
             {
                 var renderer = chunk.Rend;
@@ -883,6 +967,98 @@ namespace WaveHarmonic.Crest
 
                 buffer.DrawRenderer(renderer, material, submeshIndex: 0, pass);
             }
+        }
+
+        internal void RenderAdditionalChunks(CommandBuffer commands)
+        {
+            if (WaterBody.WaterBodies.Count <= 0)
+            {
+                return;
+            }
+
+            var rendered = false;
+            var wrapper = new PropertyWrapperBuffer(commands);
+
+            if (RenderPipelineHelper.IsLegacy)
+            {
+                SetUpDraw(commands);
+            }
+
+            foreach (var body in WaterBody.WaterBodies)
+            {
+                if (!body.OverrideMaterials || body.AboveSurfaceMaterial == null || !body.Precise || body.Exclusion == WaterBodyExclusion.Exclude)
+                {
+                    continue;
+                }
+
+                var bounds = new Vector4
+                (
+                    body.AABB.min.x,
+                    body.AABB.min.z,
+                    body.AABB.max.x,
+                    body.AABB.max.z
+                );
+
+                var bound = false;
+
+                foreach (var chunk in Chunks)
+                {
+                    if (!chunk._Visible || chunk._Culled)
+                    {
+                        continue;
+                    }
+
+                    // We should be able to get away with unexpanded bounds.
+                    if (chunk._UnexpandedBoundsXZ.Overlaps(body.AABB.RectXZ()))
+                    {
+                        if (!bound)
+                        {
+                            wrapper.SetBoolean(ShaderIDs.s_HasBoundsXZ, true);
+                            wrapper.SetVector(ShaderIDs.s_BoundsXZ, bounds);
+                        }
+
+                        commands.DrawRenderer(chunk.Rend, body.AboveSurfaceMaterial, 0, _ForwardPass);
+                        rendered = bound = true;
+                    }
+                }
+
+                if (bound)
+                {
+                    body.RenderMaterialClip(_Water, commands);
+                }
+            }
+
+            if (rendered)
+            {
+                wrapper.SetBoolean(ShaderIDs.s_HasBoundsXZ, false);
+            }
+        }
+
+        void RenderMesh(Mesh mesh, Material material, Matrix4x4 matrix, Bounds bounds, MaterialPropertyBlock mpb = null, int priority = 0)
+        {
+            var hasTemplate = _RendererTemplate != null;
+
+            Graphics.RenderMesh
+            (
+                new(material)
+                {
+                    motionVectorMode = MotionVectorGenerationMode.Camera,
+                    material = material,
+                    worldBounds = bounds,
+                    layer = Layer,
+                    shadowCastingMode = CastShadows ? ShadowCastingMode.On : ShadowCastingMode.Off,
+                    lightProbeUsage = hasTemplate ? _RendererTemplate.lightProbeUsage : LightProbeUsage.Off,
+                    reflectionProbeUsage = hasTemplate ? _RendererTemplate.reflectionProbeUsage : ReflectionProbeUsage.BlendProbesAndSkybox,
+                    renderingLayerMask = hasTemplate ? _RendererTemplate.renderingLayerMask : 1,
+                    // Not required for BIRP but required for SRPs.
+                    camera = _Water.IsMultipleViewpointMode ? _Water.CurrentCamera : null,
+                    rendererPriority = priority,
+                    matProps = mpb,
+                },
+                mesh,
+                submeshIndex: 0,
+                matrix
+            );
         }
     }
 
@@ -942,7 +1118,7 @@ namespace WaveHarmonic.Crest
     {
         // Mostly to update the motion vector material only once.
         bool _QueueMotionVectors;
-        bool QueueMotionVectors => _QueueMotionVectors && !IsQuadMesh;
+        bool QueueMotionVectors => _QueueMotionVectors && IsChunkMesh;
         Matrix4x4[] _PreviousObjectToWorld;
         internal Matrix4x4[] PreviousObjectToWorld { get; private set; }
 
@@ -1057,6 +1233,7 @@ namespace WaveHarmonic.Crest
         internal Dictionary<Camera, MaterialPropertyBlock[]> _PerCameraPerCascadeMPB = new();
         internal Dictionary<Camera, Vector4[]> _PerCameraNormalMapParameters = new();
         internal Dictionary<Camera, Matrix4x4[]> _PerCameraPreviousObjectToWorld = new();
+        internal Dictionary<Camera, Material> _PerCameraCustomGeometryMaterial = new();
 
         void LoadCameraData(Camera camera)
         {
@@ -1073,6 +1250,8 @@ namespace WaveHarmonic.Crest
                 _PerCameraNormalMapParameters.Add(camera, NormalMapParameters);
                 PreviousObjectToWorld = new Matrix4x4[Chunks.Count];
                 _PerCameraPreviousObjectToWorld.Add(camera, PreviousObjectToWorld);
+                CustomGeometryMaterial = new(Material);
+                _PerCameraCustomGeometryMaterial.Add(camera, CustomGeometryMaterial);
                 InitializeProperties();
             }
             else
@@ -1080,6 +1259,7 @@ namespace WaveHarmonic.Crest
                 PerCascadeMPB = _PerCameraPerCascadeMPB[camera];
                 NormalMapParameters = _PerCameraNormalMapParameters[camera];
                 PreviousObjectToWorld = _PerCameraPreviousObjectToWorld[camera];
+                CustomGeometryMaterial = _PerCameraCustomGeometryMaterial[camera];
             }
         }
 
@@ -1090,6 +1270,10 @@ namespace WaveHarmonic.Crest
                 _PerCameraPerCascadeMPB.Remove(camera);
                 _PerCameraNormalMapParameters.Remove(camera);
                 _PerCameraPreviousObjectToWorld.Remove(camera);
+
+                var material = _PerCameraCustomGeometryMaterial[camera];
+                Helpers.Destroy(ref material);
+                _PerCameraCustomGeometryMaterial.Remove(camera);
             }
         }
     }
@@ -1105,27 +1289,126 @@ namespace WaveHarmonic.Crest
             var scale = new Vector3(10000 * _Water.Scale, 10000 * _Water.Scale, 1);
             var bounds = Helpers.QuadMesh.bounds;
             bounds.Expand(scale);
-            Graphics.RenderMesh
+
+            RenderMesh
             (
-                new()
-                {
-                    motionVectorMode = MotionVectorGenerationMode.Camera,
-                    material = Material,
-                    worldBounds = Root.TransformBounds(bounds),
-                    layer = Layer,
-                    shadowCastingMode = CastShadows ? ShadowCastingMode.On : ShadowCastingMode.Off,
-                    lightProbeUsage = LightProbeUsage.Off,
-                    reflectionProbeUsage = ReflectionProbeUsage.BlendProbesAndSkybox,
-                    renderingLayerMask = _RendererTemplate != null ? _RendererTemplate.renderingLayerMask : 1,
-                    // Not required for BIRP but required for SRPs.
-                    camera = _Water.IsMultipleViewpointMode ? _Water.CurrentCamera : null,
-                },
                 Helpers.QuadMesh,
-                submeshIndex: 0,
-                Matrix4x4.TRS(Root.position, Quaternion.Euler(90f, 0, 0), scale)
+                Material,
+                Matrix4x4.TRS(_Water.Position, Quaternion.Euler(90f, 0, 0), scale),
+                Matrix4x4.TRS(_Water.Position, Quaternion.identity, scale).TransformBounds(bounds)
             );
 
             UpdateMaterial(_Material, ref _MotionVectorMaterial);
+        }
+    }
+
+    // Off LOD Rendering
+    partial class SurfaceRenderer
+    {
+        Material _CustomGeometryMaterial;
+        Material CustomGeometryMaterial { get; set; }
+        MaterialPropertyBlock _CustomGeometryMPB;
+        MaterialPropertyBlock _CustomGeometryWithDataMPB;
+        internal static readonly List<IRenderMaximumLOD> s_SurfaceInputs = new();
+
+        internal void RenderMaximumLOD()
+        {
+            if (!_Water.RenderMaximumLOD)
+            {
+                return;
+            }
+
+            if (s_SurfaceInputs.Count == 0)
+            {
+                return;
+            }
+
+            var material = _Material;
+            var rect = Rect.zero;
+
+            // NOTE: happened in test harness.
+            if (material == null)
+            {
+                return;
+            }
+
+            if (!IsQuadMesh)
+            {
+                CustomGeometryMaterial.CopyPropertiesFromMaterial(_Material);
+
+                var scale = _Water.CascadeData.Current[_Water.LodLevels - 1].x;
+                var texel = scale / _Water.LodResolution * 4f * _Water.GeometryDownSampleFactor;
+                var width = 4f * scale;
+                var snapped = _Water.Position.XZ() - new Vector2(Mathf.Repeat(_Water.Position.x, texel), Mathf.Repeat(_Water.Position.z, texel));
+                rect = new Rect(snapped.x - width * 0.5f, snapped.y - width * 0.5f, width, width);
+
+                var tileResolution = Mathf.Round(0.25f * _Water.LodResolution / _Water.GeometryDownSampleFactor);
+                var offset = 1f / tileResolution * scale * 6f;
+                rect.xMin += offset;
+                rect.yMin += offset;
+                rect.xMax -= offset;
+                rect.yMax -= offset;
+
+                CustomGeometryMaterial.SetBoolean(ShaderIDs.s_HasBoundsXZ, true);
+                CustomGeometryMaterial.SetBoolean(ShaderIDs.s_InvertBoundsXZ, true);
+                CustomGeometryMaterial.SetVector(ShaderIDs.s_BoundsXZ, new(rect.xMin, rect.yMin, rect.xMax, rect.yMax));
+
+                var keywordCM = new LocalKeyword(CustomGeometryMaterial.shader, "_CREST_CUSTOM_MESH");
+
+                if (keywordCM.isValid)
+                {
+                    CustomGeometryMaterial.SetKeyword(keywordCM, true);
+                }
+
+                var keywordOM = new LocalKeyword(CustomGeometryMaterial.shader, "_CREST_OFF_LOD_MESH");
+
+                if (keywordOM.isValid)
+                {
+                    CustomGeometryMaterial.SetKeyword(keywordOM, true);
+                }
+
+                material = CustomGeometryMaterial;
+            }
+
+            foreach (var renderer in s_SurfaceInputs)
+            {
+                // Force for water level inputs with quad mesh.
+                if (!(IsQuadMesh && renderer.HasLevel) && !renderer.Enabled)
+                {
+                    continue;
+                }
+
+                if (!IsQuadMesh && rect.Encapsulates(renderer.Rect))
+                {
+                    continue;
+                }
+
+                var hasData = renderer.HasData;
+
+                var mpb = hasData ? _CustomGeometryWithDataMPB : _CustomGeometryMPB;
+
+                var wrapper = new PropertyWrapperMPB(mpb);
+                _Water.FoamLod.SetMaterialRenderingParameters(wrapper, material);
+                _Water.AbsorptionLod.SetMaterialRenderingParameters(wrapper, material);
+                _Water.ScatteringLod.SetMaterialRenderingParameters(wrapper, material);
+
+                if (hasData)
+                {
+                    wrapper.SetVector(Crest.ShaderIDs.s_FeatherWidth, renderer.FeatherWidths);
+                    wrapper.SetVector(LodInput.ShaderIDs.s_Weight, renderer.Weights);
+                }
+
+                RenderMesh
+                (
+                    renderer.Mesh,
+                    material,
+                    renderer.Transform.localToWorldMatrix,
+                    renderer.Bounds,
+                    mpb,
+                    // Render before the extents, as it renders over it.
+                    priority: -1
+                );
+            }
         }
     }
 

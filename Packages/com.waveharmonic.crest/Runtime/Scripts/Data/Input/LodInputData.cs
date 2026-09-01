@@ -39,9 +39,11 @@ namespace WaveHarmonic.Crest
         internal abstract void OnEnable();
         internal abstract void OnDisable();
         internal abstract void OnDestroy();
-        internal abstract void Draw(Lod lod, Component component, CommandBuffer buffer, RenderTargetIdentifier target, int slice);
+        internal abstract void Draw(Lod lod, Component component, CommandBuffer buffer, RenderTargetIdentifier target, int slice, int offset);
         internal abstract void RecalculateRect();
         internal abstract void RecalculateBounds();
+
+        internal virtual Mesh InternalMesh => null;
 
         internal virtual bool HasHeightRange => true;
 
@@ -91,7 +93,7 @@ namespace WaveHarmonic.Crest
 
         internal virtual void OnUpdate()
         {
-            if (_Input.transform.hasChanged)
+            if (_Input.Transform.hasChanged)
             {
                 RecalculateCulling();
             }
@@ -146,6 +148,10 @@ namespace WaveHarmonic.Crest
         /// <inheritdoc cref="Generated.LodInputMode.Geometry"/>
         [Tooltip("Renders geometry using a default material.")]
         Geometry,
+
+        /// <inheritdoc cref="Generated.LodInputMode.Area"/>
+        [Tooltip("Covers a local area.")]
+        Area,
     }
 
     /// <summary>

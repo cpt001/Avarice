@@ -11,7 +11,7 @@ namespace WaveHarmonic.Crest
 {
     abstract class BakedWaveData : CustomScriptableObject
     {
-        public abstract ICollisionProvider CreateCollisionProvider();
+        public abstract ICollisionProvider CreateCollisionProvider(bool blend = false);
         public abstract float WindSpeed { get; }
     }
 
@@ -62,7 +62,7 @@ namespace WaveHarmonic.Crest
     }
 
     /// <summary>
-    /// Flags to enable extra collsion layers.
+    /// Flags to enable extra collision layers.
     /// </summary>
     [System.Flags]
     [@GenerateDoc]
@@ -178,6 +178,7 @@ namespace WaveHarmonic.Crest
             public static readonly int s_WaveBuffer = Shader.PropertyToID("_Crest_WaveBuffer");
             public static readonly int s_DynamicWavesTarget = Shader.PropertyToID("_Crest_DynamicWavesTarget");
             public static readonly int s_AttenuationInShallows = Shader.PropertyToID("_Crest_AttenuationInShallows");
+            public static readonly int s_CascadeAnimatedWaves = Shader.PropertyToID("_Crest_CascadeAnimatedWaves");
         }
 
         internal static readonly Color s_GizmoColor = new(0f, 1f, 0f, 0.5f);
@@ -186,6 +187,8 @@ namespace WaveHarmonic.Crest
         /// Turn shape combine pass on/off. Debug only - stripped in builds.
         /// </summary>
         internal static bool s_Combine = true;
+
+        internal static int s_NeedsAnimatedWavesCopy;
 
         WaterResources.ShapeCombineCompute _CombineShader;
         RenderTexture _PersistentDataTexture;
@@ -196,6 +199,7 @@ namespace WaveHarmonic.Crest
         private protected override bool NeedToReadWriteTextureData => true;
         private protected override Color ClearColor => Color.black;
         internal override int BufferCount => _Water.WriteMotionVectors ? 2 : 1;
+        bool ExecuteQueries => QuerySource is LodQuerySource.GPU;
 
         // NOTE: Tried RGB111110Float but errors becomes visible. One option would be to use a UNORM setup.
         private protected override GraphicsFormat RequestedTextureFormat => _TextureFormatMode switch
@@ -398,9 +402,9 @@ namespace WaveHarmonic.Crest
             // Query collisions including only Animated Waves.
             // Requires copying the water level.
             // Guard not required, as Query already does this check before returning the
-            // correct provider, thus nothing would be reqistered nor dispatched. But seems
+            // correct provider, thus nothing would be registered nor dispatched. But seems
             // right to do so anyhow.
-            if (_CollisionLayers != CollisionLayers.Nothing)
+            if (ExecuteQueries && _CollisionLayers != CollisionLayers.Nothing)
             {
                 Provider.UpdateQueries(_Water, CollisionLayer.AfterAnimatedWaves);
             }
@@ -453,7 +457,7 @@ namespace WaveHarmonic.Crest
 
                 // Query collisions including Dynamic Waves.
                 // Does not require copying the water level as they are added with zero alpha.
-                if (_CollisionLayers.HasFlag(CollisionLayers.DynamicWaves))
+                if (ExecuteQueries && _CollisionLayers.HasFlag(CollisionLayers.DynamicWaves))
                 {
                     Provider.UpdateQueries(_Water, CollisionLayer.AfterDynamicWaves);
                 }
@@ -461,14 +465,32 @@ namespace WaveHarmonic.Crest
 
             if (_CollisionLayers.HasFlag(CollisionLayers.Displacement))
             {
+                if (s_NeedsAnimatedWavesCopy > 0)
+                {
+                    // Make a copy so we can read/write in graphics shader.
+                    var id = ShaderIDs.s_CascadeAnimatedWaves;
+                    buffer.GetTemporaryRT(ShaderIDs.s_CascadeAnimatedWaves, DataTexture.descriptor);
+                    buffer.CopyTexture(DataTexture, ShaderIDs.s_CascadeAnimatedWaves);
+                }
+
                 // LOD independent data.
                 // Draw any data that did not express a preference for one lod or another.
                 drawn = SubmitDraws(buffer, s_Inputs, DataTexture, (int)DisplacementPass.LodIndependentLast);
+
+                if (s_NeedsAnimatedWavesCopy > 0)
+                {
+                    buffer.ReleaseTemporaryRT(ShaderIDs.s_CascadeAnimatedWaves);
+                }
             }
 
-            if (_CollisionLayers == CollisionLayers.Nothing || _CollisionLayers.HasFlag(CollisionLayers.Displacement))
+            if (ExecuteQueries && (_CollisionLayers == CollisionLayers.Nothing || _CollisionLayers.HasFlag(CollisionLayers.Displacement)))
             {
                 Queryable?.UpdateQueries(_Water);
+            }
+
+            if (RequiresClearBorder)
+            {
+                ClearBorder(buffer);
             }
 
             buffer.EndSample(ID);
@@ -476,6 +498,11 @@ namespace WaveHarmonic.Crest
 
         internal override void AfterExecute()
         {
+            if (!ExecuteQueries)
+            {
+                return;
+            }
+
             Provider.SendReadBack(_Water, _CollisionLayers);
         }
 
@@ -497,7 +524,7 @@ namespace WaveHarmonic.Crest
 
             var source = QuerySource;
 
-            if (_Water.Surface.IsQuadMesh)
+            if (!_Water.Surface.IsChunkMesh)
             {
                 source = LodQuerySource.None;
             }
@@ -518,15 +545,21 @@ namespace WaveHarmonic.Crest
 
                     break;
                 }
+#if d_WaveHarmonic_Crest_CPUQueries
                 case LodQuerySource.CPU:
                 {
                     if (_BakedWaveData != null)
                     {
                         provider = _BakedWaveData.CreateCollisionProvider();
                     }
+                    else
+                    {
+                        provider = new CPUCollisionQuery();
+                    }
 
                     break;
                 }
+#endif
             }
 
             // This should not be hit, but can be if compute shaders aren't loaded correctly.
@@ -577,7 +610,7 @@ namespace WaveHarmonic.Crest
                 return 0f;
             }
 
-            // If approaching end of lod chain, start smoothly transitioning any large wavelengths across last two lods
+            // If approaching end of lod chain, start smoothly transitioning any large wavelengths across last two LODs
             if (wavelength >= filter._TransitionThreshold)
             {
                 if (filter._Slice == filter._Slices - 2 && !filter._HighQualityCombine)
@@ -701,6 +734,7 @@ namespace WaveHarmonic.Crest
             switch (propertyPath)
             {
                 case nameof(_CollisionLayers):
+                case nameof(_BakedWaveData):
                     ResetQueryChange();
                     break;
             }

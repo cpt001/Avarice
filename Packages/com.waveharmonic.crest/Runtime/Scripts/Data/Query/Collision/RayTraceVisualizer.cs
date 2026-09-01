@@ -8,7 +8,7 @@ using WaveHarmonic.Crest.Utility;
 namespace WaveHarmonic.Crest
 {
     /// <summary>
-    /// Debug draw a line trace from this gameobjects position, in this gameobjects forward direction.
+    /// Debug draw a line trace from this game objects position, in this game objects forward direction.
     /// </summary>
     [@ExecuteDuringEditMode]
     [AddComponentMenu(Constants.k_MenuPrefixDebug + "Ray Cast Visualizer")]
@@ -25,15 +25,15 @@ namespace WaveHarmonic.Crest
             }
 
             // Even if only a single ray trace is desired, this still must be called every frame until it returns true
-            if (_RayCast.RayCast(transform.position, transform.forward, out var dist))
+            if (_RayCast.RayCast(Transform.position, Transform.forward, out var dist))
             {
-                var endPos = transform.position + transform.forward * dist;
-                Debug.DrawLine(transform.position, endPos, Color.green);
+                var endPos = Transform.position + Transform.forward * dist;
+                Debug.DrawLine(Transform.position, endPos, Color.green);
                 DebugUtility.DrawCross(Debug.DrawLine, endPos, 2f, Color.green, 0f);
             }
             else
             {
-                Debug.DrawLine(transform.position, transform.position + transform.forward * 50f, Color.red);
+                Debug.DrawLine(Transform.position, Transform.position + Transform.forward * 50f, Color.red);
             }
         }
     }

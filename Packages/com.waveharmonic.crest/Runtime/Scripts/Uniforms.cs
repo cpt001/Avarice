@@ -22,9 +22,11 @@ namespace WaveHarmonic.Crest
         public static readonly int s_TexturePosition = Shader.PropertyToID("_Crest_TexturePosition");
         public static readonly int s_TextureRotation = Shader.PropertyToID("_Crest_TextureRotation");
         public static readonly int s_TextureResolution = Shader.PropertyToID("_Crest_TextureResolution");
+        public static readonly int s_Value = Shader.PropertyToID("_Crest_Value");
         public static readonly int s_Multiplier = Shader.PropertyToID("_Crest_Multiplier");
         public static readonly int s_FeatherWidth = Shader.PropertyToID("_Crest_FeatherWidth");
         public static readonly int s_NegativeValues = Shader.PropertyToID("_Crest_NegativeValues");
+        public static readonly int s_InvertSource = Shader.PropertyToID("_Crest_InvertSource");
         public static readonly int s_BoundaryXZ = Shader.PropertyToID("_Crest_BoundaryXZ");
         public static readonly int s_DrawBoundaryXZ = Shader.PropertyToID("_Crest_DrawBoundaryXZ");
 

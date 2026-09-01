@@ -11,7 +11,6 @@ namespace WaveHarmonic.Crest
     /// <remarks>
     /// Attach this to objects that you want to influence the water height.
     /// </remarks>
-    [@HelpURL("Manual/Simulation/WaterLevel.html")]
     [@FilterEnum(nameof(_Blend), Filtered.Mode.Include, (int)LodInputBlend.Off, (int)LodInputBlend.Additive, (int)LodInputBlend.Minimum, (int)LodInputBlend.Maximum)]
     public sealed partial class LevelLodInput : LodInput
     {
@@ -30,14 +29,32 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         Vector2 _HeightRange = new(-100, 100);
 
+
+        [@Heading("Maximum LOD Rendering")]
+
+        [@Label("Enable")]
+        [Tooltip("Render this input directly where there is no data.\n\nWithout this enabled, there will be no water level change outside of the LOD system where there is no data. This will render the mesh directly with the water surface material.\n\nThis feature only works with mesh based inputs (Geometry, Spline etc).\n\nDepending on the Mode, non water level inputs may contribute to the rendering (like flow and color).")]
+        [@Show(nameof(_Mode), nameof(LodInputMode.Geometry))]
+        [@Show(nameof(_Mode), nameof(LodInputMode.Renderer))]
+        [@GenerateAPI(Setter.Custom)]
+        [@DecoratedField]
+        [@SerializeField]
+        bool _RenderMaximumLOD = true;
+
         LevelLodInput()
         {
+            ForceValues();
+        }
+
+        void ForceValues()
+        {
+            _FeatherWidth = 0f;
             _FollowHorizontalWaveMotion = true;
         }
 
         // Water level is packed into alpha using the displaced position.
         private protected override bool FollowHorizontalMotion => true;
-        internal override LodInputMode DefaultMode => LodInputMode.Geometry;
+        internal override LodInputMode DefaultMode => LodInputMode.Area;
 
         internal override void InferBlend()
         {
@@ -56,12 +73,14 @@ namespace WaveHarmonic.Crest
             base.Initialize();
             _Reporter ??= new(this);
             _HeightReporter = _Reporter;
+            SetRenderMaximumLOD(!_RenderMaximumLOD, _RenderMaximumLOD);
         }
 
         private protected override void OnDisable()
         {
             base.OnDisable();
             _HeightReporter = null;
+            SurfaceRenderer.s_SurfaceInputs.Remove(this);
         }
 
         bool ReportHeight(WaterRenderer water, ref Rect bounds, ref float minimum, ref float maximum)
@@ -106,6 +125,27 @@ namespace WaveHarmonic.Crest
 
             return false;
         }
+
+        void SetRenderMaximumLOD(bool previous, bool current)
+        {
+            if (previous == current) return;
+            SurfaceRenderer.s_SurfaceInputs.Remove(this);
+            if (!current || Mode is not (LodInputMode.Geometry or LodInputMode.Renderer)) return;
+            SurfaceRenderer.s_SurfaceInputs.Add(this);
+        }
+    }
+
+    partial class LevelLodInput : IRenderMaximumLOD
+    {
+        bool IRenderMaximumLOD.Enabled => _RenderMaximumLOD;
+        bool IRenderMaximumLOD.HasLevel => true;
+        bool IRenderMaximumLOD.HasData => false;
+        Transform IRenderMaximumLOD.Transform => Transform;
+        Mesh IRenderMaximumLOD.Mesh => Data.InternalMesh;
+        Rect IRenderMaximumLOD.Rect => Data.Rect;
+        Bounds IRenderMaximumLOD.Bounds => Data.Bounds;
+        Vector4 IRenderMaximumLOD.Weights => Vector4.zero;
+        Vector4 IRenderMaximumLOD.FeatherWidths => Vector4.zero;
     }
 
     partial class LevelLodInput
@@ -137,4 +177,26 @@ namespace WaveHarmonic.Crest
             }
         }
     }
+
+#if UNITY_EDITOR
+    partial class LevelLodInput
+    {
+        [@OnChange(skipIfInactive: false)]
+        void OnChange(string path, object previous)
+        {
+            switch (path)
+            {
+                case nameof(_RenderMaximumLOD):
+                    SetRenderMaximumLOD((bool)previous, _RenderMaximumLOD);
+                    break;
+            }
+        }
+
+        private protected override void OnValidate()
+        {
+            base.OnValidate();
+            ForceValues();
+        }
+    }
+#endif
 }

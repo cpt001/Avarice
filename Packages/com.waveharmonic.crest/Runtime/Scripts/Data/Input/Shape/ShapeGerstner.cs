@@ -12,6 +12,7 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// Gerstner wave shape.
     /// </summary>
+    [@HelpURL(typeof(ShapeGerstner))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Shape Gerstner")]
     public sealed partial class ShapeGerstner : ShapeWaves
     {
@@ -27,7 +28,7 @@ namespace WaveHarmonic.Crest
         [@SerializeField]
         bool _Swell = true;
 
-        [Tooltip("The weight of the opposing, second pair of Gerstner waves.\n\nEach Gerstner wave is actually a pair of waves travelling in opposite directions (similar to FFT). This weight is applied to the wave travelling in against-wind direction. Set to zero to obtain simple single waves which are useful for shorelines waves.")]
+        [Tooltip("The weight of the opposing, second pair of Gerstner waves.\n\nEach Gerstner wave is actually a pair of waves traveling in opposite directions (similar to FFT). This weight is applied to the wave traveling in against-wind direction. Set to zero to obtain simple single waves which are useful for shorelines waves.")]
         [@Order("Waves")]
         [@Disable(nameof(_Swell))]
         [@Range(0f, 1f)]
@@ -246,7 +247,7 @@ namespace WaveHarmonic.Crest
             ReportMaxDisplacement(water);
         }
 
-        internal override void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1)
+        internal override void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1, int offset = 0)
         {
             if (_LastGenerateFrameCount != Time.frameCount)
             {
@@ -592,7 +593,7 @@ namespace WaveHarmonic.Crest
         private protected override void Initialize()
         {
             base.Initialize();
-            s_Instances.Add(transform.GetSiblingIndex(), this);
+            s_Instances.Add(Transform.GetSiblingIndex(), this);
         }
 
         private protected override void OnDisable()

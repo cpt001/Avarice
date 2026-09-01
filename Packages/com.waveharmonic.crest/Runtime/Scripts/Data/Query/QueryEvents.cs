@@ -26,7 +26,7 @@ namespace WaveHarmonic.Crest
     /// Emits events (UnityEvents) based on the sampled water data.
     /// </summary>
     [AddComponentMenu(Constants.k_MenuPrefixScripts + "Query Events")]
-    [@HelpURL("Manual/Basics/Events.html#query-events")]
+    [@HelpURL(typeof(QueryEvents))]
     public sealed partial class QueryEvents : ManagedBehaviour<WaterRenderer>
     {
         [Tooltip("What transform should the queries be based on.\n\n\"Viewer\" will reuse queries already performed by the Water Renderer")]
@@ -47,7 +47,7 @@ namespace WaveHarmonic.Crest
         internal CollisionLayer _Layer;
 
 
-        [Header("Distance From Water Surface")]
+        [@Heading("Distance From Water Surface")]
 
         [Tooltip("The minimum wavelength for queries.\n\nThe higher the value, the more smaller waves will be ignored when sampling the water surface.")]
         [@Enable(nameof(_Source), nameof(QuerySource.Transform))]
@@ -85,7 +85,7 @@ namespace WaveHarmonic.Crest
         AnimationCurve _DistanceFromSurfaceCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
 
-        [Header("Distance From Water Edge")]
+        [@Heading("Distance From Water Edge")]
 
         [@Label("Signed")]
         [Tooltip("Whether to keep the sign of the value (ie positive/negative).\n\nA positive value means the query point is over water, while a negative means it is over land.")]
@@ -114,7 +114,7 @@ namespace WaveHarmonic.Crest
         AnimationCurve _DistanceFromEdgeCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
 
-        [Header("Events")]
+        [@Heading("Events")]
 
         [Tooltip("Triggers when game object goes below water surface.\n\nTriggers once per state change.")]
         [@GenerateAPI]
@@ -123,17 +123,20 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Triggers when game object goes above water surface.\n\nTriggers once per state change.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         UnityEvent _OnAboveWater = new();
 
         [Tooltip("Sends the distance from the water surface.")]
         [@GenerateAPI]
         [UnityEngine.Serialization.FormerlySerializedAs("_DistanceFromWater")]
+        [@DecoratedField]
         [SerializeField]
         internal UnityEvent<float> _DistanceFromSurface = new();
 
         [Tooltip("Sends the distance from the water's edge.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         internal UnityEvent<float> _DistanceFromEdge = new();
 
@@ -182,8 +185,8 @@ namespace WaveHarmonic.Crest
 
             if (_Source == QuerySource.Transform)
             {
-                if (!_SampleHeightHelper.SampleHeight(transform.position, out var height, minimumLength: 2f * _MinimumWavelength, _Layer)) return;
-                distance = transform.position.y - height;
+                if (!_SampleHeightHelper.SampleHeight(Transform.position, out var height, minimumLength: 2f * _MinimumWavelength, _Layer)) return;
+                distance = Transform.position.y - height;
             }
 
             var isAboveSurface = distance > 0;
@@ -246,7 +249,7 @@ namespace WaveHarmonic.Crest
 
             if (_Source == QuerySource.Transform)
             {
-                if (!_SampleDepthHelper.SampleDistanceToWaterEdge(transform.position, out distance))
+                if (!_SampleDepthHelper.SampleDistanceToWaterEdge(Transform.position, out distance))
                 {
                     return;
                 }

@@ -7,13 +7,14 @@ using WaveHarmonic.Crest.Internal;
 namespace WaveHarmonic.Crest.Examples
 {
     /// <summary>
-    /// Simple utility script to destroy the gameobject after a set time.
+    /// Simple utility script to destroy the game object after a set time.
     /// </summary>
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
     sealed partial class TimedDestroy : CustomBehaviour
     {
+        [@DecoratedField]
         [SerializeField]
         float _LifeTime = 2.0f;
 
@@ -21,6 +22,7 @@ namespace WaveHarmonic.Crest.Examples
         // [SerializeField]
         // float _ScaleToOneDuration = 0.1f;
 
+        [@DecoratedField]
         [SerializeField]
         float _ScaleToZeroDuration = 0.0f;
 
@@ -32,7 +34,7 @@ namespace WaveHarmonic.Crest.Examples
             base.OnStart();
 
             _BirthTime = Time.time;
-            _Scale = transform.localScale;
+            _Scale = Transform.localScale;
         }
 
         void Update()
@@ -45,15 +47,15 @@ namespace WaveHarmonic.Crest.Examples
             }
             else if (age > _LifeTime - _ScaleToZeroDuration)
             {
-                transform.localScale = _Scale * (1.0f - (age - (_LifeTime - _ScaleToZeroDuration)) / _ScaleToZeroDuration);
+                Transform.localScale = _Scale * (1.0f - (age - (_LifeTime - _ScaleToZeroDuration)) / _ScaleToZeroDuration);
             }
             /*else if (age < _ScaleToOneDuration && _ScaleToOneDuration > 0.0f)
             {
-                transform.localScale = _Scale * age / _ScaleToOneDuration;
+                Transform.localScale = _Scale * age / _ScaleToOneDuration;
             }*/
             else
             {
-                transform.localScale = _Scale;
+                Transform.localScale = _Scale;
             }
         }
     }

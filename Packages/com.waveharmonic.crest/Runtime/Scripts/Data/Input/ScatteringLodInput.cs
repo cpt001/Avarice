@@ -9,14 +9,9 @@ namespace WaveHarmonic.Crest
     /// <remarks>
     /// Attach this to objects that you want to influence the scattering color.
     /// </remarks>
-    [@HelpURL("Manual/Appearance/Color.html")]
     public sealed partial class ScatteringLodInput : LodInput
     {
-#if d_CrestPaint
-        internal override LodInputMode DefaultMode => LodInputMode.Paint;
-#else
-        internal override LodInputMode DefaultMode => LodInputMode.Renderer;
-#endif
+        internal override LodInputMode DefaultMode => LodInputMode.Area;
 
         internal override void InferBlend()
         {

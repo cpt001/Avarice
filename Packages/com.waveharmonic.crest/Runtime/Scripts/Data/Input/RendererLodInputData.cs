@@ -110,6 +110,19 @@ namespace WaveHarmonic.Crest
             return false;
         }
 
+        internal override Mesh InternalMesh
+        {
+            get
+            {
+                if (_Input.TryGetComponent<MeshFilter>(out var mr))
+                {
+                    return mr.sharedMesh;
+                }
+
+                return null;
+            }
+        }
+
         internal override void OnEnable()
         {
             _MaterialPropertyBlock ??= new();
@@ -161,7 +174,7 @@ namespace WaveHarmonic.Crest
             _RecalculateRect = _Bounds != _Renderer.bounds;
         }
 
-        internal override void Draw(Lod lod, Component component, CommandBuffer buffer, RenderTargetIdentifier target, int slice)
+        internal override void Draw(Lod lod, Component component, CommandBuffer buffer, RenderTargetIdentifier target, int slice, int offset)
         {
             // NOTE: Inputs will only change the first material (only ShapeWaves at the moment).
 
@@ -214,7 +227,7 @@ namespace WaveHarmonic.Crest
 
                 // By default, shaderPass is -1 which is all passes. Shader Graph will produce multi-pass shaders
                 // for depth etc so we should only render one pass. Unlit SG will have the unlit pass first.
-                // Submesh count generally must equal number of materials.
+                // Sub-mesh count generally must equal number of materials.
                 buffer.DrawRenderer(_Renderer, material, submeshIndex: i, pass);
             }
         }

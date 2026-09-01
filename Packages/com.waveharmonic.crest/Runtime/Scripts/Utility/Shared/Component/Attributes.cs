@@ -85,6 +85,16 @@ namespace WaveHarmonic.Crest
         }
     }
 
+    [Conditional(Symbols.k_UnityEditor)]
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
+    sealed class ExcludeDoc : Attribute
+    {
+        public ExcludeDoc()
+        {
+
+        }
+    }
+
 #if !UNITY_EDITOR
 
     [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
@@ -94,6 +104,7 @@ namespace WaveHarmonic.Crest
     sealed class Order : Decorator
     {
         public enum Placement { Heading, Below, Above }
+        public Order(Placement placement) { }
         public Order(string target, Placement placement = Placement.Heading) { }
     }
 
@@ -274,6 +285,7 @@ namespace WaveHarmonic.Crest
     [Conditional(Symbols.k_UnityEditor)]
     sealed class HelpURL : Decorator
     {
+        public HelpURL(Type type) { }
         public HelpURL(string path = "") { }
     }
 

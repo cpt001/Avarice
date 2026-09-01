@@ -10,13 +10,7 @@ using UnityEditor.Rendering.BuiltIn.ShaderGraph;
 using UnityEditor.ShaderGraph;
 using UnityEngine;
 using UnityEngine.Rendering;
-
-#if UNITY_2022_3_OR_NEWER
 using UnityEngine.UIElements;
-#else
-using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
 
 using UnityBuiltInLitSubTarget = UnityEditor.Rendering.BuiltIn.ShaderGraph.BuiltInLitSubTarget;
 
@@ -215,10 +209,8 @@ namespace WaveHarmonic.Crest.Editor.ShaderGraph
             set => m_TransparentReceiveShadows = value;
         }
 
-#if UNITY_2022_3_OR_NEWER
         static FieldInfo s_CustomEditorForRenderPipelines;
         static FieldInfo CustomEditorForRenderPipelines => s_CustomEditorForRenderPipelines ??= typeof(TargetSetupContext).GetField("customEditorForRenderPipelines", BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
 
         public override void Setup(ref TargetSetupContext context)
         {
@@ -229,7 +221,6 @@ namespace WaveHarmonic.Crest.Editor.ShaderGraph
             // Caused a crash: !context.HasCustomEditorForRenderPipeline(null)
             if (string.IsNullOrEmpty(target.customEditorGUI))
             {
-#if UNITY_2022_3_OR_NEWER
                 var editors = (List<ShaderCustomEditor>)CustomEditorForRenderPipelines.GetValue(context);
                 if (editors.Count > 0)
                 {
@@ -237,14 +228,6 @@ namespace WaveHarmonic.Crest.Editor.ShaderGraph
                 }
 
                 context.AddCustomEditorForRenderPipeline(typeof(CustomBuiltInLitGUI).FullName, "");
-#else
-                if (context.customEditorForRenderPipelines.Count > 0)
-                {
-                    context.customEditorForRenderPipelines.RemoveAt(context.customEditorForRenderPipelines.Count - 1);
-                }
-
-                context.customEditorForRenderPipelines.Add((typeof(CustomBuiltInLitGUI).FullName, ""));
-#endif
             }
 
             context.subShaders.RemoveAt(0);

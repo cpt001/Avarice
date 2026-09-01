@@ -20,6 +20,8 @@ namespace WaveHarmonic.Crest
         private protected override Color ClearColor => Color.clear;
         private protected override bool NeedToReadWriteTextureData => Blur;
         internal override bool SkipEndOfFrame => true;
+        private protected override bool CanRenderToOneSlice => true;
+        private protected override bool SnapToGeometry => true;
 
         private protected override GraphicsFormat RequestedTextureFormat => _TextureFormatMode switch
         {

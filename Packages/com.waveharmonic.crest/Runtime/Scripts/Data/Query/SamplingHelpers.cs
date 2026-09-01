@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using WaveHarmonic.Crest.Utility;
 
 // Linter does not support mixing inheritdoc plus defining own parameters.
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
@@ -83,6 +84,9 @@ namespace WaveHarmonic.Crest
         readonly Vector3[] _QueryResultNormal = new Vector3[1];
         readonly Vector3[] _QueryResultVelocity = new Vector3[1];
 
+        // Buffer velocity to mitigate spikes.
+        readonly BufferedData<Vector3> _VelocityHistory = new(3, () => Vector3.zero);
+
         enum QueryType
         {
             Displacement,
@@ -144,6 +148,18 @@ namespace WaveHarmonic.Crest
             if (isDisplacement) displacement = _QueryResult[0];
             if (isVelocity) velocity = _QueryResultVelocity[0];
             if (isNormal) normal = _QueryResultNormal[0];
+
+            if (isVelocity)
+            {
+                // Filter velocity, as there are quite a few cases which cause spikes.
+                _VelocityHistory.Flip();
+                _VelocityHistory.Current = velocity;
+                for (var frame = 1; frame < _VelocityHistory.Size; frame++)
+                {
+                    var lastVelocity = _VelocityHistory.Previous(frame);
+                    if (lastVelocity.sqrMagnitude < velocity.sqrMagnitude) velocity = lastVelocity;
+                }
+            }
 
             return true;
         }

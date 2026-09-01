@@ -24,7 +24,7 @@ namespace WaveHarmonic.Crest.Internal
 
         private protected CustomScriptableObject()
         {
-            // Sets the default version. Overriden by serialized field above.
+            // Sets the default version. Overridden by serialized field above.
             _Version = Version;
         }
 

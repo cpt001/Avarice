@@ -162,9 +162,7 @@ namespace MapMagic.Brush.Undo
 		public string lastUndoName;  //the last undo group name (kept to know it on UndoRedoPerformed)
 
 		//private Stack<Set> sets = new Stack<Set>();  //we've got to remove first items from it, so using list instead
-		[SerializeField] private List< Dictionary<Terrain,TerrainUndoData> > sets = new List< Dictionary<Terrain,TerrainUndoData> >();
-
-		Terrain testTesrrain = null;
+		private List< Dictionary<Terrain,TerrainUndoData> > sets = new List< Dictionary<Terrain,TerrainUndoData> >();
 
 		#if UNITY_EDITOR
 		///Calling Undo
@@ -235,8 +233,6 @@ namespace MapMagic.Brush.Undo
 				undoData.Read(terrain, worldPos, worldSize, 
 					readHeight, readSplats, readGrass, readTrees);
 			}
-
-			testTesrrain = terrains[0];
 		}
 
 		
@@ -256,7 +252,13 @@ namespace MapMagic.Brush.Undo
 				undoData.Write(terrain);
 			}
 
+			#if UNITY_6000_35_OR_NEWER
+			foreach (MapMagicBrush brush in GameObject.FindObjectsByType<MapMagicBrush>())
+			#elif UNITY_6000_3_OR_NEWER
+			foreach (MapMagicBrush brush in GameObject.FindObjectsByType<MapMagicBrush>(FindObjectsSortMode.None))
+			#else
 			foreach (MapMagicBrush brush in GameObject.FindObjectsOfType<MapMagicBrush>())
+			#endif
 				brush.UpdateCaches();
 		}
 	}

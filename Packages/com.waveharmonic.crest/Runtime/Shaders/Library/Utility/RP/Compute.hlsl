@@ -11,7 +11,7 @@
 
 // Fallback to BIRP if HDRP package missing.
 #if _HRP
-#if (CREST_PACKAGE_HDRP != 1)
+#if !d_Crest_PackageHDRP
 #undef _HRP
 #define _BRP 1
 #endif
@@ -19,7 +19,7 @@
 
 // Fallback to BIRP if URP package missing.
 #if _URP
-#if (CREST_PACKAGE_URP != 1)
+#if !d_Crest_PackageURP
 #undef _URP
 #define _BRP 1
 #endif

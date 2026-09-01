@@ -26,6 +26,11 @@ namespace MapMagic.Nodes.ObjectsGenerators
 
 		public BiomeBlend biomeBlend = BiomeBlend.Random;
 
+		//advanced:
+		public enum RandomBase { Id, Hash };
+		public RandomBase randomBase;
+		public bool randomBaseSerialized = false; //to switch to Hash when updating older graphs
+
 		//outdated:
 		public bool objHeight = true;
 		public bool relativeHeight = true;
@@ -64,6 +69,11 @@ namespace MapMagic.Nodes.ObjectsGenerators
 		public bool allowReposition = true;
 		public bool instantiateClones = false;
 		public int seed = 12345;
+
+		//advanced:
+		public enum RandomBase { Id, Hash };
+		public RandomBase randomBase;
+		public bool randomBaseSerialized = false; //to switch to Hash when updating older graphs
 
 		//moved to PositioningSettings, and thus outdated:
 		public bool objHeight = true;
@@ -185,7 +195,7 @@ namespace MapMagic.Nodes.ObjectsGenerators
 					//objTransitionsList[listNum].Add(trsCpy);
 					//objsList.[listNum].Add(trsCpy);
 
-					float rnd = random.Random(trn.hash);
+					float rnd = random.Random(output.randomBase==RandomBase.Hash ? trn.hash : trn.id);
 					ObjectsPool.Prototype prototype = prototypes[ (int)(rnd*prototypes.Count) ];
 					objs[prototype].Add(trn);
 				}
@@ -279,6 +289,11 @@ namespace MapMagic.Nodes.ObjectsGenerators
 		public bool scaleYonly = false;
 		public bool regardPrefabScale = false;
 		public bool guiScale;
+
+		//advanced:
+		public enum RandomBase { Id, Hash };
+		public RandomBase randomBase;
+		public bool randomBaseSerialized = false; //to switch to Hash when updating older graphs
 
 		public static PositioningSettings CreatePosSettings (TreesOutput output)
 		{ 
@@ -378,7 +393,7 @@ namespace MapMagic.Nodes.ObjectsGenerators
 					
 					output.posSettings.MoveRotateScale(ref trn, data);
 
-					float rnd = random.Random(trn.hash);
+					float rnd = random.Random(output.randomBase==RandomBase.Hash ? trn.hash : trn.id);
 					int index = (int)(rnd*output.prefabs.Length);
 						
 					TreeInstance tree = new TreeInstance();
@@ -436,6 +451,7 @@ namespace MapMagic.Nodes.ObjectsGenerators
 					terrain.terrainData.treePrototypes = new TreePrototype[0];
 				}
 
+				terrain.terrainData.treeInstances = new TreeInstance[0];
 				terrain.terrainData.treePrototypes = treePrototypes;
 				terrain.terrainData.treeInstances = treeInstances;
 			}

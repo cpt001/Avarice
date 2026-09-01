@@ -108,15 +108,34 @@ namespace WaveHarmonic.Crest
 
 namespace WaveHarmonic.Crest
 {
+    partial class AreaLodInputData
+    {
+        /// <summary>
+        /// The <i>Crest Area</i> to use with this input.
+        /// </summary>
+        public Area Area { get => _Area; set => _Area = value; }
+    }
+}
+
+namespace WaveHarmonic.Crest
+{
     partial class ClipLod
     {
         /// <summary>
-        /// The default clipping behaviour.
+        /// The default clipping behavior.
         /// </summary>
         /// <remarks>
         /// Whether to clip nothing by default (and clip inputs remove patches of surface), or to clip everything by default (and clip inputs add patches of surface).
         /// </remarks>
         public DefaultClippingState DefaultClippingState { get => _DefaultClippingState; set => SetDefaultClippingState(_DefaultClippingState, _DefaultClippingState = value); }
+
+        /// <summary>
+        /// Whether to include terrain holes automatically.
+        /// </summary>
+        /// <remarks>
+        /// Water will be clipped where terrain holes are.
+        /// </remarks>
+        public bool IncludeTerrainHoles { get => _IncludeTerrainHoles; set => _IncludeTerrainHoles = value; }
     }
 }
 
@@ -141,6 +160,17 @@ namespace WaveHarmonic.Crest
         /// It is imperfect so custom logic might be needed for your use case.
         /// </remarks>
         public bool WaterHeightDistanceCulling { get => _WaterHeightDistanceCulling; set => _WaterHeightDistanceCulling = value; }
+    }
+}
+
+namespace WaveHarmonic.Crest
+{
+    partial class ColorAreaLodInputData
+    {
+        /// <summary>
+        /// The water color.
+        /// </summary>
+        public UnityEngine.Color Color { get => _Color; set => SetDirty(_Color, _Color = value); }
     }
 }
 
@@ -284,7 +314,7 @@ namespace WaveHarmonic.Crest
         /// How many additional Jump Flood rounds to use.
         /// </summary>
         /// <remarks>
-        /// The standard number of rounds is log2(resolution). Additional rounds can reduce innaccuracies.
+        /// The standard number of rounds is log2(resolution). Additional rounds can reduce inaccuracies.
         /// </remarks>
         public int AdditionalJumpFloodRounds { get => _AdditionalJumpFloodRounds; set => SetDirty(_AdditionalJumpFloodRounds, _AdditionalJumpFloodRounds = value); }
 
@@ -340,6 +370,8 @@ namespace WaveHarmonic.Crest
         /// </summary>
         /// <remarks>
         /// Call Populate() if scripting.
+        ///
+        /// When Placement is not set to Fixed, EveryFrame is still applicable, but the others are not (update only happens on position change).
         /// </remarks>
         public DepthProbeRefreshMode RefreshMode { get => GetRefreshMode(); set => _RefreshMode = value; }
 
@@ -560,6 +592,22 @@ namespace WaveHarmonic.Crest
 
 namespace WaveHarmonic.Crest
 {
+    partial class FlowAreaLodInputData
+    {
+        /// <summary>
+        /// The direction of flow in turns (0-1).
+        /// </summary>
+        public float Direction { get => _Direction; set => SetDirty(_Direction, _Direction = value); }
+
+        /// <summary>
+        /// The speed of flow (m/s).
+        /// </summary>
+        public float Speed { get => _Speed; set => SetDirty(_Speed, _Speed = value); }
+    }
+}
+
+namespace WaveHarmonic.Crest
+{
     partial class FoamLod
     {
         /// <summary>
@@ -601,6 +649,14 @@ namespace WaveHarmonic.Crest
         /// Foam will not exceed this value in the simulation which can be used to prevent foam from accumulating too much.
         /// </summary>
         public float Maximum { get => _Maximum; set => _Maximum = value; }
+
+        /// <summary>
+        /// Generate foam at shorelines.
+        /// </summary>
+        /// <remarks>
+        /// This is a superior option to camera depth shoreline foam on the water material - make sure both are not enabled.
+        /// </remarks>
+        public bool ShorelineFoamEnabled { get => _ShorelineFoamEnabled; set => _ShorelineFoamEnabled = value; }
 
         /// <summary>
         /// Foam will be generated in water shallower than this depth.
@@ -671,6 +727,18 @@ namespace WaveHarmonic.Crest
         /// Mandatory for non mesh inputs like "Texture".
         /// </remarks>
         public bool OverrideHeight { get => _OverrideHeight; set => _OverrideHeight = value; }
+
+        /// <summary>
+        /// Render this input directly where there is no data.
+        /// </summary>
+        /// <remarks>
+        /// Without this enabled, there will be no water level change outside of the LOD system where there is no data. This will render the mesh directly with the water surface material.
+        ///
+        /// This feature only works with mesh based inputs (Geometry, Spline etc).
+        ///
+        /// Depending on the Mode, non water level inputs may contribute to the rendering (like flow and color).
+        /// </remarks>
+        public bool RenderMaximumLOD { get => _RenderMaximumLOD; set => SetRenderMaximumLOD(_RenderMaximumLOD, _RenderMaximumLOD = value); }
     }
 }
 
@@ -720,7 +788,7 @@ namespace WaveHarmonic.Crest
         /// The render texture format used for this simulation data.
         /// </summary>
         /// <remarks>
-        /// It will be overriden if the format is incompatible with the platform.
+        /// It will be overridden if the format is incompatible with the platform.
         /// </remarks>
         public UnityEngine.Experimental.Rendering.GraphicsFormat TextureFormat { get => _TextureFormat; set => SetDirty(_TextureFormat, _TextureFormat = value); }
 
@@ -1129,6 +1197,9 @@ namespace WaveHarmonic.Crest
         /// <summary>
         /// FFT waves will loop with a period of this many seconds.
         /// </summary>
+        /// <remarks>
+        /// For baked data (CPU queries): smaller values decrease data size, but can make waves visibly repetitive; and this value will clamped at 128 regardless of what the UI allows.
+        /// </remarks>
         public float TimeLoopLength { get => _TimeLoopLength; set => _TimeLoopLength = value; }
 
         /// <summary>
@@ -1171,7 +1242,7 @@ namespace WaveHarmonic.Crest
         /// The weight of the opposing, second pair of Gerstner waves.
         /// </summary>
         /// <remarks>
-        /// Each Gerstner wave is actually a pair of waves travelling in opposite directions (similar to FFT). This weight is applied to the wave travelling in against-wind direction. Set to zero to obtain simple single waves which are useful for shorelines waves.
+        /// Each Gerstner wave is actually a pair of waves traveling in opposite directions (similar to FFT). This weight is applied to the wave traveling in against-wind direction. Set to zero to obtain simple single waves which are useful for shorelines waves.
         /// </remarks>
         public float ReverseWaveWeight { get => GetReverseWaveWeight(); set => _ReverseWaveWeight = value; }
 
@@ -1249,7 +1320,7 @@ namespace WaveHarmonic.Crest
         /// Whether global waves is applied above or below sea level.
         /// </summary>
         /// <remarks>
-        /// Waves are faded out to avoid hard transitionds. They are fully faded by 1m from sea level.
+        /// Waves are faded out to avoid hard transitions. They are fully faded by 1m from sea level.
         /// </remarks>
         public bool SeaLevelOnly { get => _SeaLevelOnly; set => _SeaLevelOnly = value; }
 
@@ -1270,6 +1341,22 @@ namespace WaveHarmonic.Crest
         /// Wind speed in km/h. Controls wave conditions.
         /// </summary>
         public float WindSpeed { get => _WindSpeed; set => _WindSpeed = value; }
+    }
+}
+
+namespace WaveHarmonic.Crest
+{
+    partial class SharedMeshComponent
+    {
+        /// <summary>
+        /// Render this input directly where there is no data.
+        /// </summary>
+        /// <remarks>
+        /// Without this enabled, inputs will not be visible outside the LOD system where there is no data. This will render the mesh directly with the water surface material.
+        ///
+        /// Supports water level, flow, absorption and scattering.
+        /// </remarks>
+        public bool RenderMaximumLOD { get => _RenderMaximumLOD; set => SetRenderMaximumLOD(_RenderMaximumLOD, _RenderMaximumLOD = value); }
     }
 }
 
@@ -1297,7 +1384,7 @@ namespace WaveHarmonic.Crest
         /// Model parameter that can be used to modify the shape of the interaction.
         /// </summary>
         /// <remarks>
-        /// Internally the interaction is modelled by a pair of nested spheres. The forces from the two spheres combine to create the final effect. This parameter scales the effect of the inner sphere and can be tweaked to adjust the shape of the result.
+        /// Internally the interaction is modeled by a pair of nested spheres. The forces from the two spheres combine to create the final effect. This parameter scales the effect of the inner sphere and can be tweaked to adjust the shape of the result.
         /// </remarks>
         public float InnerSphereMultiplier { get => _InnerSphereMultiplier; set => _InnerSphereMultiplier = value; }
 
@@ -1318,7 +1405,7 @@ namespace WaveHarmonic.Crest
         public float MaximumSpeed { get => _MaximumSpeed; set => _MaximumSpeed = value; }
 
         /// <summary>
-        /// Radius of the sphere that is modelled from which the interaction forces are calculated.
+        /// Radius of the sphere that is modeled from which the interaction forces are calculated.
         /// </summary>
         public float Radius { get => _Radius; set => _Radius = value; }
 
@@ -1334,7 +1421,7 @@ namespace WaveHarmonic.Crest
         /// Offset in direction of motion to help ripples appear in front of sphere.
         /// </summary>
         /// <remarks>
-        /// There is some latency between applying a force to the wave simualtion and the resulting waves appearing. Applying this offset can help to ensure the waves do not lag behind the sphere.
+        /// There is some latency between applying a force to the wave simulation and the resulting waves appearing. Applying this offset can help to ensure the waves do not lag behind the sphere.
         /// </remarks>
         public float VelocityOffset { get => _VelocityOffset; set => _VelocityOffset = value; }
 
@@ -1375,6 +1462,8 @@ namespace WaveHarmonic.Crest
         /// </summary>
         /// <remarks>
         /// If you need to change the minor part of the render queue (eg +100), then enable this option. As a side effect, it will also disable the front-to-back rendering optimization for Crest. This option does not affect changing the major part of the render queue (eg AlphaTest, Transparent), as that is always allowed.
+        ///
+        /// Render queue sorting is required for some third-party integrations.
         /// </remarks>
         public bool AllowRenderQueueSorting { get => _AllowRenderQueueSorting; set => _AllowRenderQueueSorting = value; }
 
@@ -1405,6 +1494,14 @@ namespace WaveHarmonic.Crest
         public int Layer { get => _Layer; set => _Layer = value; }
 
         /// <summary>
+        /// Adds an LPPV for indirect lighting.
+        /// </summary>
+        /// <remarks>
+        /// Lighting from light probes can have minor tiling when not using an LPPV. This LPPV follows the camera.
+        /// </remarks>
+        public bool ManageLightProbeProxyVolume { get => _ManageLightProbeProxyVolume; set => _ManageLightProbeProxyVolume = value; }
+
+        /// <summary>
         /// Material to use for the water surface.
         /// </summary>
         public UnityEngine.Material Material { get => _Material; set => _Material = value; }
@@ -1429,7 +1526,7 @@ namespace WaveHarmonic.Crest
         /// Underwater will copy from this material if set.
         /// </summary>
         /// <remarks>
-        /// Useful for overriding properties for the underwater effect. To see what properties can be overriden, see the disabled properties on the underwater material. This does not affect the surface.
+        /// Useful for overriding properties for the underwater effect. To see what properties can be overridden, see the disabled properties on the underwater material. This does not affect the surface.
         /// </remarks>
         public UnityEngine.Material VolumeMaterial { get => _VolumeMaterial; set => _VolumeMaterial = value; }
 
@@ -1453,6 +1550,8 @@ namespace WaveHarmonic.Crest
         /// </summary>
         /// <remarks>
         /// This is useful for normalized textures. The four components map to the four color/alpha components of the texture (if they exist).
+        ///
+        /// If you just want to fade out the input, consider using weight instead.
         /// </remarks>
         public UnityEngine.Vector4 Multiplier { get => _Multiplier; set => _Multiplier = value; }
 
@@ -1587,7 +1686,7 @@ namespace WaveHarmonic.Crest
         /// <remarks>
         /// If enabled and no materials are set, then the global materials are used.
         /// </remarks>
-        public bool OverrideMaterials { get => _OverrideMaterials; set => _OverrideMaterials = value; }
+        public bool OverrideMaterials { get => _OverrideMaterials; set => SetOverrideMaterials(_OverrideMaterials, _OverrideMaterials = value); }
 
         /// <summary>
         /// Affects the surface more precisely.
@@ -1609,6 +1708,28 @@ namespace WaveHarmonic.Crest
         /// Overrides the Water Renderer's volume material when the camera is inside the bounds.
         /// </summary>
         public UnityEngine.Material VolumeMaterial { get => _VolumeMaterial; set => _VolumeMaterial = value; }
+    }
+}
+
+namespace WaveHarmonic.Crest
+{
+    partial class WaterCamera
+    {
+        /// <summary>
+        /// The viewpoint which drives the water detail - the center of the LOD system.
+        /// </summary>
+        /// <remarks>
+        /// Setting this is optional. Defaults to the camera.
+        /// </remarks>
+        public UnityEngine.Transform Viewpoint { get => _Viewpoint; set => _Viewpoint = value; }
+
+        /// <summary>
+        /// Override the transform for data and repeated textures.
+        /// </summary>
+        /// <remarks>
+        /// This can be used to give the appearance of moving the water without moving the entire system or camera.
+        /// </remarks>
+        public UnityEngine.Transform ViewpointDataOverride { get => _ViewpointDataOverride; set => _ViewpointDataOverride = value; }
     }
 }
 
@@ -1731,7 +1852,7 @@ namespace WaveHarmonic.Crest
         public WaterReflectionSide ReflectionSide { get => _Mode; set => SetReflectionSide(_Mode, _Mode = value); }
 
         /// <summary>
-        /// Planar relfections using an oblique frustum for better performance.
+        /// Planar reflections using an oblique frustum for better performance.
         /// </summary>
         /// <remarks>
         /// This can cause depth issues for TIRs, especially near the surface.
@@ -1748,6 +1869,8 @@ namespace WaveHarmonic.Crest
         /// </summary>
         /// <remarks>
         /// Renders the reflections at a larger viewport size to capture off-screen content when the surface reflects off-screen. This avoids a category of artifacts - especially when looking down. This can be expensive, as the value is a multiplier to the capture size.
+        ///
+        /// This feature is disabled when using physical cameras.
         /// </remarks>
         public float Overscan { get => _Overscan; set => _Overscan = value; }
 
@@ -1807,7 +1930,7 @@ namespace WaveHarmonic.Crest
         public AbsorptionLod AbsorptionLod => _AbsorptionLod;
 
         /// <summary>
-        /// Albedo - a colour layer composited onto the water surface.
+        /// Albedo - a color layer composited onto the water surface.
         /// </summary>
         public AlbedoLod AlbedoLod => _AlbedoLod;
 
@@ -1816,6 +1939,8 @@ namespace WaveHarmonic.Crest
         /// </summary>
         /// <remarks>
         /// If you need to change the minor part of the render queue (eg +100), then enable this option. As a side effect, it will also disable the front-to-back rendering optimization for Crest. This option does not affect changing the major part of the render queue (eg AlphaTest, Transparent), as that is always allowed.
+        ///
+        /// Render queue sorting is required for some third-party integrations.
         /// </remarks>
         [System.Obsolete("This property can now be found on WaterRenderer.Surface")]
         public bool AllowRenderQueueSorting { get => GetAllowRenderQueueSorting(); set => SetAllowRenderQueueSorting(_AllowRenderQueueSorting, _AllowRenderQueueSorting = value); }
@@ -1942,7 +2067,9 @@ namespace WaveHarmonic.Crest
         /// When in the render pipeline the water is rendered.
         /// </summary>
         /// <remarks>
-        /// Default is the old behaviour which is controlled by Unity.
+        /// Default is the old behavior which is controlled by Unity.
+        ///
+        /// Before Transparency has advantages like being compatible with soft particles, refractive shaders, and possibly third-party atmospheric fog.
         /// </remarks>
         public WaterInjectionPoint InjectionPoint { get => _InjectionPoint; set => _InjectionPoint = value; }
 
@@ -1974,10 +2101,12 @@ namespace WaveHarmonic.Crest
         public bool OverrideGravity { get => _OverrideGravity; set => _OverrideGravity = value; }
 
         /// <summary>
-        /// Whether to override the automatic detection of framebuffer HDR rendering (BIRP only).
+        /// Whether to override the automatic detection of frame buffer HDR rendering (BIRP only).
         /// </summary>
         /// <remarks>
         /// Rendering using HDR formats is optional, but there is no way for us to determine if HDR rendering is enabled in the Graphics Settings. We make an educated based on which platform is the target. If you see rendering issues, try disabling this.
+        ///
+        /// This has nothing to do with having an HDR monitor.
         /// </remarks>
         public bool OverrideRenderHDR { get => _OverrideRenderHDR; set => _OverrideRenderHDR = value; }
 
@@ -2024,15 +2153,25 @@ namespace WaveHarmonic.Crest
         /// Force HDR format usage (BIRP only).
         /// </summary>
         /// <remarks>
-        /// If enabled, we assume the framebuffer is an HDR format, otherwise an LDR format.
+        /// If enabled, we assume the frame buffer is an HDR format, otherwise an LDR format.
         /// </remarks>
         public bool RenderHDR { get => _RenderHDR; set => _RenderHDR = value; }
+
+        /// <summary>
+        /// Whether to draw inputs where there is no data.
+        /// </summary>
+        /// <remarks>
+        /// Outside of the LOD system, there is no data, so inputs will have no effect. This option will render the meshes directly to the screen using the input's geometry.
+        ///
+        /// See documentation for what is supported.
+        /// </remarks>
+        public bool RenderMaximumLOD { get => _RenderMaximumLOD; set => _RenderMaximumLOD = value; }
 
         /// <summary>
         /// The resolution of the various water LOD data.
         /// </summary>
         /// <remarks>
-        /// This includes mesh density, displacement textures, foam data, dynamic wave simulation, etc. Sets the 'detail' present in the water - larger values give more detail at increased run-time expense. This value can be overriden per LOD in their respective settings except for Animated Waves which is tied to this value.
+        /// This includes mesh density, displacement textures, foam data, dynamic wave simulation, etc. Sets the 'detail' present in the water - larger values give more detail at increased run-time expense. This value can be overridden per LOD in their respective settings except for Animated Waves which is tied to this value.
         /// </remarks>
         public int LodResolution { get => _Resolution; set => _Resolution = value; }
 
@@ -2102,14 +2241,26 @@ namespace WaveHarmonic.Crest
         /// </summary>
         /// <remarks>
         /// Setting this is optional. Defaults to the camera.
+        ///
+        /// This can be set on the Water Camera if using Multiple Viewpoints.
         /// </remarks>
         public UnityEngine.Transform Viewpoint { get => GetViewpoint(); set => _Viewpoint = value; }
+
+        /// <summary>
+        /// Override the transform for data and repeated textures.
+        /// </summary>
+        /// <remarks>
+        /// This can be used to give the appearance of moving the water without moving the entire system or camera.
+        ///
+        /// This can be set on the Water Camera if using Multiple Viewpoints.
+        /// </remarks>
+        public UnityEngine.Transform ViewpointDataOverride { get => _ViewpointDataOverride; set => _ViewpointDataOverride = value; }
 
         /// <summary>
         /// Underwater will copy from this material if set.
         /// </summary>
         /// <remarks>
-        /// Useful for overriding properties for the underwater effect. To see what properties can be overriden, see the disabled properties on the underwater material. This does not affect the surface.
+        /// Useful for overriding properties for the underwater effect. To see what properties can be overridden, see the disabled properties on the underwater material. This does not affect the surface.
         /// </remarks>
         [System.Obsolete("This property can now be found on WaterRenderer.Surface")]
         public UnityEngine.Material VolumeMaterial { get => GetVolumeMaterial(); set => SetVolumeMaterial(_VolumeMaterial, _VolumeMaterial = value); }
@@ -2175,6 +2326,10 @@ namespace WaveHarmonic.Crest
         /// </summary>
         /// <remarks>
         /// The water surface writes to the depth buffer, but Unity does not copy it to the depth texture for post-processing effects like Depth of Field (or refraction). This will copy the depth buffer to the depth texture.
+        ///
+        /// If the water injection point is in the transparent pass, be wary that it will include all transparent objects that write to depth. Furthermore, other third parties may already be doing this, and we do not check whether it is necessary to copy or not.
+        ///
+        /// This feature has a considerable overhead if using the built-in render pipeline, as it requires rendering the surface depth another time.
         /// </remarks>
         public bool WriteToDepthTexture { get => GetWriteToDepthTexture(); set => _WriteToDepthTexture = value; }
     }
@@ -2184,6 +2339,14 @@ namespace WaveHarmonic.Crest
 {
     partial class WatertightHull
     {
+        /// <summary>
+        /// Scales the clip input.
+        /// </summary>
+        /// <remarks>
+        /// Having the clip input larger than the displacement input helps to ensure the surface is fully removed inside.
+        /// </remarks>
+        public float ClipScale { get => _ClipScale; set => _ClipScale = value; }
+
         /// <summary>
         /// Inverts the effect to remove clipping (ie add water).
         /// </summary>

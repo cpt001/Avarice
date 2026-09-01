@@ -60,7 +60,7 @@ namespace WaveHarmonic.Crest.Editor
                 target._ProxyPlane = GameObject.CreatePrimitive(PrimitiveType.Quad);
                 Helpers.Destroy(target._ProxyPlane.GetComponent<Collider>());
                 target._ProxyPlane.hideFlags = HideFlags.HideAndDontSave;
-                target._ProxyPlane.transform.parent = target.transform;
+                target._ProxyPlane.transform.parent = target.Transform;
                 target._ProxyPlane.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.Euler(90f, 0f, 0f));
                 target._ProxyPlane.transform.localScale = 1000000f * Vector3.one;
 
@@ -72,7 +72,7 @@ namespace WaveHarmonic.Crest.Editor
             {
                 target._ProxyPlane.SetActive(target._ShowWaterProxyPlane);
 
-                // Scene view doesnt automatically refresh which makes the option confusing, so force it
+                // Scene view doesn't automatically refresh which makes the option confusing, so force it
                 EditorWindow view = EditorWindow.GetWindow<SceneView>();
                 view.Repaint();
             }
@@ -89,7 +89,7 @@ namespace WaveHarmonic.Crest.Editor
                 if (rect != Rect.zero)
                 {
                     var water = WaterRenderer.Instance;
-                    var height = water ? water.SeaLevel : target.transform.position.y;
+                    var height = water ? water.SeaLevel + 0.001f : target.Transform.position.y;
                     Gizmos.color = Color.magenta;
                     Gizmos.DrawWireCube
                     (
@@ -126,7 +126,7 @@ namespace WaveHarmonic.Crest.Editor
 
             if (geometry != null)
             {
-                var transform = target.transform;
+                var transform = target.Transform;
                 Gizmos.color = target.GizmoColor;
                 Gizmos.DrawWireMesh(geometry, transform.position, transform.rotation, transform.lossyScale);
             }
@@ -137,6 +137,7 @@ namespace WaveHarmonic.Crest.Editor
         {
             if (!target.Enabled) return;
             if (target.Data is not LodInputData data) return;
+            if (target.Mode == LodInputMode.Area) return;
 
             var bounds = data.Bounds;
 
@@ -152,11 +153,30 @@ namespace WaveHarmonic.Crest.Editor
         }
 
         [DrawGizmo(GizmoType.Selected)]
+        static void DrawAreaGizmos(Area target, GizmoType type)
+        {
+            if (!target.isActiveAndEnabled) return;
+
+            var water = WaterRenderer.Instance;
+            var transform = target.Transform;
+            var position = transform.position;
+            if (!target._HasLevel && water != null) position.y = water.SeaLevel + 0.001f;
+            Gizmos.matrix = Matrix4x4.TRS
+            (
+                position,
+                Quaternion.Euler(0, transform.rotation.eulerAngles.y, 0),
+                transform.lossyScale
+            );
+
+            Gizmos.DrawWireCube(Vector3.zero, Vector3.one.XNZ());
+        }
+
+        [DrawGizmo(GizmoType.Selected)]
         static void DrawWatertightHullGizmos(WatertightHull target, GizmoType type)
         {
             if (!target.Enabled) return;
 
-            var transform = target.transform;
+            var transform = target.Transform;
 
             Gizmos.color = ClipLod.s_GizmoColor;
             Gizmos.DrawMesh(target._Mesh, submeshIndex: 0, transform.position, transform.rotation, transform.lossyScale);
@@ -168,7 +188,7 @@ namespace WaveHarmonic.Crest.Editor
                 if (rect != Rect.zero)
                 {
                     var water = WaterRenderer.Instance;
-                    var height = water ? water.SeaLevel : target.transform.position.y;
+                    var height = water ? water.SeaLevel : transform.position.y;
                     Gizmos.color = Color.magenta;
                     Gizmos.DrawWireCube
                     (
@@ -188,9 +208,9 @@ namespace WaveHarmonic.Crest.Editor
             Gizmos.color = target.GizmoColor;
             Gizmos.matrix = Matrix4x4.TRS
             (
-                target.transform.position,
-                Quaternion.Euler(Vector3.up * target.transform.rotation.eulerAngles.y),
-                target.transform.lossyScale.XNZ()
+                target.Transform.position,
+                Quaternion.Euler(Vector3.up * target.Transform.rotation.eulerAngles.y),
+                target.Transform.lossyScale.XNZ()
             );
             Gizmos.DrawWireCube(Vector3.zero, Vector3.one);
         }
@@ -203,7 +223,7 @@ namespace WaveHarmonic.Crest.Editor
 
             if (target.Mode == LodInputMode.Primitive)
             {
-                Gizmos.matrix = target.transform.localToWorldMatrix;
+                Gizmos.matrix = target.Transform.localToWorldMatrix;
 
                 switch (target._Primitive)
                 {
@@ -275,9 +295,6 @@ namespace WaveHarmonic.Crest.Editor
                 position.y = Mathf.LerpUnclamped(target._CaptureRange.x, target._CaptureRange.y, 0.5f);
                 Gizmos.DrawWireCube(position, scale.XNZ(-target._CaptureRange.x + target._CaptureRange.y));
 
-                position.y = target._CaptureRange.y + target._FillHolesCaptureHeight * 0.5f;
-                Gizmos.DrawWireCube(position, scale.XNZ(target._FillHolesCaptureHeight));
-
                 var size = Gizmos.matrix.lossyScale.XZ();
                 var offset = Vector3.one * 0.5f;
                 var height0 = target._CaptureRange.y;
@@ -286,12 +303,23 @@ namespace WaveHarmonic.Crest.Editor
 
                 DrawGrid(size, offset.XNZ(-height0));
                 DrawGrid(size, offset.XNZ(-height1));
-                DrawGrid(size, offset.XNZ(-height2));
 
                 Gizmos.color = new(1f, 1f, 1f, 0.2f);
                 Gizmos.DrawCube(Vector3.zero.XNZ(height0), Vector3.one.XNZ());
                 Gizmos.DrawCube(Vector3.zero.XNZ(height1), Vector3.one.XNZ());
-                Gizmos.DrawCube(Vector3.zero.XNZ(height2), Vector3.one.XNZ());
+
+                if (target._FillHolesCaptureHeight > 0f)
+                {
+                    Gizmos.color = Color.magenta;
+                    position.y = target._CaptureRange.y + target._FillHolesCaptureHeight * 0.5f;
+                    Gizmos.DrawWireCube(position, scale.XNZ(target._FillHolesCaptureHeight));
+                    DrawGrid(size, offset.XNZ(-height2));
+
+                    var color = Color.magenta;
+                    color.a = 0.2f;
+                    Gizmos.color = color;
+                    Gizmos.DrawCube(Vector3.zero.XNZ(height2), Vector3.one.XNZ());
+                }
             }
         }
 
@@ -316,7 +344,7 @@ namespace WaveHarmonic.Crest.Editor
         static void DrawGizmos(SphereWaterInteraction target, GizmoType type)
         {
             Gizmos.color = DynamicWavesLod.s_GizmoColor;
-            Gizmos.DrawWireSphere(target.transform.position + target._VelocityOffset * target._Velocity, target._Radius);
+            Gizmos.DrawWireSphere(target.Transform.position + target._VelocityOffset * target._Velocity, target._Radius);
         }
 
         [DrawGizmo(GizmoType.Selected)]
@@ -339,7 +367,7 @@ namespace WaveHarmonic.Crest.Editor
             if ((target._DrawRenderBounds || type.HasFlag(GizmoType.Selected)) && target.Rend != null)
             {
                 Gizmos.color = type.HasFlag(GizmoType.Selected) ? Color.green : Color.white;
-                Handles.Label(target.transform.position, $"{target._LodIndex},{target._SiblingIndex}");
+                Handles.Label(target.Transform.position, $"{target._LodIndex},{target._SiblingIndex}");
                 target.Rend.bounds.GizmosDraw();
                 Gizmos.color = Color.white;
             }
@@ -354,7 +382,7 @@ namespace WaveHarmonic.Crest.Editor
                 Gizmos.color = Color.green;
                 Gizmos.DrawWireCube
                 (
-                    target._UnexpandedBoundsXZ.center.XNZ(target.transform.position.y),
+                    target._UnexpandedBoundsXZ.center.XNZ(target.Transform.position.y),
                     target._UnexpandedBoundsXZ.size.XNZ()
                 );
             }
@@ -366,7 +394,7 @@ namespace WaveHarmonic.Crest.Editor
             if (!target.TryGetComponent<Rigidbody>(out var physics)) return;
 
             Gizmos.color = Color.yellow;
-            Gizmos.DrawCube(target.transform.TransformPoint(physics.centerOfMass), Vector3.one * 0.25f);
+            Gizmos.DrawCube(target.Transform.TransformPoint(physics.centerOfMass), Vector3.one * 0.25f);
 
             if (target.Model != FloatingObjectModel.Probes) return;
 
@@ -374,7 +402,7 @@ namespace WaveHarmonic.Crest.Editor
             {
                 var point = target._Probes[i];
 
-                var transformedPoint = target.transform.TransformPoint(point._Position + new Vector3(0, physics.centerOfMass.y, 0));
+                var transformedPoint = target.Transform.TransformPoint(point._Position + new Vector3(0, physics.centerOfMass.y, 0));
 
                 Gizmos.color = Color.red;
                 Gizmos.DrawCube(transformedPoint, Vector3.one * 0.5f);

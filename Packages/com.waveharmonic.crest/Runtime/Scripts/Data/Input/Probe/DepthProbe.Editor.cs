@@ -18,7 +18,7 @@ namespace WaveHarmonic.Crest
 
         void Update()
         {
-            if (transform.hasChanged)
+            if (Transform.hasChanged)
             {
                 HashState(ref _CurrentStateHash);
             }

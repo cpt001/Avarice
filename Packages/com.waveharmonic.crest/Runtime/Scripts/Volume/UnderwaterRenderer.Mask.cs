@@ -160,8 +160,8 @@ namespace WaveHarmonic.Crest
             );
         }
 
-        // Populates a screen space mask which will inform the underwater postprocess. As a future optimisation we may
-        // be able to avoid this pass completely if we can reuse the camera depth after transparents are rendered.
+        // Populates a screen space mask which will inform the underwater post-process. As a future optimization we may
+        // be able to avoid this pass completely if we can reuse the camera depth after transparent objects are rendered.
         internal void PopulateMask(CommandBuffer commandBuffer, Camera camera)
         {
             if (!_Water.Surface.Enabled && Portaled)

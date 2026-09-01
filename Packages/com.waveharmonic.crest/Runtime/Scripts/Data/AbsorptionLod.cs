@@ -19,6 +19,8 @@ namespace WaveHarmonic.Crest
         static new class ShaderIDs
         {
             public static readonly int s_SampleAbsorptionSimulation = Shader.PropertyToID("g_Crest_SampleAbsorptionSimulation");
+            public static readonly int s_AbsorptionShoreline = Shader.PropertyToID("_Crest_AbsorptionShoreline");
+            public static readonly int s_AbsorptionShorelineColor = Shader.PropertyToID("_Crest_AbsorptionShorelineColor");
         }
 
         internal override string ID => "Absorption";
@@ -45,6 +47,8 @@ namespace WaveHarmonic.Crest
         }
 
         private protected override int GlobalShaderID => ShaderIDs.s_SampleAbsorptionSimulation;
+        private protected override int MaterialShaderID => ShaderIDs.s_AbsorptionShoreline;
+        private protected override int MaterialColorShaderID => ShaderIDs.s_AbsorptionShorelineColor;
 
         internal AbsorptionLod()
         {

@@ -30,7 +30,7 @@ namespace WaveHarmonic.Crest
 
     static class PropertyWrapperConstants
     {
-        internal const string k_NoShaderMessage = "Cannot create required material because shader <i>{0}</i> could not be found or loaded."
+        internal const string k_NoShaderMessage = "Crest.PropertyWrapper{0}: Cannot create required material because shader <i>{1}</i> could not be found or loaded."
             + " Try right clicking the Crest folder in the Project view and selecting Reimport, and checking for errors.";
     }
 
@@ -89,7 +89,7 @@ namespace WaveHarmonic.Crest
         public PropertyWrapperMaterial(string shaderPath)
         {
             var shader = Shader.Find(shaderPath);
-            Debug.AssertFormat(shader != null, $"Crest.PropertyWrapperMaterial: {PropertyWrapperConstants.k_NoShaderMessage}", shaderPath);
+            Debug.AssertFormat(shader != null, PropertyWrapperConstants.k_NoShaderMessage, "Material", shaderPath);
             Material = new(shader);
         }
 

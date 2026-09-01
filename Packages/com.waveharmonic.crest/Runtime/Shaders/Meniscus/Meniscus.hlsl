@@ -157,19 +157,19 @@ half4 Fragment(Varyings input)
         half3 scattering = _Crest_Scattering.xyz;
 
         // Keep the same as the volume.
-        const uint sliceIndex = clamp(_Crest_DataSliceOffset, 0, g_Crest_LodCount - 2);
+        const uint sliceIndex = clamp(max(g_Crest_LodIndex, _Crest_DataSliceOffset), 0, g_Crest_LodCount - 2);
 
 #if d_Crest_AbsorptionLod
         if (g_Crest_SampleAbsorptionSimulation)
         {
-            absorption = Cascade::MakeAbsorption(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
+            absorption = Cascade::MakeAbsorption(g_Crest_LodIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
         }
 #endif
 
 #if d_Crest_ScatteringLod
         if (g_Crest_SampleScatteringSimulation)
         {
-            scattering = Cascade::MakeScattering(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
+            scattering = Cascade::MakeScattering(g_Crest_LodIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
         }
 #endif
 

@@ -13,6 +13,9 @@
 
 #define m_FloatMaximum 3.402823466e+38
 
+#ifndef k_Crest_LodOffset
+#define k_Crest_LodOffset 0
+#endif
 
 //
 // Fallback for WebGPU
@@ -29,7 +32,7 @@
 #endif
 
 
-#if (CREST_FULL_PRECISION_DISPLACEMENT != 0)
+#if d_Crest_FullPrecisionDisplacement
 #define m_DisplacementTexture(texture, components) texture<float##components>
 #else
 #define m_DisplacementTexture(texture, components) texture
@@ -88,7 +91,7 @@ void Crest##name(uint3 id : SV_DispatchThreadID) \
 [numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, 1)] \
 void Crest##name(uint3 id : SV_DispatchThreadID) \
 { \
-    m_Crest::name(uint3(id.xy, g_Crest_LodCount - 1 - id.z)); \
+    m_Crest::name(uint3(id.xy, g_Crest_LodCount - 1 - id.z - k_Crest_LodOffset)); \
 }
 
 // Cross render pipeline kernels.

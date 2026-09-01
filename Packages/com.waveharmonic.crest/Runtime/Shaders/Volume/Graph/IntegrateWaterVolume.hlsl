@@ -16,7 +16,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Settings.Crest.hlsl"
 
-#if (CREST_PORTALS != 0)
+#if d_Crest_PackagePortals
 #define d_Crest_Portal 1
 #endif
 
@@ -41,7 +41,7 @@ static half3 s_VolumeLighting;
 
 float3 ApplyFog(float3 color)
 {
-#if (CREST_DISCARD_ATMOSPHERIC_SCATTERING == 0)
+#if !d_Crest_DiscardAtmosphericScattering
     if (!s_IsUnderWater)
     {
         return color;
@@ -81,7 +81,7 @@ void SetUpFog(const float2 i_PositionNDC, const float3 i_PositionWS, const float
         return;
     }
 
-#if (CREST_DISCARD_ATMOSPHERIC_SCATTERING != 0)
+#if d_Crest_DiscardAtmosphericScattering
 #if !d_Transparent
     // FIXME: Find alternative solution for new mask.
     const float rawSurfaceDepth = LOAD_DEPTH_TEXTURE_X(_Crest_WaterMaskDepthTexture, positionSS).r;
@@ -99,7 +99,7 @@ void SetUpFog(const float2 i_PositionNDC, const float3 i_PositionWS, const float
     float fogDistanceOffset = _ProjectionParams.y;
     float fogDistance = 0.0;
 
-#if (CREST_PORTALS != 0)
+#if d_Crest_PackagePortals
     if (!Portal::EvaluateFog(i_PositionNDC, mask, rawFogDistance, fogDistanceOffset))
     {
         return;
@@ -147,7 +147,7 @@ m_CrestNameSpaceEnd
 #endif // UNITY_PASS_FORWARDADD
 
 #undef UNITY_APPLY_FOG
-#if (CREST_DISCARD_ATMOSPHERIC_SCATTERING != 0)
+#if d_Crest_DiscardAtmosphericScattering
 #define UNITY_APPLY_FOG(coord, color) \
 if (m_Crest::s_IsUnderWater) \
 { \
@@ -173,7 +173,7 @@ CREST_INTEGRATE_COLOR_FINAL(color.rgb)
 
 #if CREST_HDRP
 // Color is RGBA.
-#if (CREST_DISCARD_ATMOSPHERIC_SCATTERING != 0)
+#if d_Crest_DiscardAtmosphericScattering
 #define EvaluateAtmosphericScattering(i, V, color) color; \
 if (m_Crest::s_IsUnderWater) \
 { \
@@ -198,22 +198,31 @@ CREST_INTEGRATE_COLOR_FINAL(color.rgb)
 #endif
 
 #if CREST_URP
+
+#if UNITY_VERSION < 60070000
+#define m_BlendUnityFog MixFog
+#define MixFog m_FogPatcher
+#else
+#define m_BlendUnityFog BlendDistanceFog
+#define BlendDistanceFog m_FogPatcher
+#endif
+
 // Color is RGB.
-#if (CREST_DISCARD_ATMOSPHERIC_SCATTERING != 0)
-#define MixFog(color, coord) color; \
+#if d_Crest_DiscardAtmosphericScattering
+#define m_FogPatcher(color, coord) color; \
 if (m_Crest::s_IsUnderWater) \
 { \
     color = m_Crest::ApplyFog(color); \
 } \
 else \
 { \
-    color = MixFog(color, coord); \
+    color = m_BlendUnityFog(color, coord); \
     CREST_INTEGRATE_COLOR_AFTER_FOG(color) \
 } \
 CREST_INTEGRATE_COLOR_FINAL(color)
 #else
-#define MixFog(color, coord) color; \
-color = MixFog(color, coord); \
+#define m_FogPatcher(color, coord) color; \
+color = m_BlendUnityFog(color, coord); \
 color = m_Crest::ApplyFog(color); \
 if (!m_Crest::s_IsUnderWater) \
 { \

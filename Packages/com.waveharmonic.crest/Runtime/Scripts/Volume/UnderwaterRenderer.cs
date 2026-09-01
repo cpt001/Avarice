@@ -499,7 +499,7 @@ namespace WaveHarmonic.Crest
             RestoreEnvironmentalLighting();
 
             // Will only be set if surface is active, which prevents reflection camera from
-            // interferring. This ensures the value is valid which is most robust.
+            // interfering. This ensures the value is valid which is most robust.
             if (_Water._ActiveModules.HasFlag(WaterRenderer.ActiveModules.Surface))
             {
                 foreach (var tile in _Water.Surface.Chunks)

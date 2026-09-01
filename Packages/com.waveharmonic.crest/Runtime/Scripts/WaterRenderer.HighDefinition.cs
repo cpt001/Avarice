@@ -180,7 +180,7 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            if (!SurfaceRenderer.IsTransparent(_Water.Surface.Material))
+            if (!_Water.Surface._MaybeTransparent && !SurfaceRenderer.IsTransparent(_Water.Surface.Material))
             {
                 return;
             }

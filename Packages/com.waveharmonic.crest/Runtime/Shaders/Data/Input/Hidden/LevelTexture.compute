@@ -30,6 +30,8 @@ float2 _Crest_TextureSize;
 float2 _Crest_TexturePosition;
 float2 _Crest_TextureRotation;
 float2 _Crest_TextureResolution;
+bool  _Crest_TargetRegion;
+uint2 _Crest_TargetRegionSize;
 CBUFFER_END
 
 m_CrestNameSpace
@@ -37,6 +39,12 @@ m_CrestNameSpace
 void Execute(uint3 id)
 {
     const Cascade cascade = Cascade::MakeLevel(id.z);
+
+    if (_Crest_TargetRegion)
+    {
+        id.xy = cascade.InputIDToLodID(id.xy, _Crest_TargetRegionSize, _Crest_TexturePosition);
+    }
+
     const float2 uv = DataIDToInputUV(id.xy, cascade, _Crest_TexturePosition, _Crest_TextureRotation, _Crest_TextureSize);
 
     half weight = _Crest_Weight;

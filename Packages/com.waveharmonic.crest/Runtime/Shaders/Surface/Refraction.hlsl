@@ -10,7 +10,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Depth.hlsl"
 
-#if (CREST_PORTALS != 0)
+#if d_Crest_PackagePortals
 #include "Packages/com.waveharmonic.crest.portals/Runtime/Shaders/Library/Portals.hlsl"
 #endif
 
@@ -120,7 +120,7 @@ void RefractedScene
     float deviceDepth = SHADERGRAPH_SAMPLE_SCENE_DEPTH(uv);
 #endif
 
-#if (CREST_PORTALS != 0)
+#if d_Crest_PackagePortals
 #if d_Crest_AlphaTest
     Portal::EvaluateRefraction(uv, i_SceneZRaw, i_Underwater, deviceDepth, o_Caustics);
 #endif

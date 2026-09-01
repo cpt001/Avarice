@@ -13,7 +13,8 @@ namespace Den.Tools
 	/// Matrix-like array with limited length, that holds only N elements
 	/// Adds new ones with Set, and erases old ones when stack is full
 	{
-		[SerializeField] internal Dictionary<Coord, (uint,T)> stack = new Dictionary<Coord, (uint, T)>();  //coord to addNumber and T
+		internal Dictionary<Coord, (uint,T)> stack = new Dictionary<Coord, (uint, T)>();  //coord to addNumber and T
+
 		[SerializeField] private int count;
 		[SerializeField] private int capacity = 10;
 		[SerializeField] private uint lastId = 0;

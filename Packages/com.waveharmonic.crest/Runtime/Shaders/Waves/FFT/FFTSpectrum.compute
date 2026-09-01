@@ -5,7 +5,7 @@
 
 #pragma exclude_renderers glcore gles3
 
-#pragma kernel SpectrumInitalize
+#pragma kernel SpectrumInitialize
 #pragma kernel SpectrumUpdate
 
 #pragma multi_compile_local _ d_AdvancedControls
@@ -138,7 +138,7 @@ SamplerState linear_clamp_sampler;
 float2 _Crest_WindDir;
 
 [numthreads(8,8,1)]
-void SpectrumInitalize(uint3 id : SV_DispatchThreadID)
+void SpectrumInitialize(uint3 id : SV_DispatchThreadID)
 {
     const int2 center = _Crest_Size.xx / 2;
     const int2 coord = id.xy - center;

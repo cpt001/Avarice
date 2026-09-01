@@ -46,8 +46,11 @@
 #endif
 
 // Required on Windows (and possibly others) to prevent tiling.
+#if SHADER_API_D3D11
+// Causes tiling for LPPVs.
 #undef UNITY_SAMPLE_FULL_SH_PER_PIXEL
 #define UNITY_SAMPLE_FULL_SH_PER_PIXEL 1
+#endif
 
 
 //
@@ -112,7 +115,7 @@ float4 _ShadowMapTexture_TexelSize;
 #define SHADOWMAPSAMPLER_DEFINED 1
 #define SHADOWMAPSAMPLER_AND_TEXELSIZE_DEFINED 1
 
-#define d_Crest_ShadowsOverriden 1
+#define d_Crest_ShadowsOverridden 1
 
 #endif
 #endif

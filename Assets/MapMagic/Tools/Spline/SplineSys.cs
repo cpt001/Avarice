@@ -84,6 +84,109 @@ namespace Den.Tools.Splines
 			{ for (int l=0; l<lines.Length; l++) lines[l].UpdateLength(); }
 
 
+		public float Length ()
+		{
+			float length = 0;
+			for (int l=0; l<lines.Length; l++)
+			{
+				if (lines[l].segments.Length == 0)
+					continue;
+
+				lines[l].UpdateLength();
+				length += lines[l].length;
+			}
+
+			return length;
+		}
+
+
+		public List<SplineSys> SplitIntoConnected (float margin)
+		{
+			List<SplineSys> systems = new List<SplineSys>();
+			float marginSq = margin * margin;
+
+			for (int l=0; l<lines.Length; l++)
+			{
+				Line line = new Line(lines[l]);
+				if (line.segments.Length == 0)
+					continue;
+
+				List<int> connectedSystems = new List<int>();
+				for (int s=0; s<systems.Count; s++)
+					if (IsLineConnectedToSpline(line, systems[s], marginSq))
+						connectedSystems.Add(s);
+
+				if (connectedSystems.Count == 0)
+				{
+					SplineSys system = new SplineSys();
+					system.AddLine(line);
+					systems.Add(system);
+				}
+				else
+				{
+					int dstSystemNum = connectedSystems[0];
+					SplineSys dstSystem = systems[dstSystemNum];
+					dstSystem.AddLine(line);
+
+					for (int i=connectedSystems.Count-1; i>0; i--)
+					{
+						int srcSystemNum = connectedSystems[i];
+						dstSystem.AddLines(systems[srcSystemNum].lines);
+						systems.RemoveAt(srcSystemNum);
+					}
+				}
+			}
+
+			return systems;
+		}
+
+
+		private static bool IsLineConnectedToSpline (Line line, SplineSys spline, float marginSq)
+		{
+			for (int l=0; l<spline.lines.Length; l++)
+				if (AreLinesConnected(line, spline.lines[l], marginSq))
+					return true;
+
+			return false;
+		}
+
+
+		private static bool AreLinesConnected (Line line1, Line line2, float marginSq)
+		{
+			return EndpointsNearNodes(line1, line2, marginSq) ||
+				EndpointsNearNodes(line2, line1, marginSq);
+		}
+
+
+		private static bool EndpointsNearNodes (Line endpointsLine, Line nodesLine, float marginSq)
+		{
+			if (endpointsLine.segments.Length == 0 || nodesLine.segments.Length == 0)
+				return false;
+
+			Vector3 start = endpointsLine.startPos;
+			Vector3 end = endpointsLine.endPos;
+
+			for (int n=0; n<nodesLine.NodesCount; n++)
+			{
+				Vector3 node = nodesLine.GetNodePos(n);
+				if (DistanceSqXZ(start, node) <= marginSq)
+					return true;
+				if (DistanceSqXZ(end, node) <= marginSq)
+					return true;
+			}
+
+			return false;
+		}
+
+
+		private static float DistanceSqXZ (Vector3 p1, Vector3 p2)
+		{
+			float deltaX = p1.x - p2.x;
+			float deltaZ = p1.z - p2.z;
+			return deltaX*deltaX + deltaZ*deltaZ;
+		}
+
+
 		public Vector3[][] GetAllPoints (float resPerUnit=0.1f, int minRes=3, int maxRes=20)
 		/// evaluates each of the splines, returning the positions
 		/// if lengthFactor==1 resolution is multiplied with segment length

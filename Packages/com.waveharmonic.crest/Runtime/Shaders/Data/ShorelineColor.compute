@@ -41,7 +41,7 @@ void ShorelineColor(uint3 id)
 #if d_Crest_ShorelineColorSource_ShorelineDistance
         .SampleShorelineDistance(worldXZ);
 #else
-        .SampleSignedDepthFromSeaLevel(worldXZ);
+        .SampleSignedDepthFromSeaLevel(worldXZ) + Cascade::MakeLevel(slice0).SampleLevel(worldXZ);
 #endif
 
     const float shallowness = pow(1.0 - saturate(depth / _Crest_ShorelineColorMaximumDistance), _Crest_ShorelineColorFalloff);

@@ -15,39 +15,52 @@ namespace WaveHarmonic.Crest.Watercraft.Examples
     sealed class PlayerControl : Control
     {
 #if d_InputSystem
+        [@DecoratedField]
+
         [SerializeField]
         Key _DriveForward = Key.W;
 
+        [@DecoratedField]
         [SerializeField]
         Key _DriveBackward = Key.S;
 
+        [@DecoratedField]
         [SerializeField]
         Key _SteerLeftward = Key.A;
 
+        [@DecoratedField]
         [SerializeField]
         Key _SteerRightward = Key.D;
 
+        [@DecoratedField]
         [SerializeField]
         Key _FloatUpward = Key.E;
 
+        [@DecoratedField]
         [SerializeField]
         Key _FloatDownward = Key.Q;
 #else
+        [@DecoratedField]
         [SerializeField]
         int _DriveForward;
 
+        [@DecoratedField]
         [SerializeField]
         int _DriveBackward;
 
+        [@DecoratedField]
         [SerializeField]
         int _SteerLeftward;
 
+        [@DecoratedField]
         [SerializeField]
         int _SteerRightward;
 
+        [@DecoratedField]
         [SerializeField]
         int _FloatUpward;
 
+        [@DecoratedField]
         [SerializeField]
         int _FloatDownward;
 #endif
@@ -56,6 +69,7 @@ namespace WaveHarmonic.Crest.Watercraft.Examples
         [HideInInspector]
 #endif
         [Tooltip("The input axis name for throttle. See Project Settings > Input Manager.")]
+        [@DecoratedField]
         [SerializeField]
         string _DriveInputAxis = "Vertical";
 
@@ -63,22 +77,26 @@ namespace WaveHarmonic.Crest.Watercraft.Examples
         [HideInInspector]
 #endif
         [Tooltip("The input axis name for steering. See Project Settings > Input Manager.")]
+        [@DecoratedField]
         [SerializeField]
         string _SteerInputAxis = "Horizontal";
 
 #if d_InputSystem
         [HideInInspector]
 #endif
+        [@DecoratedField]
         [SerializeField]
         KeyCode _FloatUpwards = KeyCode.E;
 
 #if d_InputSystem
         [HideInInspector]
 #endif
+        [@DecoratedField]
         [SerializeField]
         KeyCode _FloatDownwards = KeyCode.Q;
 
         [Tooltip("Whether to allow submerge control.")]
+        [@DecoratedField]
         [SerializeField]
         bool _Submersible;
 

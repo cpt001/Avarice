@@ -57,6 +57,7 @@ namespace MapMagic.Nodes.SplinesGenerators
 
 		[Val("Iterations")]		public int iterations = 8;
 		[Val("Max Links")]		public int maxLinks = 4;
+		[Val("Max Distance")]	public float maxDist = -1;
 		[Val("Within Tile")]	public bool withinTile = true;
 
 		public enum Clamp { Off, Full, Active }
@@ -85,7 +86,7 @@ namespace MapMagic.Nodes.SplinesGenerators
 			posTab.Add(objs);
 
 			if (stop != null && stop.stop) return;
-			GabrielGraph(posTab, spline, maxLinks:maxLinks, triesPerObj:iterations);
+			GabrielGraph(posTab, spline, maxLinks:maxLinks, maxDist:maxDist, triesPerObj:iterations);
 
 			if (stop != null && stop.stop) return;
 			if (clamp == Clamp.Full) spline.Clamp((Vector3)data.area.full.worldPos, (Vector3)data.area.full.worldSize);
@@ -99,9 +100,11 @@ namespace MapMagic.Nodes.SplinesGenerators
 		private struct LinkIds { public int id1; public int id2; public LinkIds(int i1, int i2) {id1=i1; id2=i2;} }
 
 
-		public static void GabrielGraph ( PosTab objs, SplineSys splineSys, int maxLinks=4, int triesPerObj=8 )
+		public static void GabrielGraph ( PosTab objs, SplineSys splineSys, int maxLinks=4, float maxDist=-1, int triesPerObj=8 )
 		{
 			triesPerObj = Mathf.Min(objs.totalCount-1, triesPerObj);
+			if (maxDist < 0)
+				maxDist = 2147000000;
 
 			Dictionary<int,int[]> closestMap = new Dictionary<int, int[]>();
 
@@ -120,7 +123,7 @@ namespace MapMagic.Nodes.SplinesGenerators
 				float minDist = 0.001f;
 				for (int i=0; i<triesPerObj; i++)
 				{
-					Transition closest = objs.Closest(trs.pos.x, trs.pos.z, minDist); //, filterFn:CheckIfWithin);
+					Transition closest = objs.Closest(trs.pos.x, trs.pos.z, minDist, maxDist); //, filterFn:CheckIfWithin);
 
 					float curDistSq = (trs.pos.x-closest.pos.x)*(trs.pos.x-closest.pos.x) + (trs.pos.z-closest.pos.z)*(trs.pos.z-closest.pos.z);
 					minDist = Mathf.Sqrt(curDistSq)  + 0.001f;
@@ -611,14 +614,14 @@ namespace MapMagic.Nodes.SplinesGenerators
 			if (!enabled) { data.StoreProduct(this, heightMatrix); return; }
 
 			if (stop!=null && stop.stop) return;
-			MatrixWorld splineMatrix = Stamp(heightMatrix, splineSys, stop);
+			MatrixWorld splineMatrix = Stamp(heightMatrix, splineSys, data.isDraft, stop);
 
 			if (stop!=null && stop.stop) return;
 			data.StoreProduct(this,  splineMatrix);
 		}
 
 
-		private MatrixWorld Stamp (MatrixWorld srcHeights, SplineSys splineSys, StopToken stop)
+		private MatrixWorld Stamp (MatrixWorld srcHeights, SplineSys splineSys, bool draft, StopToken stop)
 		{
 			MatrixWorld dstHeights = new MatrixWorld(srcHeights);
 
@@ -638,6 +641,15 @@ namespace MapMagic.Nodes.SplinesGenerators
 			if (stop!=null && stop.stop) return null;
 			MatrixWorld lineHeightsSrc = new MatrixWorld(srcHeights.rect, srcHeights.worldPos, srcHeights.worldSize);
 			SplineMatrixOps.Stroke(splineSys, lineHeightsSrc, padOnePixel:true);
+			
+			
+			if (!draft)
+			{
+				for (int i=0; i<4; i++)
+					MatrixOps.PaddingOnePixel(lineHeightsSrc, lineContours, 0.8f - (i*0.2f));
+			}
+					//padding 1-pixel with lowering opacity to prevent spikes on road connections. TODO: not an elegant solution.
+
 			MatrixWorld lineHeights = new MatrixWorld(lineHeightsSrc); //TODO: use same src/dst matrix in padding
 			MatrixOps.PaddingMipped(lineHeightsSrc, lineContours, lineHeights);
 
@@ -753,6 +765,7 @@ namespace MapMagic.Nodes.SplinesGenerators
 		helpLink = "https://gitlab.com/denispahunov/mapmagic/-/wikis/MatrixGenerators/Blend")]
 	public class Combine217 : Generator, IMultiInlet, IOutlet<SplineSys>
 	{
+		[Serializable]
 		public class Layer
 		{
 			public readonly Inlet<SplineSys> inlet = new Inlet<SplineSys>();
@@ -822,6 +835,76 @@ namespace MapMagic.Nodes.SplinesGenerators
 			
 			if (stop!=null && stop.stop) return;
 			data.StoreProduct(this,  dst);
+		}
+	}
+
+
+	[System.Serializable]
+	[GeneratorMenu (menu="Spline/Standard", name ="Longest/Shortest", iconName=null, disengageable = true, colorType = typeof(SplineSys), helpLink ="https://gitlab.com/denispahunov/mapmagic/wikis/map_generators/constant")]
+	public class LongestShortest200 : Generator, IInlet<SplineSys>, IMultiOutlet
+	{
+		public override (string, int) GetCodeFileLine () => GetCodeFileLineBase();  //to get here with right-click on generator
+
+		[Val("Spline", "Inlet")] public readonly Inlet<SplineSys> splineIn = new Inlet<SplineSys>();
+		[Val("Longest", "Outlet")] public readonly Outlet<SplineSys> longestOut = new Outlet<SplineSys>();
+		[Val("Shortest", "Outlet")] public readonly Outlet<SplineSys> shortestOut = new Outlet<SplineSys>();
+		public IEnumerable<IOutlet<object>> Outlets () { yield return longestOut; yield return shortestOut; }
+
+		[Val("Margin")] public float margin = 1;
+
+		public override void Generate (TileData data, StopToken stop)
+		{
+			SplineSys src = data.ReadInletProduct(this);
+			if (src == null) return;
+			if (!enabled) 
+			{
+				data.StoreProduct(longestOut, src);
+				data.StoreProduct(shortestOut, src);
+				return; 
+			}
+
+			if (stop!=null && stop.stop) return;
+			(SplineSys longest, SplineSys shortest) = FindLongestShortest(src, margin, stop);
+			if (longest == null || shortest == null) return;
+
+			if (stop!=null && stop.stop) return;
+			data.StoreProduct(longestOut, longest);
+			data.StoreProduct(shortestOut, shortest);
+		}
+
+
+		public static (SplineSys longest, SplineSys shortest) FindLongestShortest (SplineSys src, float margin, StopToken stop=null)
+		{
+			List<SplineSys> systems = src.SplitIntoConnected(margin);
+			if (systems.Count == 0)
+				return (new SplineSys(), new SplineSys());
+
+			SplineSys longest = null;
+			SplineSys shortest = null;
+			float longestLength = float.MinValue;
+			float shortestLength = float.MaxValue;
+
+			for (int i=0; i<systems.Count; i++)
+			{
+				if (stop!=null && stop.stop) return (null, null);
+
+				SplineSys system = systems[i];
+				float length = system.Length();
+
+				if (length > longestLength)
+				{
+					longestLength = length;
+					longest = system;
+				}
+
+				if (length < shortestLength)
+				{
+					shortestLength = length;
+					shortest = system;
+				}
+			}
+
+			return (longest, shortest);
 		}
 	}
 

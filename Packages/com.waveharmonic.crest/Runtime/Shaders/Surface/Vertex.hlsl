@@ -86,7 +86,7 @@ void Vertex(m_Properties(inout))
         else
 #endif
         {
-            Cascade::MakeAnimatedWaves(slice0).SampleDisplacement(o_UndisplacedXZ, weight0, o_PositionWS, derivatives, o_WaterLevelOffset);
+            Cascade::MakeAnimatedWaves(slice0).SampleDisplacement(o_UndisplacedXZ, weight0, 1.0 - weight1, o_PositionWS, derivatives, o_WaterLevelOffset);
         }
     }
 
@@ -100,7 +100,7 @@ void Vertex(m_Properties(inout))
         else
 #endif
         {
-            Cascade::MakeAnimatedWaves(slice1).SampleDisplacement(o_UndisplacedXZ, weight1, o_PositionWS, derivatives, o_WaterLevelOffset);
+            Cascade::MakeAnimatedWaves(slice1).SampleDisplacement(o_UndisplacedXZ, weight1, weight1, o_PositionWS, derivatives, o_WaterLevelOffset);
         }
     }
 
@@ -110,17 +110,8 @@ void Vertex(m_Properties(inout))
     o_Normal = TransformWorldToObjectNormal(o_Normal, true);
 
 #if d_Crest_FlowLod
-    // Data that needs to be sampled at the displaced position.
-    if (weight0 > m_CrestSampleLodThreshold)
-    {
-        Cascade::MakeFlow(slice0).SampleFlow(o_UndisplacedXZ, weight0, o_Flow);
-    }
-
-    if (weight1 > m_CrestSampleLodThreshold)
-    {
-        Cascade::MakeFlow(slice1).SampleFlow(o_UndisplacedXZ, weight1, o_Flow);
-    }
-#endif // d_Crest_FlowLod
+    if (weight0 > 0.0 || weight1 > 0.0) o_Flow = Cascade::MakeFlow(slice0).SampleFlow(o_UndisplacedXZ);
+#endif
 
 #if d_Crest_MotionVectors
     if (isMotionVectors)
@@ -129,6 +120,7 @@ void Vertex(m_Properties(inout))
         o_PositionWS.xz *= g_Crest_WaterScaleChange;
         o_PositionWS.xz += g_Crest_WaterCenter.xz;
         o_PositionWS.xz += g_Crest_WaterCenterDelta;
+        o_PositionWS.xz -= g_Crest_DataChange.xz;
     }
 #endif
 }
@@ -165,6 +157,10 @@ void Vertex_float(m_Properties(out))
     );
 #endif // SHADERGRAPH_PREVIEW
 #endif // d_Crest_CustomMesh
+
+#if d_Crest_CustomMesh
+    o_PositionWS.y += 0.01;
+#endif
 }
 
 #undef m_Properties

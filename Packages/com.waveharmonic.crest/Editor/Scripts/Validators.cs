@@ -387,8 +387,8 @@ namespace WaveHarmonic.Crest.Editor
             isValid = isValid && Validate(target._Underwater, messenger, target);
             isValid = isValid && Validate(target._Reflections, messenger, target);
             isValid = isValid && Validate(target._Meniscus, messenger, target);
-            isValid = isValid && ValidateNoRotation(target, target.transform, messenger);
-            isValid = isValid && ValidateNoScale(target, target.transform, messenger);
+            isValid = isValid && ValidateNoRotation(target, target.Transform, messenger);
+            isValid = isValid && ValidateNoScale(target, target.Transform, messenger);
 
 #if CREST_OCEAN
             messenger
@@ -497,7 +497,7 @@ namespace WaveHarmonic.Crest.Editor
                 (
                     "There are reflection probes in the scene. These can cause tiling to appear on the water surface if not set up correctly.",
                     "For reflections probes that affect the water, they will either need to cover the visible water tiles or water tiles need to ignore reflection probes (can done done with <i>Water Tile Prefab</i> field). " +
-                    $"For all reflection probles that include the <i>{LayerMask.LayerToName(target.Surface.Layer)}</i> layer, make sure they are above the water surface as underwater reflections are not supported.",
+                    $"For all reflection probes that include the <i>{LayerMask.LayerToName(target.Surface.Layer)}</i> layer, make sure they are above the water surface as underwater reflections are not supported.",
                     MessageType.Info, target
                 );
             }
@@ -512,7 +512,7 @@ namespace WaveHarmonic.Crest.Editor
                 {
                     messenger
                     (
-                        "<i>Animated Materials</i> is not enabled on the scene view. The water's framerate will appear low as updates are not real-time.",
+                        "<i>Animated Materials</i> is not enabled on the scene view. The water's frame rate will appear low as updates are not real-time.",
                         "Enable <i>Animated Materials</i> on the scene view.",
                         MessageType.Info, target,
                         (_, _) =>
@@ -712,13 +712,13 @@ namespace WaveHarmonic.Crest.Editor
                 isValid = false;
             }
 
-            if (Mathf.Abs(target.transform.lossyScale.x) < 2f && Mathf.Abs(target.transform.lossyScale.z) < 2f)
+            if (Mathf.Abs(target.Transform.lossyScale.x) < 2f && Mathf.Abs(target.Transform.lossyScale.z) < 2f)
             {
                 messenger
                 (
                     $"Water body {target.gameObject.name} has a very small size (the size is set by the X & Z scale of its transform), and will be a very small body of water.",
                     "Increase X & Z scale on water body transform (or parents).",
-                    MessageType.Error, target
+                    MessageType.Info, target
                 );
 
                 isValid = false;
@@ -730,12 +730,12 @@ namespace WaveHarmonic.Crest.Editor
                 ValidateMaterialParent(target.BelowSurfaceMaterial, target.AboveSurfaceMaterial, messenger);
             }
 
-            isValid = isValid && ValidateNoRotation(target, target.transform, messenger);
+            isValid = isValid && ValidateNoRotation(target, target.Transform, messenger);
 
             if (target.Precise && water != null)
             {
-                // Validate main material, then overriden material.
-                ValidateLod(OptionalLod.Get(typeof(ClipLod)), messenger, water, material: target.AboveSurfaceMaterial, context: target);
+                // Validate main material, then overridden material.
+                ValidateLod(OptionalLod.Get(typeof(ClipLod)), messenger, water, nameof(WaterBody.Precise), material: target.AboveSurfaceMaterial, context: target);
 
                 if (water.ClipLod.DefaultClippingState == DefaultClippingState.NothingClipped && water.DefaultExcludes.HasFlag(WaterBodyAffects.Surface))
                 {
@@ -778,7 +778,7 @@ namespace WaveHarmonic.Crest.Editor
                 dependentClause = $", as {dependent} needs it.";
             }
 
-            if (!simulation._Enabled && material == null)
+            if (!simulation._Enabled)
             {
                 messenger
                 (
@@ -1081,7 +1081,7 @@ namespace WaveHarmonic.Crest.Editor
         {
             var isValid = true;
 
-            var isDataInput = target.Mode is LodInputMode.Spline or LodInputMode.Texture or LodInputMode.Renderer or LodInputMode.Paint;
+            var isDataInput = target.Mode is LodInputMode.Spline or LodInputMode.Texture or LodInputMode.Renderer or LodInputMode.Paint or LodInputMode.Geometry or LodInputMode.Area;
 
             if (isDataInput)
             {
@@ -1350,7 +1350,7 @@ namespace WaveHarmonic.Crest.Editor
                 // We used to test if nothing is present that would render into the probe, but these could probably come from other scenes.
             }
 
-            if (!target.Managed && target.transform.lossyScale.XZ().magnitude < 5f)
+            if (!target.Managed && target.Transform.lossyScale.XZ().magnitude < 5f)
             {
                 messenger
                 (
@@ -1362,69 +1362,17 @@ namespace WaveHarmonic.Crest.Editor
                 isValid = false;
             }
 
-            if (!target.Managed && target.transform.lossyScale.y <= 0f)
+            if (!target.Managed && target.Transform.lossyScale.y <= 0f)
             {
                 messenger
                 (
-                    $"<i>{nameof(DepthProbe)}</i> scale is zero or negative. Y should be set to 1.0, but can be other values providing it is greater than zero. Its current scale in the hierarchy is {target.transform.lossyScale.y}.",
+                    $"<i>{nameof(DepthProbe)}</i> scale is zero or negative. Y should be set to 1.0, but can be other values providing it is greater than zero. Its current scale in the hierarchy is {target.Transform.lossyScale.y}.",
                     "Set the Y scale to 1.0.",
                     MessageType.Error, target
                 );
 
                 isValid = false;
             }
-
-#if d_UnityURP
-#if !UNITY_6000_0_OR_NEWER
-#if UNITY_2022_3_OR_NEWER
-            if (int.Parse(Application.unityVersion.Substring(7, 2)) < 23)
-            {
-                // Asset based validation.
-                foreach (var asset in GraphicsSettings.allConfiguredRenderPipelines)
-                {
-                    if (asset is UniversalRenderPipelineAsset urpAsset)
-                    {
-                        var urpRenderers = Helpers.UniversalRendererData(urpAsset);
-
-                        foreach (var renderer in urpRenderers)
-                        {
-                            var urpRenderer = (UniversalRendererData)renderer;
-
-                            if (urpRenderer.depthPrimingMode != DepthPrimingMode.Disabled)
-                            {
-                                messenger
-                                (
-                                    $"<i>{nameof(DepthPrimingMode)}</i> is not set to <i>{nameof(DepthPrimingMode.Disabled)}</i>. " +
-                                    $"This can cause the <i>{nameof(DepthProbe)}</i> not to work. " +
-                                    $"Unity fixed this in 2022.3.23f1.",
-                                    $"If you are experiencing problems, disable depth priming or upgrade Unity.",
-                                    MessageType.Info, urpRenderer,
-                                    caller: target
-                                );
-                            }
-
-                            foreach (var feature in renderer.rendererFeatures)
-                            {
-                                if (feature.GetType().Name == "ScreenSpaceAmbientOcclusion" && feature.isActive)
-                                {
-                                    messenger
-                                    (
-                                        $"<i>ScreenSpaceAmbientOcclusion</i> is is active. " +
-                                        $"This can cause the <i>{nameof(DepthProbe)}</i> not to work. " +
-                                        $"Unity fixed this in 2022.3.23f1.",
-                                        $"If you are experiencing problems, disable SSAO or upgrade Unity.",
-                                        MessageType.Info, urpRenderer,
-                                        caller: target
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-#endif
-#endif
-#endif
 
             // Check that there are no renderers in descendants.
             target.GetComponentsInChildren(s_Renderers);

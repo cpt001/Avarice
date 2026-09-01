@@ -9,9 +9,8 @@ namespace WaveHarmonic.Crest
     /// <remarks>
     /// Attach this objects that you want use to override shadows.
     /// </remarks>
-    [@HelpURL("Manual/Appearance/Shadows.html")]
     public sealed partial class ShadowLodInput : LodInput
     {
-        internal override LodInputMode DefaultMode => LodInputMode.Renderer;
+        internal override LodInputMode DefaultMode => LodInputMode.Area;
     }
 }

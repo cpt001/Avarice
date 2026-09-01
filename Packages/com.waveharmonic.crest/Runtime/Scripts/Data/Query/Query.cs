@@ -66,7 +66,7 @@ namespace WaveHarmonic.Crest
 
         // 4 was enough for a long time, but Linux setups seems to demand 7
         const int k_MaximumRequests = 7;
-        const int k_MaximumGuids = 1024;
+        const int k_MaximumGUIDs = 1024;
 
         // We need only two additional queries to compute normals.
         const int k_NormalAdditionalQueryCount = 2;
@@ -102,13 +102,13 @@ namespace WaveHarmonic.Crest
         /// </summary>
         sealed class SegmentRegistrar
         {
-            // Map from guids to (segment start index, segment end index, frame number when query was made)
+            // Map from GUIDs to (segment start index, segment end index, frame number when query was made)
             public Dictionary<int, Vector3Int> _Segments = new();
             public int _QueryCount = 0;
         }
 
         /// <summary>
-        /// Since query results return asynchronously and may not return at all (in theory), we keep a ringbuffer
+        /// Since query results return asynchronously and may not return at all (in theory), we keep a ring buffer
         /// of the registrars of the last frames so that when data does come back it can be interpreted correctly.
         /// </summary>
         sealed class SegmentRegistrarRingBuffer
@@ -141,7 +141,7 @@ namespace WaveHarmonic.Crest
                     if (newSegmentAcquire == _SegmentRelease)
                     {
                         // The last index has incremented and landed on the first index. This shouldn't happen normally, but
-                        // can happen if the Scene and Game view are not visible, in which case async readbacks dont get processed
+                        // can happen if the Scene and Game view are not visible, in which case async readbacks don't get processed
                         // and the pipeline blocks up.
 #if !UNITY_EDITOR
                         Debug.LogError("Crest: Query ring buffer exhausted. Please report this to developers.");
@@ -153,7 +153,7 @@ namespace WaveHarmonic.Crest
                 }
 
                 // Copy the registrations across from the previous frame. This makes queries persistent. This is needed because
-                // queries are often made from FixedUpdate(), and at high framerates this may not be called, which would mean
+                // queries are often made from FixedUpdate(), and at high frame rates this may not be called, which would mean
                 // the query would get lost and this leads to stuttering and other artifacts.
                 {
                     var registrar = _Segments[_SegmentAcquire];
@@ -339,9 +339,9 @@ namespace WaveHarmonic.Crest
 
             if (!segmentRetrieved)
             {
-                if (registrar._Segments.Count >= k_MaximumGuids)
+                if (registrar._Segments.Count >= k_MaximumGUIDs)
                 {
-                    Debug.LogError("Crest: Too many guids registered with CollProviderCompute. Increase s_maxGuids.");
+                    Debug.LogError("Crest: Too many GUIDs registered with CollProviderCompute. Increase k_MaximumGUIDs.");
                     return false;
                 }
 
@@ -838,6 +838,5 @@ namespace WaveHarmonic.Crest
     static partial class Extensions
     {
         public static void UpdateQueries(this IQueryProvider self, WaterRenderer water) => (self as IQueryable)?.UpdateQueries(water);
-        public static void CleanUp(this IQueryProvider self) => (self as IQueryable)?.CleanUp();
     }
 }

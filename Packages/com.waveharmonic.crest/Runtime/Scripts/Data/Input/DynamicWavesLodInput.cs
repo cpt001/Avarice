@@ -10,7 +10,6 @@ namespace WaveHarmonic.Crest
     /// Attach this to objects that you want to influence the simulation, such as
     /// ripples etc.
     /// </remarks>
-    [@HelpURL("Manual/Simulation/Ripples.html#user-inputs")]
     public sealed partial class DynamicWavesLodInput : LodInput
     {
         internal override LodInputMode DefaultMode => LodInputMode.Renderer;

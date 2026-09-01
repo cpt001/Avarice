@@ -97,6 +97,7 @@ namespace MapMagic.Nodes
 
 	[Flags] public enum OutputLevel { Draft=1, Main=2, Both=3 }  //Both is for gui purpose only
 
+	[Serializable]
 	public abstract class OutputGenerator : Generator
 	/// Final output node (height, textures, objects, etc)
 	{

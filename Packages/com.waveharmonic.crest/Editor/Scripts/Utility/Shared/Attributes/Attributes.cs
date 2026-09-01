@@ -28,7 +28,7 @@ namespace WaveHarmonic.Crest.Attributes
     abstract class DecoratedProperty : PropertyAttribute
     {
         /// <summary>
-        /// Override this method to customise the label.
+        /// Override this method to customize the label.
         /// </summary>
         internal virtual GUIContent BuildLabel(SerializedProperty property, GUIContent label, DecoratedDrawer drawer) => label;
 
@@ -53,7 +53,7 @@ namespace WaveHarmonic.Crest.Attributes
         public abstract bool AlwaysVisible { get; }
 
         /// <summary>
-        /// Override this method to customise the label.
+        /// Override this method to customize the label.
         /// </summary>
         internal virtual GUIContent BuildLabel(SerializedProperty property, GUIContent label, DecoratedDrawer drawer) => label;
 
@@ -188,6 +188,12 @@ namespace WaveHarmonic.Crest
             Above,
         }
 
+        public Order(Placement placement)
+        {
+            _Target = string.Empty;
+            _Placement = placement;
+        }
+
         public Order(string target, Placement placement = Placement.Heading)
         {
             _Target = target;
@@ -287,7 +293,7 @@ namespace WaveHarmonic.Crest
             Accordian,
         }
 
-        readonly GUIContent _Title;
+        internal readonly GUIContent _Title;
         readonly bool _IsEnd;
         readonly bool _CustomFoldout;
 
@@ -304,7 +310,7 @@ namespace WaveHarmonic.Crest
         /// </summary>
         /// <param name="title">Title of the group.</param>
         /// <param name="style">The appearance of the group.</param>
-        /// <param name="isCustomFoldout">Pass "true" if this field is an object which would normally be a foldout but you want accordian styling. Also set this value on the DecoratedField attribute. Other parameters are ignored with this set.</param>
+        /// <param name="isCustomFoldout">Pass "true" if this field is an object which would normally be a foldout but you want accordion styling. Also set this value on the DecoratedField attribute. Other parameters are ignored with this set.</param>
         public Group(string title = null, Style style = Style.Foldout, bool isCustomFoldout = false)
         {
             _IsEnd = title == null || style == Style.None;
@@ -934,7 +940,7 @@ namespace WaveHarmonic.Crest
     sealed class Label : Decorator
     {
 
-        readonly string _Label;
+        internal readonly string _Label;
 
         public override bool AlwaysVisible => false;
 

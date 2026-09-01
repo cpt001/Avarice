@@ -267,6 +267,11 @@ namespace WaveHarmonic.Crest.Generated
         /// Renders geometry using a default material.
         /// </summary>
         Geometry,
+
+        /// <summary>
+        /// Covers a local area.
+        /// </summary>
+        Area,
     }
 }
 
@@ -540,6 +545,8 @@ namespace WaveHarmonic.Crest.Generated
         /// </summary>
         /// <remarks>
         /// For the water surface, this will be determined by the material (opaque or transparent). This pass is controlled by Unity, and is not compatible with certain features like soft particles.
+        ///
+        /// For the water volume, this will be after transparency.
         /// </remarks>
         Default,
 
@@ -584,7 +591,7 @@ namespace WaveHarmonic.Crest.Generated
         /// Use displacement to remove water.
         /// </summary>
         /// <remarks>
-        /// Using displacement will also affect the underwater and can nest bouyant objects. Requires the displacement layer to be enabled.
+        /// Using displacement will also affect the underwater and can nest buoyant objects. Requires the displacement layer to be enabled.
         /// </remarks>
         Displacement,
 

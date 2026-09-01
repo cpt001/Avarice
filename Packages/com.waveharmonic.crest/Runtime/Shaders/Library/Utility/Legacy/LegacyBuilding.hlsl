@@ -7,7 +7,7 @@
 // Transparent Objects Receives Shadows
 //
 
-#if d_Crest_ShadowsOverriden
+#if d_Crest_ShadowsOverridden
 
 #define unity_WorldToShadow _Crest_WorldToShadow
 
@@ -67,7 +67,7 @@ float GetShadows(float3 positionWS, float4 uvLightMap)
     fixed destName = tex2D(_LightTexture0, lightCoord).w * GetShadows(worldPos, input.lmap);
 #endif
 
-#endif // d_Crest_ShadowsOverriden
+#endif // d_Crest_ShadowsOverridden
 
 
 //

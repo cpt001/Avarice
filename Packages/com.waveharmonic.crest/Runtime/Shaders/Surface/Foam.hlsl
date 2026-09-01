@@ -10,7 +10,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Texture.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Flow.hlsl"
 
-#if (CREST_SHIFTING_ORIGIN != 0)
+#if d_Crest_PackageShiftingOrigin
 #include "Packages/com.waveharmonic.crest.shifting-origin/Runtime/Shaders/ShiftingOrigin.hlsl"
 #endif
 
@@ -31,7 +31,7 @@ half2 WhiteFoamTexture
     const float2 i_WorldXZ1,
     const float2 i_TexelOffset,
     const half i_LodAlpha,
-    const Cascade i_CascadeData0,
+    const Cascade i_CascadeData,
     const bool i_Sample2ndChannel = false
 )
 {
@@ -44,7 +44,7 @@ half2 WhiteFoamTexture
     // 0.5 * 0.2 == / 10. We only need the full amount for multi-scale to account for
     // the default lower scale of 4. * 0.5 alone above will not match multi-scaled, but
     // overall better matches visually.
-    scale *= i_CascadeData0._Scale * 0.2;
+    scale *= i_CascadeData._Scale * 0.2;
 #endif
 
     half2 f0 = i_Texture.m_SampleFoam((i_WorldXZ0 + uvOffset) / scale).rg;
@@ -60,7 +60,7 @@ half2 WhiteFoamTexture
     if (i_Sample2ndChannel)
     {
 #if d_Crest_FoamMultiScale
-        f0 = lerp(f0, f1, i_LodAlpha);
+        f0 = lerp(f0, f1, i_LodAlpha * _Crest_ChunkNormalMapParameters.z);
 #endif
 
         return smoothstep(result, result + i_Feather, f0);
@@ -69,7 +69,7 @@ half2 WhiteFoamTexture
 #endif
     {
 #if d_Crest_FoamMultiScale
-        f0.r = lerp(f0.r, f1.r, i_LodAlpha);
+        f0.r = lerp(f0.r, f1.r, i_LodAlpha * _Crest_ChunkNormalMapParameters.z);
 #endif
 
         return half2(smoothstep(result, result + i_Feather, f0.r), 0.0);
@@ -88,10 +88,10 @@ half2 MultiScaleFoamAlbedo
     const bool i_Sample2ndChannel
 )
 {
-    float2 worldXZ0 = i_UndisplacedXZ;
-    float2 worldXZ1 = i_UndisplacedXZ;
+    float2 worldXZ0 = i_UndisplacedXZ - g_Crest_DataOffset.xz;
+    float2 worldXZ1 = worldXZ0;
 
-#if (CREST_SHIFTING_ORIGIN != 0)
+#if d_Crest_PackageShiftingOrigin
     // Apply tiled floating origin offset. Only needed if:
     //  - _FoamScale is a non integer value
     //  - _FoamScale is over 48
@@ -116,10 +116,10 @@ half2 MultiScaleFoamNormal
     const float i_PixelZ
 )
 {
-    float2 worldXZ0 = i_UndisplacedXZ;
-    float2 worldXZ1 = i_UndisplacedXZ;
+    float2 worldXZ0 = i_UndisplacedXZ - g_Crest_DataOffset.xz;
+    float2 worldXZ1 = worldXZ0;
 
-#if (CREST_SHIFTING_ORIGIN != 0)
+#if d_Crest_PackageShiftingOrigin
     // Apply tiled floating origin offset. Only needed if:
     //  - _FoamScale is a non integer value
     //  - _FoamScale is over 48

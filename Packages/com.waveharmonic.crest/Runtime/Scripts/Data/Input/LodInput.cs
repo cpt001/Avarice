@@ -17,7 +17,7 @@ namespace WaveHarmonic.Crest
         /// <summary>
         /// Draw the input (the render target will be bound)
         /// </summary>
-        void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slice = -1);
+        void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slice = -1, int offset = 0);
 
         float Filter(WaterRenderer water, int slice);
 
@@ -60,7 +60,6 @@ namespace WaveHarmonic.Crest
     /// Base class for scripts that register inputs to the various LOD data types.
     /// </summary>
     [@ExecuteDuringEditMode]
-    [@HelpURL("Manual/Basics/WaterInputs.html")]
     public abstract partial class LodInput : ManagedBehaviour<WaterRenderer>
     {
         [Tooltip("The mode for this input.\n\nSee the manual for more details about input modes. Use AddComponent(LodInputMode) to set the mode via scripting. The mode cannot be changed after creation.")]
@@ -95,7 +94,6 @@ namespace WaveHarmonic.Crest
         [@Hide(typeof(DepthLodInput))]
         [@Hide(typeof(DynamicWavesLodInput))]
         [@Hide(typeof(ScatteringLodInput))]
-        [@Hide(typeof(ShadowLodInput))]
         [@Disable(nameof(_Mode), nameof(LodInputMode.Global))]
         [@Disable(nameof(_Mode), nameof(LodInputMode.Primitive))]
         [@Disable(nameof(_Mode), nameof(LodInputMode.Renderer))]
@@ -115,9 +113,10 @@ namespace WaveHarmonic.Crest
         [@Disable(nameof(_Mode), nameof(LodInputMode.Renderer))]
         [@Disable(nameof(_Mode), nameof(LodInputMode.Global))]
         [@Disable(nameof(_Mode), nameof(LodInputMode.Primitive))]
+        [@Minimum(0f)]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
-        float _FeatherWidth = 0.1f;
+        private protected float _FeatherWidth = 0.1f;
 
         [Tooltip("How this input responds to horizontal displacement.\n\nIf false, data will not move horizontally with the waves. Has a small performance overhead when disabled. Only suitable for inputs of small size.")]
         [@Hide(typeof(ClipLodInput))]
@@ -139,12 +138,13 @@ namespace WaveHarmonic.Crest
         [SerializeReference]
         internal LodInputData _Data;
 
-        // Need always visble for space to appear before foldout instead of inside.
+        // Need always visible for space to appear before foldout instead of inside.
         [@Space(10, isAlwaysVisible: true)]
 
         [@Group("Debug", order = k_DebugGroupOrder)]
 
         [@Disable(nameof(_Mode), nameof(LodInputMode.Global))]
+        [@ExcludeDoc]
         [@DecoratedField, SerializeField]
         internal bool _DrawBounds;
 
@@ -157,6 +157,8 @@ namespace WaveHarmonic.Crest
             public static readonly int s_BlendSource = Shader.PropertyToID("_Crest_BlendSource");
             public static readonly int s_BlendTarget = Shader.PropertyToID("_Crest_BlendTarget");
             public static readonly int s_BlendOperation = Shader.PropertyToID("_Crest_BlendOperation");
+            public static readonly int s_TargetRegion = Shader.PropertyToID("_Crest_TargetRegion");
+            public static readonly int s_TargetRegionSize = Shader.PropertyToID("_Crest_TargetRegionSize");
         }
 
 
@@ -209,12 +211,74 @@ namespace WaveHarmonic.Crest
                 return null;
             }
 
-            Debug.AssertFormat(Data is T, "Crest: Incorrect data type ({1}). The data type is {0}.", Data.GetType().BaseType.Name, typeof(T).Name);
+#if UNITY_EDITOR
+            if (Data is not T)
+            {
+                Debug.LogErrorFormat("Crest: Incorrect data type ({1}). The data type is {0}.", Data.GetType().BaseType.Name, typeof(T).Name);
+            }
+#endif
 
             return Data as T;
         }
 
-        internal bool IsCompute => Mode is LodInputMode.Texture or LodInputMode.Paint or LodInputMode.Global or LodInputMode.Primitive;
+        internal void Dispatch(PropertyWrapperCompute wrapper, Lod lod, int slices, int offset)
+        {
+            Dispatch(wrapper, lod, slices, offset, Transform, Rect);
+        }
+
+        internal static void Dispatch(PropertyWrapperCompute wrapper, Lod lod, int slices, int offset, Transform transform, Rect rect)
+        {
+            var smallestCascade = lod.Cascades[lod.Slices - slices - offset];
+
+            var subTarget = false;
+            if (!lod.Water._DisableInputDispatchOptimization)
+            {
+                // TODO: we could shrink the render area using a partial overlap (complicated).
+                // LOD must be bigger than the input, otherwise negative performance and other issues.
+                var lodRect = smallestCascade.TexelRect;
+                subTarget = lodRect.size.x >= rect.size.x && lodRect.size.y >= rect.size.y;
+            }
+
+            if (lod.NeedsOffset)
+            {
+                wrapper.SetInteger(Lod.ShaderIDs.s_LodOffset, offset);
+            }
+
+            wrapper.SetBoolean(ShaderIDs.s_TargetRegion, subTarget);
+
+            if (!subTarget)
+            {
+                var threads = lod.Resolution / Lod.k_ThreadGroupSize;
+                wrapper.Dispatch(threads, threads, slices);
+                return;
+            }
+
+            // Texel of the smallest slice we write to.
+            var texel = smallestCascade._Texel;
+
+            // Calculate width and height from all sides to ensure correct area coverage.
+            // Calculating from the size will be less accurate.
+            var position = transform.position.XZ();
+            var minX = Mathf.FloorToInt((rect.xMin - position.x) / texel);
+            var minY = Mathf.FloorToInt((rect.yMin - position.y) / texel);
+            var maxX = Mathf.CeilToInt((rect.xMax - position.x) / texel);
+            var maxY = Mathf.CeilToInt((rect.yMax - position.y) / texel);
+
+            // Still needs a minor buffer.
+            var weight = maxX - minX + 1;
+            var height = maxY - minY + 1;
+
+            wrapper.SetIntegers(ShaderIDs.s_TargetRegionSize, weight, height);
+
+            wrapper.Dispatch
+            (
+                Mathf.CeilToInt((float)weight / Lod.k_ThreadGroupSize),
+                Mathf.CeilToInt((float)height / Lod.k_ThreadGroupSize),
+                slices
+            );
+        }
+
+        internal bool IsCompute => Mode is LodInputMode.Texture or LodInputMode.Paint or LodInputMode.Global or LodInputMode.Primitive or LodInputMode.Area;
         internal virtual int Pass => -1;
         internal virtual Rect Rect
         {
@@ -272,7 +336,7 @@ namespace WaveHarmonic.Crest
         private protected override Action<WaterRenderer> OnUpdateMethod => OnUpdate;
         private protected virtual void OnUpdate(WaterRenderer water)
         {
-            if (transform.hasChanged)
+            if (Transform.hasChanged)
             {
                 _RecalculateBounds = true;
             }
@@ -280,7 +344,7 @@ namespace WaveHarmonic.Crest
             // Input culling depends on displacement.
             if (!FollowHorizontalMotion)
             {
-                _SampleHeightHelper.SampleDisplacement(transform.position, out _Displacement);
+                _SampleHeightHelper.SampleDisplacement(Transform.position, out _Displacement);
             }
             else
             {
@@ -295,7 +359,7 @@ namespace WaveHarmonic.Crest
         {
             Data?.OnLateUpdate();
 
-            transform.hasChanged = false;
+            Transform.hasChanged = false;
         }
 
 
@@ -314,7 +378,7 @@ namespace WaveHarmonic.Crest
             ILodInput.Detach(_Input, Inputs);
         }
 
-        internal virtual void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slice = -1)
+        internal virtual void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slice = -1, int offset = 0)
         {
             if (weight == 0f)
             {
@@ -326,7 +390,7 @@ namespace WaveHarmonic.Crest
             wrapper.SetFloat(ShaderIDs.s_Weight, weight * _Weight);
             wrapper.SetVector(ShaderIDs.s_DisplacementAtInputPosition, _Displacement);
 
-            Data?.Draw(simulation, this, buffer, target, slice);
+            Data?.Draw(simulation, this, buffer, target, slice, offset);
         }
 
         internal virtual float Filter(WaterRenderer water, int slice)
@@ -501,7 +565,7 @@ namespace WaveHarmonic.Crest
             public IReportsDisplacement DisplacementReporter => _Input._DisplacementReporter;
             public IReportWaveDisplacement WaveDisplacementReporter => _Input._WaveDisplacementReporter;
             public float Filter(WaterRenderer water, int slice) => _Input.Filter(water, slice);
-            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1) => _Input.Draw(lod, buffer, target, pass, weight, slice);
+            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1, int offset = 0) => _Input.Draw(lod, buffer, target, pass, weight, slice, offset);
         }
     }
 }

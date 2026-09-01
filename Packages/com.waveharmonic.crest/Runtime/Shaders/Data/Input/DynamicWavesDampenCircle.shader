@@ -6,7 +6,7 @@ Shader "Crest/Inputs/Dynamic Waves/Dampen Circle"
     Properties
     {
         _Crest_Radius("Radius", float) = 3
-        _Crest_Strength("Strength", Range(0, 100)) = 10
+        _Crest_Strength("Multiplier", Range(0, 100)) = 10
 
         [HideInInspector]
         _Crest_Version("Version", Integer) = 0

@@ -17,7 +17,7 @@ namespace WaveHarmonic.Crest.Editor
     sealed partial class RenderPipelineLightPatcher : RenderPipelinePatcher
     {
 #if d_UnityHDRP
-        // For 2023.3 onwards, HDAdditionalLightData.intensity is obsolete and returns Light.intensity.
+        // For Unity 6 onwards, HDAdditionalLightData.intensity is obsolete and returns Light.intensity.
         // It still serializes the old value so grab it via reflection.
         static readonly FieldInfo s_Intensity = typeof(HDAdditionalLightData)
             .GetField("m_Intensity", BindingFlags.Instance | BindingFlags.NonPublic);

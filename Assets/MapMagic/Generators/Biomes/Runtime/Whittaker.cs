@@ -11,6 +11,7 @@ using Den.Tools.GUI;
 
 namespace MapMagic.Nodes.Biomes
 {
+	[Serializable]
 	public class WhittakerLayer : IBiome, IOutlet<MatrixWorld>
 	{
 		public string name;

@@ -72,7 +72,7 @@ namespace WaveHarmonic.Crest
 
 #if d_UnityModuleWind
                 _Wind = EditorGUILayout.Toggle("Wind Waves", _Wind);
-                DisplayHelp("Whether to add wind waves to the scene. These waves are based on local wind conditions. Requires Gaia's Wind Zone (note that the defaul wind value will produce no waves). Modify the component after creation to customize.");
+                DisplayHelp("Whether to add wind waves to the scene. These waves are based on local wind conditions. Requires Gaia's Wind Zone (note that the default wind value will produce no waves). Modify the component after creation to customize.");
 #endif
 
 #if d_WaveHarmonic_Crest_ShallowWater
@@ -109,16 +109,16 @@ namespace WaveHarmonic.Crest
             // Sea level is height above terrain bottom.
             var seaLevel = GaiaAPI.GetSeaLevel();
 
-            water.transform.position = new Vector3(0f, seaLevel, 0f);
+            water.Transform.position = new Vector3(0f, seaLevel, 0f);
 
-            var managed = water.transform.Find("Managed");
+            var managed = water.Transform.Find("Managed");
 
             if (managed == null)
             {
                 managed = new GameObject("Managed").transform;
             }
 
-            managed.SetParent(water.transform, worldPositionStays: false);
+            managed.SetParent(water.Transform, worldPositionStays: false);
 
 #if d_UnityModuleWind
             // Wind
@@ -146,12 +146,12 @@ namespace WaveHarmonic.Crest
                 }
 
                 dp.gameObject.layer = water.Surface.Layer;
-                dp.transform.SetParent(terrain.transform, worldPositionStays: false);
-                dp.transform.localPosition = terrain.terrainData.size * 0.5f;
-                var position = dp.transform.position;
+                dp.Transform.SetParent(terrain.transform, worldPositionStays: false);
+                dp.Transform.localPosition = terrain.terrainData.size * 0.5f;
+                var position = dp.Transform.position;
                 position.y = seaLevel;
-                dp.transform.position = position;
-                dp.transform.localScale = new(terrain.terrainData.size.x, 1f, terrain.terrainData.size.z);
+                dp.Transform.position = position;
+                dp.Transform.localScale = new(terrain.terrainData.size.x, 1f, terrain.terrainData.size.z);
                 dp.Layers = 1 << terrain.gameObject.layer;
                 // 1m below terrain bottom to 1m above maximum terrain height.
                 dp.CaptureRange = new(-seaLevel + -1f, terrain.terrainData.size.y - seaLevel + 1);

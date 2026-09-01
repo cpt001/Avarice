@@ -3,6 +3,7 @@
 
 using UnityEngine;
 using UnityEngine.Rendering;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -24,16 +25,26 @@ namespace WaveHarmonic.Crest
         {
             public static readonly int s_SimDeltaTime = Shader.PropertyToID("_Crest_SimDeltaTime");
             public static readonly int s_TemporaryPersistentTarget = Shader.PropertyToID("_Crest_TemporaryPersistentTarget");
+            public static readonly int s_Prewarm = Shader.PropertyToID("_Crest_Prewarm");
+            public static readonly int s_Overlap = Shader.PropertyToID("_Crest_Overlap");
         }
+
+        enum PreWarm
+        {
+            None,
+            Partial,
+            Full,
+        }
+
+        const bool k_Debug = false;
 
         private protected override bool NeedToReadWriteTextureData => true;
         internal override int BufferCount => 2;
 
-        // Is this the first step since being enabled?
-        private protected bool _NeedsPrewarmingThisStep = true;
-
         // This is how far the simulation time is behind Unity's time.
         private protected float _TimeToSimulate = 0f;
+
+        bool _IsFirst = true;
 
         // Pristine historic data. Needed if using blur or multiple viewpoints. For the
         // latter, we cannot optimize the upstream data texture away due to camera filtering.
@@ -43,6 +54,7 @@ namespace WaveHarmonic.Crest
 
         private protected virtual int Kernel => 0;
         private protected virtual bool SkipFlipBuffers => false;
+        private protected virtual bool RequiresPrewarming => false;
         private protected abstract ComputeShader SimulationShader { get; }
 
         internal override void Initialize()
@@ -55,7 +67,7 @@ namespace WaveHarmonic.Crest
 
             base.Initialize();
 
-            _NeedsPrewarmingThisStep = true;
+            _IsFirst = true;
         }
 
         private protected override void Allocate()
@@ -105,7 +117,7 @@ namespace WaveHarmonic.Crest
 
             // Even if no steps were needed this frame, the simulation still needs to advect to
             // compensate for camera motion / water scale changes, so do a trivial substep.
-            // This could be a specialised kernel that only advects, or the simulation shader
+            // This could be a specialized kernel that only advects, or the simulation shader
             // could have a branch for 0 delta time.
             if (substeps == 0)
             {
@@ -131,6 +143,53 @@ namespace WaveHarmonic.Crest
 
             var wrapper = new PropertyWrapperCompute(buffer, SimulationShader, Kernel);
 
+            var prewarm = RequiresPrewarming && _IsFirst ? PreWarm.Full : PreWarm.None;
+
+            // Overlap with previous.
+            var overlap = new Vector4(0, 0, _Resolution - 1, _Resolution - 1);
+
+            if (!_IsFirst && RequiresPrewarming)
+            {
+                var c = new Cascade(_SamplingParameters.Previous(0)[Slices - 1], Resolution);
+                var p = new Cascade(_SamplingParameters.Previous(1)[Slices - 1], Resolution);
+                var cr = c.TexelRect;
+                var pr = p.TexelRect;
+
+                if (cr.Overlaps(pr))
+                {
+                    var or = cr.Overlap(pr);
+                    or = new()
+                    {
+                        min = WorldToID(or.min - c._SnappedPosition, c._Texel),
+                        max = WorldToID(or.max - c._SnappedPosition, c._Texel) - Vector2Int.one,
+                    };
+
+                    var newOverlap = new Vector4(or.xMin, or.yMin, or.xMax, or.yMax);
+
+                    prewarm = overlap == newOverlap ? PreWarm.None : PreWarm.Partial;
+                    overlap = newOverlap;
+
+                    if (prewarm == PreWarm.Partial)
+                    {
+                        var isFull = overlap.x >= Resolution - 1 || overlap.y >= Resolution - 1 || overlap.z <= 0 || overlap.w <= 0;
+
+                        if (isFull)
+                        {
+                            prewarm = PreWarm.Full;
+                        }
+                    }
+                }
+                else
+                {
+                    prewarm = PreWarm.Full;
+                }
+            }
+
+            if (k_Debug && prewarm != PreWarm.None)
+            {
+                Debug.Log($"Crest.Debug: Prewarm {prewarm} Overlap {overlap}");
+            }
+
             for (var substep = 0; substep < substeps; substep++)
             {
                 var isFirstStep = substep == 0;
@@ -146,12 +205,15 @@ namespace WaveHarmonic.Crest
                     // to buffer substeps as they will not match buffered cascade data etc. Each buffer
                     // entry must be for a single frame and substeps are "sub-frame".
                     (source, target) = (target, source);
+
+                    prewarm = PreWarm.None;
                 }
-                else
+                else if (prewarm == PreWarm.Partial)
                 {
-                    // We only want to handle teleports for the first step.
-                    _NeedsPrewarmingThisStep = _NeedsPrewarmingThisStep || _Water._HasTeleportedThisFrame;
+                    wrapper.SetVector(ShaderIDs.s_Overlap, overlap);
                 }
+
+                wrapper.SetInteger(ShaderIDs.s_Prewarm, (int)prewarm);
 
                 // Both simulation update and input draws need delta time.
                 buffer.SetGlobalFloat(ShaderIDs.s_SimDeltaTime, delta);
@@ -178,9 +240,6 @@ namespace WaveHarmonic.Crest
                 {
                     SubmitDraws(buffer, Inputs, target);
                 }
-
-                // The very first step since being enabled.
-                _NeedsPrewarmingThisStep = false;
             }
 
             // Swap textures if needed.
@@ -201,7 +260,14 @@ namespace WaveHarmonic.Crest
 
             TryBlur(buffer);
 
+            if (RequiresClearBorder)
+            {
+                ClearBorder(buffer);
+            }
+
             buffer.EndSample(ID);
+
+            _IsFirst = false;
         }
 
         /// <summary>

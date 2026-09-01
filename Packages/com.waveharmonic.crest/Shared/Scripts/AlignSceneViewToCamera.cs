@@ -56,7 +56,7 @@ namespace WaveHarmonic.Crest.Examples
             var water = WaterRenderer.Instance;
             if (s_SceneChanged && SceneView.lastActiveSceneView != null && water != null && water.IsSceneViewActive)
             {
-                TeleportSceneCamera(transform);
+                TeleportSceneCamera(Transform);
                 s_SceneChanged = false;
             }
         }

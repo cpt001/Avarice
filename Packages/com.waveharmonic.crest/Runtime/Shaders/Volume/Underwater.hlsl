@@ -5,7 +5,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/UnderwaterShared.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/Debug.hlsl"
 
-#if (CREST_LEGACY_UNDERWATER == 1) || defined(CREST_URP)
+#if d_Crest_LegacyUnderwater || defined(CREST_URP)
 #define d_Crest_SampleColor 1
 #else
 #define d_Crest_SampleColor 0
@@ -15,7 +15,7 @@
 #define FoveatedRemapLinearToNonUniform(uv) uv
 #endif
 
-#if (CREST_LEGACY_UNDERWATER != 0) || d_Crest_CustomColorTexture
+#if d_Crest_LegacyUnderwater || d_Crest_CustomColorTexture
 TEXTURE2D_X(_Crest_CameraColorTexture);
 #endif
 
@@ -23,9 +23,11 @@ TEXTURE2D_X(_Crest_CameraColorTexture);
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Data.hlsl"
 #endif
 
+bool _Crest_IsOverlayCamera;
+
 m_CrestNameSpace
 
-#if (CREST_LEGACY_UNDERWATER != 0) || d_Crest_CustomColorTexture
+#if d_Crest_LegacyUnderwater || d_Crest_CustomColorTexture
 float3 SampleSceneColor(float2 i_UV)
 {
     return LOAD_TEXTURE2D_X(_Crest_CameraColorTexture, i_UV * _ScreenSize.xy).rgb;
@@ -102,6 +104,12 @@ half4 Fragment(Varyings input)
 #endif // !d_Crest_NoMaskColor
 
     float rawDepth = LoadSceneDepth(positionSS);
+
+    // Discard the background for overlays.
+    if (_Crest_IsOverlayCamera && rawDepth == 0.0)
+    {
+        discard;
+    }
 
     half3 sceneColour;
 

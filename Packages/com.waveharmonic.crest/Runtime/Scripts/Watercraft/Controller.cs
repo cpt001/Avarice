@@ -7,9 +7,9 @@ using WaveHarmonic.Crest.Internal;
 namespace WaveHarmonic.Crest.Watercraft
 {
     /// <summary>
-    /// A simple watercraft controlller.
+    /// A simple watercraft controller.
     /// </summary>
-    [@HelpURL("Manual/Basics/FloatingObjects.html#movement-controller")]
+    [@HelpURL(typeof(Controller))]
     [AddComponentMenu(Constants.k_MenuPrefixPhysics + "Watercraft Controller")]
     public sealed partial class Controller : ManagedBehaviour<WaterRenderer>
     {
@@ -72,10 +72,10 @@ namespace WaveHarmonic.Crest.Watercraft
 
             // Thrust
             var forcePosition = rb.worldCenterOfMass + _ForceHeightOffset * Vector3.up;
-            rb.AddForceAtPosition(_ThrustPower * input.z * transform.forward, forcePosition, ForceMode.Acceleration);
+            rb.AddForceAtPosition(_ThrustPower * input.z * Transform.forward, forcePosition, ForceMode.Acceleration);
 
             // Steer
-            var rotation = transform.up + _TurningHeel * transform.forward;
+            var rotation = Transform.up + _TurningHeel * Transform.forward;
             rb.AddTorque(_SteerPower * input.x * rotation, ForceMode.Acceleration);
 
             if (input.y > 0f)

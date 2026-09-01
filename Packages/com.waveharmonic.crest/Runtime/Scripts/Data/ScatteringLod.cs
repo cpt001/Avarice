@@ -19,6 +19,8 @@ namespace WaveHarmonic.Crest
         static new class ShaderIDs
         {
             public static readonly int s_SampleScatteringSimulation = Shader.PropertyToID("g_Crest_SampleScatteringSimulation");
+            public static readonly int s_ScatteringShoreline = Shader.PropertyToID("_Crest_ScatteringShoreline");
+            public static readonly int s_ScatteringShorelineColor = Shader.PropertyToID("_Crest_ScatteringShorelineColor");
         }
 
         internal override string ID => "Scattering";
@@ -45,6 +47,8 @@ namespace WaveHarmonic.Crest
         }
 
         private protected override int GlobalShaderID => ShaderIDs.s_SampleScatteringSimulation;
+        private protected override int MaterialShaderID => ShaderIDs.s_ScatteringShoreline;
+        private protected override int MaterialColorShaderID => ShaderIDs.s_ScatteringShorelineColor;
 
         internal ScatteringLod()
         {

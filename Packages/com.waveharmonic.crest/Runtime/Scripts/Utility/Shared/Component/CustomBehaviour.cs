@@ -18,6 +18,9 @@ namespace WaveHarmonic.Crest.Internal
     /// </summary>
     public abstract partial class CustomBehaviour : MonoBehaviour
     {
+        /// <inheritdoc cref="Component.transform" />
+        public Transform Transform { get; private set; }
+
         // Not available in 2022.3:
         // https://docs.unity3d.com/6000.0/Documentation/ScriptReference/MonoBehaviour-didStart.html
         bool _AfterStart;
@@ -29,13 +32,15 @@ namespace WaveHarmonic.Crest.Internal
 #endif
         private protected void Awake()
         {
+            Transform = transform;
+
 #if UNITY_EDITOR
             base.Awake();
 #endif
         }
 
         /// <summary>
-        /// Unity's Start method. Make sure to call base if overriden.
+        /// Unity's Start method. Make sure to call base if overridden.
         /// </summary>
 #if UNITY_EDITOR
         override
@@ -81,7 +86,7 @@ namespace WaveHarmonic.Crest.Internal
         }
 
         /// <summary>
-        /// Unity's OnEnable method. Make sure to call base if overriden.
+        /// Unity's OnEnable method. Make sure to call base if overridden.
         /// </summary>
 #if UNITY_EDITOR
         override
@@ -90,6 +95,8 @@ namespace WaveHarmonic.Crest.Internal
 #endif
         private protected void OnEnable()
         {
+            Transform = transform;
+
 #if UNITY_EDITOR
             base.OnEnable();
 #endif
@@ -99,7 +106,7 @@ namespace WaveHarmonic.Crest.Internal
         }
 
         /// <summary>
-        /// Unity's OnDisable method. Make sure to call base if overriden.
+        /// Unity's OnDisable method. Make sure to call base if overridden.
         /// </summary>
 #if UNITY_EDITOR
         override
@@ -158,7 +165,7 @@ namespace WaveHarmonic.Crest.Internal
 
         private protected CustomBehaviour()
         {
-            // Sets the default version. Overriden by serialized field above.
+            // Sets the default version. Overridden by serialized field above.
             _Version = Version;
         }
 
@@ -181,4 +188,16 @@ namespace WaveHarmonic.Crest.Internal
 
         }
     }
+
+#if UNITY_EDITOR
+    partial class CustomBehaviour
+    {
+        private protected override void OnValidate()
+        {
+            base.OnValidate();
+
+            Transform = transform;
+        }
+    }
+#endif
 }

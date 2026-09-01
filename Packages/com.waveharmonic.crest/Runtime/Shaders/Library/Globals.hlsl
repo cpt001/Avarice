@@ -23,10 +23,14 @@ float3 g_Crest_WaterCenter;
 float  g_Crest_WaterScale;
 float  g_Crest_Time;
 uint   g_Crest_LodCount;
+uint   g_Crest_LodIndex;
 int    g_Crest_LodChange;
 float  g_Crest_MeshScaleLerp;
 float  g_Crest_LodAlphaBlackPointFade;
 float  g_Crest_LodAlphaBlackPointWhitePointFade;
+
+float3 g_Crest_DataOffset;
+float3 g_Crest_DataChange;
 
 float4 g_Crest_Flow;
 
@@ -56,12 +60,13 @@ float  g_Crest_WaterScaleChange;
 float2 g_Crest_WaterCenterDelta;
 
 // Shifting Origin
-#if (CREST_SHIFTING_ORIGIN != 0)
+#if d_Crest_PackageShiftingOrigin
 float3 g_Crest_ShiftingOriginOffset;
+bool   g_Crest_ShiftingOriginWaveCompatibilityMode;
 #endif
 
 // Portals
-#if (CREST_PORTALS != 0)
+#if d_Crest_PackagePortals
 int    _Crest_Portal;
 #endif
 

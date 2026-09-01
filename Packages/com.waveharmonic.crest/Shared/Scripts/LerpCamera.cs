@@ -13,18 +13,23 @@ namespace WaveHarmonic.Crest.Examples
     {
 #pragma warning disable IDE0032 // Use auto property
 
+        [@DecoratedField]
         [SerializeField]
         float _LerpAlpha = 0.1f;
 
+        [@DecoratedField]
         [SerializeField]
         Transform _Target = null;
 
+        [@DecoratedField]
         [SerializeField]
         Transform _LookAt = null;
 
+        [@DecoratedField]
         [SerializeField]
         float _LookAtOffset = 5f;
 
+        [@DecoratedField]
         [SerializeField]
         float _MinimumHeightAboveWater = 0.5f;
 
@@ -43,13 +48,13 @@ namespace WaveHarmonic.Crest.Examples
                 return;
             }
 
-            _SampleHeightHelper.SampleHeight(transform.position, out var h);
+            _SampleHeightHelper.SampleHeight(Transform.position, out var h);
 
             var targetPos = _Target.position;
             targetPos.y = Mathf.Max(targetPos.y, h + _MinimumHeightAboveWater);
 
-            transform.position = Vector3.Lerp(transform.position, targetPos, _LerpAlpha * water.DeltaTime * 60f);
-            transform.LookAt(_LookAt.position + _LookAtOffset * Vector3.up);
+            Transform.position = Vector3.Lerp(Transform.position, targetPos, _LerpAlpha * water.DeltaTime * 60f);
+            Transform.LookAt(_LookAt.position + _LookAtOffset * Vector3.up);
         }
     }
 }

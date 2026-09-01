@@ -10,7 +10,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Texture.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Flow.hlsl"
 
-#if (CREST_SHIFTING_ORIGIN != 0)
+#if d_Crest_PackageShiftingOrigin
 #include "Packages/com.waveharmonic.crest.shifting-origin/Runtime/Shaders/ShiftingOrigin.hlsl"
 #endif
 
@@ -62,10 +62,12 @@ half2 SampleNormalMaps
 {
     float2 worldXZUndisplaced = i_UndisplacedXZ;
 
-#if (CREST_SHIFTING_ORIGIN != 0)
+#if d_Crest_PackageShiftingOrigin
     // Apply tiled floating origin offset. Always needed.
     worldXZUndisplaced -= ShiftingOriginOffset(i_NormalMap, i_CascadeData);
 #endif
+
+    worldXZUndisplaced -= g_Crest_DataOffset.xz;
 
     const float3 parameters = _Crest_ChunkNormalMapParameters.xyz;
     const float2 speed = parameters.xy;

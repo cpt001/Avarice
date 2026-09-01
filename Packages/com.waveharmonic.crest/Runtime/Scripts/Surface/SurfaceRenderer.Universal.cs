@@ -50,7 +50,7 @@ namespace WaveHarmonic.Crest
 
             internal void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
             {
-                if (!IsTransparent(_Water.Surface.Material))
+                if (!_Water.Surface._MaybeTransparent && !IsTransparent(_Water.Surface.Material))
                 {
                     return;
                 }
@@ -71,12 +71,35 @@ namespace WaveHarmonic.Crest
             class PassData
             {
                 public UnityEngine.Rendering.RenderGraphModule.RendererListHandle _RendererList;
+                public UnityEngine.Rendering.RenderGraphModule.TextureHandle _ColorTarget;
+                public UnityEngine.Rendering.RenderGraphModule.TextureHandle _DepthTarget;
             }
 
             readonly RenderGraphHelper.PassData _PassData = new();
 
             public override void RecordRenderGraph(UnityEngine.Rendering.RenderGraphModule.RenderGraph graph, ContextContainer frame)
             {
+                using (var builder = graph.AddUnsafePass<PassData>("Crest.DrawWater/Surface", out var data))
+                {
+                    var resourceData = frame.Get<UniversalResourceData>();
+
+                    builder.AllowPassCulling(false);
+
+                    builder.UseTexture(resourceData.cameraDepthTexture, UnityEngine.Rendering.RenderGraphModule.AccessFlags.Read);
+                    builder.UseTexture(resourceData.cameraOpaqueTexture, UnityEngine.Rendering.RenderGraphModule.AccessFlags.Read);
+                    builder.UseTexture(resourceData.activeColorTexture, UnityEngine.Rendering.RenderGraphModule.AccessFlags.Write);
+                    builder.UseTexture(resourceData.activeDepthTexture, UnityEngine.Rendering.RenderGraphModule.AccessFlags.Write);
+
+                    data._ColorTarget = resourceData.activeColorTexture;
+                    data._DepthTarget = resourceData.activeDepthTexture;
+
+                    builder.SetRenderFunc<PassData>((data, context) =>
+                    {
+                        context.cmd.SetRenderTarget(data._ColorTarget, data._DepthTarget);
+                        _Water.Surface.RenderAdditionalChunks(context.cmd.m_WrappedCommandBuffer);
+                    });
+                }
+
                 if (!_Water.RenderBeforeTransparency)
                 {
                     return;
@@ -129,25 +152,25 @@ namespace WaveHarmonic.Crest
 #endif
             public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
             {
-                if (!_Water.RenderBeforeTransparency)
-                {
-                    return;
-                }
-
                 var buffer = CommandBufferPool.Get("Crest.DrawWater/Surface");
 
-                var rld = new RendererListDesc(_ShaderTagID, renderingData.cullResults, renderingData.cameraData.camera)
-                {
-                    layerMask = 1 << _Water.Surface.Layer,
-                    // Required to set the pass. Use shader to keep WB material overrides.
-                    overrideShader = _Water.Surface.Material.shader,
-                    overrideShaderPassIndex = 0, // UniversalForward
-                    renderQueueRange = RenderQueueRange.transparent,
-                    sortingCriteria = SortingCriteria.CommonOpaque,
-                    rendererConfiguration = renderingData.perObjectData,
-                };
+                _Water.Surface.RenderAdditionalChunks(buffer);
 
-                buffer.DrawRendererList(context.CreateRendererList(rld));
+                if (_Water.RenderBeforeTransparency)
+                {
+                    var rld = new RendererListDesc(_ShaderTagID, renderingData.cullResults, renderingData.cameraData.camera)
+                    {
+                        layerMask = 1 << _Water.Surface.Layer,
+                        // Required to set the pass. Use shader to keep WB material overrides.
+                        overrideShader = _Water.Surface.Material.shader,
+                        overrideShaderPassIndex = 0, // UniversalForward
+                        renderQueueRange = RenderQueueRange.transparent,
+                        sortingCriteria = SortingCriteria.CommonOpaque,
+                        rendererConfiguration = renderingData.perObjectData,
+                    };
+
+                    buffer.DrawRendererList(context.CreateRendererList(rld));
+                }
 
                 context.ExecuteCommandBuffer(buffer);
                 CommandBufferPool.Release(buffer);

@@ -11,7 +11,7 @@ namespace WaveHarmonic.Crest
     [@ExecuteDuringEditMode(ExecuteDuringEditMode.Include.None)]
     [SelectionBase]
     [AddComponentMenu(Constants.k_MenuPrefixScripts + "Water Renderer")]
-    [@HelpURL("About/Introduction.html")]
+    [@HelpURL(typeof(WaterRenderer))]
     sealed partial class WaterRenderer
     {
         internal const string k_ProxyShader = "Hidden/Crest/Editor/WaterProxy";

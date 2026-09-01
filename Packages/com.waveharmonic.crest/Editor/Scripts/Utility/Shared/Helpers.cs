@@ -247,6 +247,32 @@ namespace WaveHarmonic.Crest.Editor
 
             return tag.name;
         }
+
+        /// <summary>
+        /// Gets a custom attribute from an enum value definition.
+        /// </summary>
+        internal static T GetCustomAttribute<T>(this System.Enum value) where T : System.Attribute
+        {
+            var member = value.GetType().GetMember(value.ToString())[0];
+            return member.GetCustomAttribute<T>();
+        }
+
+        internal static string ToKebabCase(this string input)
+        {
+            if (string.IsNullOrEmpty(input)) return input;
+
+            while (Regex.IsMatch(input, @"[a-z][A-Z]"))
+            {
+                input = input.Insert(Regex.Match(input, @"[a-z][A-Z]").Index + 1, "-");
+            }
+
+            while (Regex.IsMatch(input, @"\w[A-Z][a-z]"))
+            {
+                input = input.Insert(Regex.Match(input, @"\w[A-Z][a-z]").Index + 1, "-");
+            }
+
+            return input.ToLowerInvariant();
+        }
     }
 
     static partial class EditorHelpers

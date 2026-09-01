@@ -17,7 +17,7 @@ namespace WaveHarmonic.Crest.Internal
     using Include = ExecuteDuringEditMode.Include;
 
     /// <summary>
-    /// Implements custom behaviours common to all components.
+    /// Implements custom behaviors common to all components.
     /// </summary>
     public abstract partial class EditorBehaviour : MonoBehaviour
     {
@@ -44,7 +44,7 @@ namespace WaveHarmonic.Crest.Internal
         }
 
         /// <summary>
-        /// Start method. Must be called if overriden.
+        /// Start method. Must be called if overridden.
         /// </summary>
         private protected virtual void Start()
         {
@@ -69,11 +69,14 @@ namespace WaveHarmonic.Crest.Internal
         {
             if (_IsFirstOnValidate || !enabled) return;
             enabled = false;
+            OnDestroy();
+            Awake();
             enabled = true;
+            Start();
         }
 
         /// <summary>
-        /// OnValidate method. Must be called if overriden.
+        /// OnValidate method. Must be called if overridden.
         /// </summary>
         private protected virtual void OnValidate()
         {
@@ -342,6 +345,7 @@ namespace WaveHarmonic.Crest.Internal
             }
         }
 
+        [System.NonSerialized]
         bool _StartQueued;
 
 

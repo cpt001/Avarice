@@ -70,8 +70,17 @@ namespace MapMagic.Nodes.SplinesGenerators
 			{
 				foreach ((SplineOutput200 output, SplineSys product, MatrixWorld biomeMask) 
 					in data.Outputs<SplineOutput200,SplineSys,MatrixWorld>(typeof(SplineOutput200), inSubs:true))
-						{ mergedSpline = product; break; }
+						{ mergedSpline = new SplineSys(product); break; }
 			}
+
+			//offseting points to zero
+			Vector3 worldPos = ((Vector3)data.area.active.worldPos);   
+			foreach (Line line in mergedSpline.lines)
+				for (int s=0; s<line.segments.Length; s++)
+				{
+					line.segments[s].start.pos -= worldPos;
+					line.segments[s].end.pos -= worldPos;
+				}
 
 			//pushing to apply
 			if (stop!=null && stop.stop) return;

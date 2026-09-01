@@ -20,10 +20,11 @@ namespace Den.Tools
 		void Remove ();
 	}
 
+	[Serializable]
 	public class TileManager<T> : ISerializationCallbackReceiver where T: ITile//, IEquatable<T>
 	{
-		public Dictionary<Coord,T> grid = new Dictionary<Coord,T>();
-		public object gridLocker = new object();
+		[NonSerialized] public Dictionary<Coord,T> grid = new Dictionary<Coord,T>();
+		[NonSerialized] public object gridLocker = new object();
 
 		public bool allowMove = false;
 
@@ -188,7 +189,13 @@ namespace Den.Tools
 					if (genAroundMainCam) 
 					{
 						Camera mainCam = Camera.main;
-						if (mainCam == null) mainCam = GameObject.FindObjectOfType<Camera>(); //in case it was destroyed or something
+						
+						#if UNITY_6000_3_OR_NEWER
+						if (mainCam==null) mainCam = GameObject.FindAnyObjectByType<Camera>(); //in case it was destroyed or something
+						#else
+						if (mainCam==null) mainCam = GameObject.FindObjectOfType<Camera>(); //in case it was destroyed or something
+						#endif
+
 						if (mainCam != null) //if still no camera
 						{
 							Vector3 camPos = mainCam.transform.position;

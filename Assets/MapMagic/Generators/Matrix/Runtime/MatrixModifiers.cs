@@ -255,6 +255,7 @@ namespace MapMagic.Nodes.MatrixGenerators
 	{
 		public override (string, int) GetCodeFileLine () => GetCodeFileLineBase();  //to get here with right-click on generator
 
+		[Serializable]
 		public class Layer
 		{
 			public readonly Inlet<MatrixWorld> inlet = new Inlet<MatrixWorld>();
@@ -293,6 +294,7 @@ namespace MapMagic.Nodes.MatrixGenerators
 				Blend(matrix, blendMatrix, layer.algorithm, layer.opacity);
 			}
 			
+			matrix.Clamp01();
 			data.StoreProduct(this, matrix);
 		}
 
@@ -344,6 +346,7 @@ namespace MapMagic.Nodes.MatrixGenerators
 	{
 		public override (string, int) GetCodeFileLine () => GetCodeFileLineBase();  //to get here with right-click on generator
 
+		[Serializable]
 		public class NormalizeLayer : IInlet<MatrixWorld>, IOutlet<MatrixWorld>
 		{
 			public float Opacity { get; set; }
@@ -408,6 +411,70 @@ namespace MapMagic.Nodes.MatrixGenerators
 			if (stop!=null && stop.stop) return;
 			for (int i=0; i<layers.Length; i++)
 				data.StoreProduct(layers[i], dstMatrices[i]);
+		}
+	}
+
+
+	[System.Serializable]
+	[GeneratorMenu (menu="Map/Modifiers", name ="Distort", iconName="GeneratorIcons/Distort", disengageable = true, 
+		helpLink = "https://gitlab.com/denispahunov/mapmagic/-/wikis/MatrixGenerators/Contrast")]
+	public class Distort219 : Generator, IInlet<MatrixWorld>, IMultiInlet, IOutlet<MatrixWorld> 
+	{
+		public override (string, int) GetCodeFileLine () => GetCodeFileLineBase();  //to get here with right-click on generator
+
+		[Val("Offset X", "Inlet")]	public readonly Inlet<MatrixWorld> xOffsetIn = new Inlet<MatrixWorld>();
+		[Val("Offset Z", "Inlet")]	public readonly Inlet<MatrixWorld> zOffsetIn = new Inlet<MatrixWorld>();
+		public IEnumerable<IInlet<object>> Inlets () { yield return xOffsetIn; yield return zOffsetIn; }
+
+		[Val(name="Intensity")] public float intensity = 0f;
+		[Val(name="Midpoint")] public float midpoint = 0.5f;
+
+		public override void Generate (TileData data, StopToken stop)
+		{
+			if (stop!=null && stop.stop) return;
+			MatrixWorld src = data.ReadInletProduct(this);
+			if (src == null) return; 
+			if (!enabled) { data.StoreProduct(this, src); return; }
+
+			if (stop!=null && stop.stop) return;
+			MatrixWorld xMask = data.ReadInletProduct(xOffsetIn);
+			MatrixWorld zMask = data.ReadInletProduct(zOffsetIn);
+
+			MatrixWorld dst = new MatrixWorld(src);
+			float worldIntensity = intensity / data.area.PixelSize.x;
+
+			if (xMask != null || zMask != null)
+				for (int x=0; x<src.rect.size.x; x++)
+					for (int z=0; z<src.rect.size.z; z++)
+					{
+						int i = z*src.rect.size.x + x;
+
+						float xOffset = 0;
+						if (xMask != null)
+						{
+							xOffset = (xMask.arr[i] - midpoint) * worldIntensity;
+							if (x+xOffset < 0)
+								xOffset = -x;
+							if (x+xOffset > src.rect.size.x-1)
+								xOffset = src.rect.size.x-1 - x;
+						}
+
+						float zOffset = 0;
+						if (zMask != null)
+						{
+							zOffset = (zMask.arr[i] - midpoint) * worldIntensity;
+							if (z+zOffset < 0)
+								zOffset = -z;
+							if (z+zOffset > src.rect.size.z-1)
+								zOffset = src.rect.size.z-1 - z;
+						}
+
+						float val = src.GetInterpolated(x+dst.rect.offset.x + xOffset, z+dst.rect.offset.z + zOffset);
+						dst.arr[i] = val;
+					}
+
+			if (stop!=null && stop.stop) return;
+			data.StoreProduct(this, dst);
 		}
 	}
 
@@ -587,9 +654,9 @@ namespace MapMagic.Nodes.MatrixGenerators
 		public Vector2 from = new Vector2(0.4f, 0.6f);
 		public Vector2 to = new Vector2(1f, 1f);
 
-		public float tFrom;
-		public float tTo;
-		public float tTransition;
+		public float tFrom = 0.4f;
+		public float tTo = 0.6f;
+		public float tTransition = 0.1f;
 		
 		public override void Generate (TileData data, StopToken stop)
 		{
@@ -631,6 +698,10 @@ namespace MapMagic.Nodes.MatrixGenerators
 			float min1 = from.y;  if (inWorldUnits) min1 /= worldHeight;
 			float max0 = to.x;    if (inWorldUnits) max0 /= worldHeight;
 			float max1 = to.y;    if (inWorldUnits) max1 /= worldHeight;
+
+			if (min0==min1) min1 += 0.000001f; //selector has a division operation
+			if (max0==max1) max1 += 0.000001f;
+
 			dst.SelectRange(min0, min1, max0, max1);
 		}
 	}

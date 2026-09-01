@@ -10,15 +10,10 @@ namespace WaveHarmonic.Crest
     /// Attach this to objects that you want to influence the foam simulation, such as
     /// depositing foam on the surface.
     /// </remarks>
-    [@HelpURL("Manual/Appearance/Foam.html")]
     [@FilterEnum(nameof(_Blend), Filtered.Mode.Include, (int)LodInputBlend.Additive, (int)LodInputBlend.Maximum)]
     public sealed partial class FoamLodInput : LodInput
     {
-#if d_CrestPaint
-        internal override LodInputMode DefaultMode => LodInputMode.Paint;
-#else
-        internal override LodInputMode DefaultMode => LodInputMode.Renderer;
-#endif
+        internal override LodInputMode DefaultMode => LodInputMode.Area;
 
         internal override void InferBlend()
         {

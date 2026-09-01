@@ -6,7 +6,7 @@ Shader "Crest/Inputs/Foam/Add From Texture"
     Properties
     {
         [MainTexture] _Crest_Texture("Texture", 2D) = "white" {}
-        _Crest_Strength( "Strength", float ) = 1
+        _Crest_Strength("Multiplier", float) = 1
 
         [HideInInspector]
         _Crest_Version("Version", Integer) = 0

@@ -32,23 +32,29 @@ namespace WaveHarmonic.Crest.Examples
 #endif
     sealed partial class CameraController : CustomBehaviour
     {
+        [@DecoratedField]
         [SerializeField]
         float _LinearSpeed = 10f;
 
+        [@DecoratedField]
         [SerializeField]
         float _AngularSpeed = 70f;
 
+        [@DecoratedField]
         [SerializeField]
         bool _SimulateForwardInput = false;
 
+        [@DecoratedField]
         [SerializeField]
         bool _RequireLeftMouseButtonToMove = false;
 
+        [@DecoratedField]
         [SerializeField]
         float _FixedDeltaTime = 1 / 60f;
 
-        [UnityEngine.Space(10)]
+        [@Space(10)]
 
+        [@DecoratedField]
         [SerializeField]
         DebugFields _Debug = new();
 
@@ -75,7 +81,7 @@ namespace WaveHarmonic.Crest.Examples
         {
             base.Awake();
 
-            _TargetTransform = transform;
+            _TargetTransform = Transform;
 
             if (!TryGetComponent(out _Camera))
             {
@@ -251,7 +257,7 @@ namespace WaveHarmonic.Crest.Examples
             if (_Debug._EnableCameraRoll) return;
             var ea = _TargetTransform.eulerAngles;
             ea.z = 0f;
-            transform.eulerAngles = ea;
+            Transform.eulerAngles = ea;
         }
     }
 }

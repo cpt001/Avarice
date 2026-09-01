@@ -8,6 +8,8 @@
 #pragma multi_compile_local d_Sphere d_Cube d_Rectangle
 #pragma multi_compile_local __ d_Inverted
 
+#define k_Crest_LodOffset _Crest_LodOffset
+
 #include "HLSLSupport.cginc"
 
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Constants.hlsl"
@@ -20,6 +22,9 @@ CBUFFER_START(CrestPerMaterial)
 float3 _Crest_Position;
 float  _Crest_Diameter;
 float4x4 _Crest_Matrix;
+bool  _Crest_TargetRegion;
+uint2 _Crest_TargetRegionSize;
+uint _Crest_LodOffset;
 CBUFFER_END
 
 m_CrestNameSpace
@@ -51,6 +56,12 @@ float RectangleSDF(float2 position)
 void Execute(uint3 id)
 {
     const Cascade cascade = Cascade::MakeClip(id.z);
+
+    if (_Crest_TargetRegion)
+    {
+        id.xy = cascade.InputIDToLodID(id.xy, _Crest_TargetRegionSize, _Crest_Position.xz);
+    }
+
     const float2 positionXZ = cascade.IDToWorld(id.xy);
 
     // TODO: Optimize with something better than spherical culling.

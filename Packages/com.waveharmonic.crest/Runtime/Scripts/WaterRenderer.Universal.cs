@@ -92,7 +92,7 @@ namespace WaveHarmonic.Crest
                 }
 
                 // TODO: Could also check RenderType. Which is better?
-                if (!SurfaceRenderer.IsTransparent(water.Surface.Material))
+                if (!water.Surface._MaybeTransparent && !SurfaceRenderer.IsTransparent(water.Surface.Material))
                 {
                     return;
                 }

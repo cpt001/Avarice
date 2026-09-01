@@ -53,16 +53,16 @@ namespace MapMagic.Brush
 				AssignPreset(quickPresets[num]);
 		}
 
-		public Trace trace = new Trace(); //spacing tool
+		[NonSerialized] public Trace trace = new Trace(); //spacing tool
 
 		public Terrain[] terrains = new Terrain[0];
-		public Dictionary<Terrain,TerrainCache> terrainCaches = new Dictionary<Terrain,TerrainCache>();
-		public CacheChange cacheChange = new CacheChange();
+		[NonSerialized] public Dictionary<Terrain,TerrainCache> terrainCaches = new Dictionary<Terrain,TerrainCache>();
+		[NonSerialized] public CacheChange cacheChange = new CacheChange();
 		public bool terrainsAdded = false; //called on OnEnable
 
 		public TuneStroke tuneStroke = new TuneStroke();
 
-		public Undo.Undo undo = new Undo.Undo();
+		[NonSerialized] public Undo.Undo undo = new Undo.Undo();
 		public bool temp = false; //switching on new undo - otherwise it won't be recordered
 		
 		//IMapMagic

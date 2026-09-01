@@ -2,6 +2,9 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
+using MapMagic.Nodes.SplinesGenerators;
+using MapMagic.Nodes;
+using Den.Tools.Splines;
 /// <summary>
 /// This scripts entire purpose is to act as a library that determines
 /// - Master structure list of buildings belonging to town
@@ -46,6 +49,8 @@ public class FutureTownPlanner : MonoBehaviour
 
     private List<GameObject> availableBeachSlots = new List<GameObject>();
     private List<GameObject> availableStandaloneSlots = new List<GameObject>();
+
+    private MM2InterlinkAdaptor interlinkGrabber;
 
     //This sorts through all structures to get their probabilities
     public void GetPossibleStructures(Any_Town_Phenotype town_Phenotype)
@@ -572,7 +577,7 @@ public class FutureTownPlanner : MonoBehaviour
     {
         foreach (Transform t in transform.parent)
         {
-            if (t.GetComponent<BuildingSlot>() && t.name == "BeachBuildingTarget")
+            if (t.GetComponent<BuildingSlot>() && (t.name == "BeachBuildingTarget" || t.name == "BeachBuildingTarget(Clone)"))
             {
                 BuildingSlot checkedSlot = t.GetComponent<BuildingSlot>();
                 checkedSlot.CheckBeachViability();
@@ -581,7 +586,7 @@ public class FutureTownPlanner : MonoBehaviour
 
                 availableBeachSlots.Sort((a, b) => Vector3.Distance(a.transform.position, transform.position).CompareTo(Vector3.Distance(b.transform.position, transform.position)));
             }
-            if (t.name == "StandaloneSlot")
+            if (t.name == "StandaloneSlot" || t.name == "StandaloneSlot(Clone)")
             {
                 availableStandaloneSlots.Add(t.gameObject);
                 availableStandaloneSlots.Sort((a, b) => Vector3.Distance(a.transform.position, transform.position).CompareTo(Vector3.Distance(b.transform.position, transform.position)));
@@ -847,7 +852,7 @@ public class FutureTownPlanner : MonoBehaviour
                                                     g.transform.rotation = finalRot * Quaternion.Inverse(sb.initialSlot.transform.localRotation);
 
                                                     Physics.SyncTransforms();
-                                                    
+
                                                     adjustedBuildings.Add(g);
                                                     placementAndRotationFinalized = true;
                                                 }
@@ -875,6 +880,7 @@ public class FutureTownPlanner : MonoBehaviour
                                 }
                                 //t.GetComponent<SlotBuilder>().
                                 break;
+
                         }
 
                         if (starterGenerationQueue.Contains(bldg))

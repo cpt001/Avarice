@@ -230,37 +230,37 @@ namespace WaveHarmonic.Crest.Editor.Settings
         [SerializeField]
         internal int _Platforms;
 
-        [@Label("Overriden Settings for Windows, Mac and Linux")]
+        [@Label("Overridden Settings for Windows, Mac and Linux")]
         [@Show(nameof(_Platforms), (int)BuildTargetGroup.Standalone)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsDesktop = new();
 
-        [@Label("Overriden Settings for Dedicated Server")]
+        [@Label("Overridden Settings for Dedicated Server")]
         [@Show(nameof(_Platforms), -2)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsServer = new();
 
-        [@Label("Overriden Settings for Android")]
+        [@Label("Overridden Settings for Android")]
         [@Show(nameof(_Platforms), (int)BuildTargetGroup.Android)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsAndroid = new();
 
-        [@Label("Overriden Settings for iOS")]
+        [@Label("Overridden Settings for iOS")]
         [@Show(nameof(_Platforms), (int)BuildTargetGroup.iOS)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsIOS = new();
 
-        [@Label("Overriden Settings for tvOS")]
+        [@Label("Overridden Settings for tvOS")]
         [@Show(nameof(_Platforms), (int)BuildTargetGroup.tvOS)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
         internal PlatformSettings _PlatformSettingsTVOS = new();
 
-        [@Label("Overriden Settings for visionOS")]
+        [@Label("Overridden Settings for visionOS")]
         [@Show(nameof(_Platforms), (int)BuildTargetGroup.VisionOS)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]
@@ -268,7 +268,7 @@ namespace WaveHarmonic.Crest.Editor.Settings
 
         // Web has hard limitations on number of sampled textures. Set defaults with that
         // in mind so the surface renders.
-        [@Label("Overriden Settings for Web")]
+        [@Label("Overridden Settings for Web")]
         [@Show(nameof(_Platforms), (int)BuildTargetGroup.WebGL)]
         [@Stripped(Stripped.Style.PlatformTab, indent: true)]
         [SerializeField]

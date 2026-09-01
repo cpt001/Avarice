@@ -44,7 +44,7 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// Physics including buoyancy and drag.
     /// </summary>
-    [@HelpURL("Manual/Basics/FloatingObjects.html#physics")]
+    [@HelpURL(typeof(FloatingObject))]
     [AddComponentMenu(Constants.k_MenuPrefixPhysics + "Floating Object")]
     public sealed partial class FloatingObject : ManagedBehaviour<WaterRenderer>
     {
@@ -65,7 +65,7 @@ namespace WaveHarmonic.Crest
         CollisionLayer _Layer = CollisionLayer.AfterAnimatedWaves;
 
 
-        [Header("Buoyancy")]
+        [@Heading("Buoyancy")]
 
         [@Label("Force Strength")]
         [Tooltip("Strength of buoyancy force.\n\nFor probes, roughly a mass to force ratio of 100 to 1 to keep the center of mass near the surface. For Align Normal, default value is for a default sphere with a default rigidbody.")]
@@ -110,7 +110,7 @@ namespace WaveHarmonic.Crest
         internal FloatingObjectProbe[] _Probes = new FloatingObjectProbe[] { };
 
 
-        [Header("Drag")]
+        [@Heading("Drag")]
 
         [Tooltip("Drag when in water.\n\nAdditive to the drag declared on the rigid body.")]
         [@GenerateAPI]
@@ -128,7 +128,7 @@ namespace WaveHarmonic.Crest
         float _ForceHeightOffset;
 
 
-        [Header("Wave Response")]
+        [@Heading("Wave Response")]
 
         [Tooltip("Width of object for physics purposes.\n\nThe larger this value, the more filtered/smooth the wave response will be. If larger wavelengths cannot be filtered, increase the LOD Levels")]
         [@GenerateAPI]
@@ -179,6 +179,9 @@ namespace WaveHarmonic.Crest
         Vector3[] _QueryResultVelocities;
         Vector3[] _QueryResultNormal;
 
+        // Two previous frames should be enough.
+        readonly BufferedData<Vector3> _VelocityHistory = new(3, () => Vector3.zero);
+
         internal FloatingObjectProbe[] _Probe = new FloatingObjectProbe[] { new() { _Weight = 1f } };
 
         const float k_WaterDensity = 1000;
@@ -205,7 +208,7 @@ namespace WaveHarmonic.Crest
         private protected override System.Action<WaterRenderer> OnFixedUpdateMethod => OnFixedUpdate;
         void OnFixedUpdate(WaterRenderer water)
         {
-            if (!water.HasWater(transform.position))
+            if (!water.HasWater(Transform.position))
             {
                 InWater = false;
                 return;
@@ -228,10 +231,10 @@ namespace WaveHarmonic.Crest
                 {
                     var point = points[i];
                     _TotalWeight += point._Weight;
-                    _QueryPoints[i] = transform.TransformPoint(point._Position + com);
+                    _QueryPoints[i] = Transform.TransformPoint(point._Position + com);
                 }
 
-                _QueryPoints[^1] = transform.position + com;
+                _QueryPoints[^1] = Transform.position + com;
 
                 collisions.Query(GetHashCode(), _ObjectWidth, _QueryPoints, _QueryResultDisplacements, _QueryResultNormal, _QueryResultVelocities, _Layer);
 
@@ -250,12 +253,22 @@ namespace WaveHarmonic.Crest
             // is a hard case where a wavelength is turned on/off which generates single frame
             // velocity spikes - because the surface legitimately moves very fast.
             var surfaceVelocity = _QueryResultVelocities[^1];
-            _SampleFlowHelper.Sample(transform.position, out var surfaceFlow, minimumLength: _ObjectWidth);
+
+            // Filter velocity, as there are quite a few cases which cause spikes.
+            _VelocityHistory.Flip();
+            _VelocityHistory.Current = surfaceVelocity;
+            for (var frame = 1; frame < _VelocityHistory.Size; frame++)
+            {
+                var lastVelocity = _VelocityHistory.Previous(frame);
+                if (lastVelocity.sqrMagnitude < surfaceVelocity.sqrMagnitude) surfaceVelocity = lastVelocity;
+            }
+
+            _SampleFlowHelper.Sample(Transform.position, out var surfaceFlow, minimumLength: _ObjectWidth);
             surfaceVelocity += new Vector3(surfaceFlow.x, 0, surfaceFlow.y);
 
             if (_Debug._DrawQueries)
             {
-                Debug.DrawLine(transform.position + 5f * Vector3.up, transform.position + 5f * Vector3.up + surfaceVelocity, new(1, 1, 1, 0.6f));
+                Debug.DrawLine(Transform.position + 5f * Vector3.up, Transform.position + 5f * Vector3.up + surfaceVelocity, new(1, 1, 1, 0.6f));
             }
 
             // Buoyancy
@@ -292,12 +305,12 @@ namespace WaveHarmonic.Crest
             else
             {
                 var height = _QueryResultDisplacements[0].y + water.SeaLevel;
-                var bottomDepth = height - transform.position.y - _CenterToBottomOffset;
+                var bottomDepth = height - Transform.position.y - _CenterToBottomOffset;
                 var normal = _QueryResultNormal[0];
 
                 if (_Debug._DrawQueries)
                 {
-                    var surfPos = transform.position;
+                    var surfPos = Transform.position;
                     surfPos.y = height;
                     DebugUtility.DrawCross(Debug.DrawLine, surfPos, normal, 1f, Color.red);
                 }
@@ -332,28 +345,28 @@ namespace WaveHarmonic.Crest
 
                     if (_UseObjectLength)
                     {
-                        if (_SampleHeightHelper.SampleHeight(transform.position, out _, out _, out normalLongitudinal, minimumLength: _ObjectLength, _Layer))
+                        if (_SampleHeightHelper.SampleHeight(Transform.position, out _, out _, out normalLongitudinal, minimumLength: _ObjectLength, _Layer))
                         {
-                            var f = transform.forward;
+                            var f = Transform.forward;
                             f.y = 0f;
                             f.Normalize();
                             normalLatitudinal -= Vector3.Dot(f, normalLatitudinal) * f;
 
-                            var r = transform.right;
+                            var r = Transform.right;
                             r.y = 0f;
                             r.Normalize();
                             normalLongitudinal -= Vector3.Dot(r, normalLongitudinal) * r;
                         }
                     }
 
-                    if (_Debug._DrawQueries) Debug.DrawLine(transform.position, transform.position + 5f * normalLatitudinal, Color.green);
-                    if (_Debug._DrawQueries && _UseObjectLength) Debug.DrawLine(transform.position, transform.position + 5f * normalLongitudinal, Color.yellow);
+                    if (_Debug._DrawQueries) Debug.DrawLine(Transform.position, Transform.position + 5f * normalLatitudinal, Color.green);
+                    if (_Debug._DrawQueries && _UseObjectLength) Debug.DrawLine(Transform.position, Transform.position + 5f * normalLongitudinal, Color.yellow);
 
-                    var torqueWidth = Vector3.Cross(transform.up, normalLatitudinal);
+                    var torqueWidth = Vector3.Cross(Transform.up, normalLatitudinal);
                     _RigidBody.AddTorque(torqueWidth * _BuoyancyTorqueStrength, ForceMode.Acceleration);
                     if (_UseObjectLength)
                     {
-                        var torqueLength = Vector3.Cross(transform.up, normalLongitudinal);
+                        var torqueLength = Vector3.Cross(Transform.up, normalLongitudinal);
                         _RigidBody.AddTorque(torqueLength * _BuoyancyTorqueStrength, ForceMode.Acceleration);
                     }
 
@@ -370,9 +383,9 @@ namespace WaveHarmonic.Crest
                 var velocityRelativeToWater = _RigidBody.velocity - surfaceVelocity;
 #endif
                 var forcePosition = _RigidBody.worldCenterOfMass + _ForceHeightOffset * Vector3.up;
-                _RigidBody.AddForceAtPosition(_Drag.x * Vector3.Dot(transform.right, -velocityRelativeToWater) * transform.right, forcePosition, ForceMode.Acceleration);
+                _RigidBody.AddForceAtPosition(_Drag.x * Vector3.Dot(Transform.right, -velocityRelativeToWater) * Transform.right, forcePosition, ForceMode.Acceleration);
                 _RigidBody.AddForceAtPosition(_Drag.y * Vector3.Dot(Vector3.up, -velocityRelativeToWater) * Vector3.up, forcePosition, ForceMode.Acceleration);
-                _RigidBody.AddForceAtPosition(_Drag.z * Vector3.Dot(transform.forward, -velocityRelativeToWater) * transform.forward, forcePosition, ForceMode.Acceleration);
+                _RigidBody.AddForceAtPosition(_Drag.z * Vector3.Dot(Transform.forward, -velocityRelativeToWater) * Transform.forward, forcePosition, ForceMode.Acceleration);
             }
 
             s_FixedUpdateMarker.End();

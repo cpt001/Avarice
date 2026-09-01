@@ -48,6 +48,9 @@ namespace WaveHarmonic.Crest
                 case nameof(_Debug) + "." + nameof(DebugFields._DrawRendererBounds):
                     foreach (var chunk in Chunks) chunk._DrawRenderBounds = _Debug._DrawRendererBounds;
                     break;
+                case nameof(_ManageLightProbeProxyVolume):
+                    SetManageLightProbeProxyVolume((bool)previous, _ManageLightProbeProxyVolume);
+                    break;
             }
         }
     }

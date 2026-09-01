@@ -24,14 +24,16 @@ namespace WaveHarmonic.Crest
 
         Material _Material;
 
-        internal override void Draw(Lod lod, Component component, CommandBuffer buffer, RenderTargetIdentifier target, int slices)
+        internal override Mesh InternalMesh => _Geometry;
+
+        internal override void Draw(Lod lod, Component component, CommandBuffer buffer, RenderTargetIdentifier target, int slices, int offset)
         {
 #if UNITY_EDITOR
             // Weird things happen when hitting save if this is not set here. Hitting save will
             // still flicker the input, but without this it nothing renders.
             if (!Application.isPlaying) LodInput.SetBlendFromPreset(_Material, _Input.Blend);
 #endif
-            buffer.DrawMesh(_Geometry, component.transform.localToWorldMatrix, _Material);
+            buffer.DrawMesh(_Geometry, _Input.Transform.localToWorldMatrix, _Material);
         }
 
         internal override void OnEnable()
@@ -56,7 +58,7 @@ namespace WaveHarmonic.Crest
 
         internal override void RecalculateBounds()
         {
-            _Bounds = _Input.transform.TransformBounds(_Geometry.bounds);
+            _Bounds = _Input.Transform.TransformBounds(_Geometry.bounds);
         }
 
         internal override void RecalculateRect()

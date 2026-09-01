@@ -8,8 +8,9 @@ using WaveHarmonic.Crest.Utility;
 
 namespace WaveHarmonic.Crest
 {
+    [@HelpURL(typeof(AbsorptionLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Absorption Input")]
-    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Spline, (int)LodInputMode.Paint)]
+    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Spline, (int)LodInputMode.Paint, (int)LodInputMode.Area)]
     partial class AbsorptionLodInput
     {
         internal override Color GizmoColor => AbsorptionLod.s_GizmoColor;
@@ -32,6 +33,7 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Absorption";
     }
 
+    [@HelpURL(typeof(AlbedoLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Albedo Input")]
     [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer)]
     partial class AlbedoLodInput
@@ -48,6 +50,7 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Albedo";
     }
 
+    [@HelpURL(typeof(AnimatedWavesLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Animated Waves Input")]
     [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer)]
     partial class AnimatedWavesLodInput
@@ -64,6 +67,7 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Animated Waves";
     }
 
+    [@HelpURL(typeof(ClipLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Clip Input")]
     [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Paint, (int)LodInputMode.Primitive)]
     partial class ClipLodInput
@@ -88,6 +92,7 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Clip";
     }
 
+    [@HelpURL(typeof(DepthLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Water Depth Input")]
     [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Geometry)]
     partial class DepthLodInput
@@ -112,6 +117,7 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Depth";
     }
 
+    [@HelpURL(typeof(DynamicWavesLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Dynamic Waves Input")]
     [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer)]
     partial class DynamicWavesLodInput
@@ -128,8 +134,9 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Dynamic Waves";
     }
 
+    [@HelpURL(typeof(FlowLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Flow Input")]
-    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Paint, (int)LodInputMode.Spline)]
+    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Paint, (int)LodInputMode.Spline, (int)LodInputMode.Area)]
     partial class FlowLodInput
     {
         internal override Color GizmoColor => FlowLod.s_GizmoColor;
@@ -152,8 +159,9 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Flow";
     }
 
+    [@HelpURL(typeof(FoamLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Foam Input")]
-    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Paint, (int)LodInputMode.Spline)]
+    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Paint, (int)LodInputMode.Spline, (int)LodInputMode.Area)]
     partial class FoamLodInput
     {
         internal override Color GizmoColor => FoamLod.s_GizmoColor;
@@ -176,8 +184,9 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Foam";
     }
 
+    [@HelpURL(typeof(LevelLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Water Level Input")]
-    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Paint, (int)LodInputMode.Spline, (int)LodInputMode.Geometry)]
+    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Paint, (int)LodInputMode.Spline, (int)LodInputMode.Geometry, (int)LodInputMode.Area)]
     partial class LevelLodInput
     {
         internal override Color GizmoColor => LevelLod.s_GizmoColor;
@@ -200,8 +209,9 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Level";
     }
 
+    [@HelpURL(typeof(ScatteringLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Scattering Input")]
-    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Spline, (int)LodInputMode.Paint)]
+    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Spline, (int)LodInputMode.Paint, (int)LodInputMode.Area)]
     partial class ScatteringLodInput
     {
         internal override Color GizmoColor => ScatteringLod.s_GizmoColor;
@@ -224,8 +234,9 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Scattering";
     }
 
+    [@HelpURL(typeof(ShadowLodInput))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Shadow Input")]
-    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer)]
+    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Area)]
     partial class ShadowLodInput
     {
         internal override Color GizmoColor => ShadowLod.s_GizmoColor;
@@ -240,8 +251,7 @@ namespace WaveHarmonic.Crest
         internal override string ShaderPrefix => "Crest/Inputs/Shadow";
     }
 
-    [AddComponentMenu(Constants.k_MenuPrefixInputs + "Shape Waves Input")]
-    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Paint, (int)LodInputMode.Spline, (int)LodInputMode.Global)]
+    [@FilterEnum(nameof(_Mode), Filtered.Mode.Include, (int)LodInputMode.Renderer, (int)LodInputMode.Texture, (int)LodInputMode.Paint, (int)LodInputMode.Spline, (int)LodInputMode.Global, (int)LodInputMode.Area)]
     partial class ShapeWaves
     {
         internal override Color GizmoColor => AnimatedWavesLod.s_GizmoColor;

@@ -13,7 +13,6 @@ namespace WaveHarmonic.Crest
     /// <remarks>
     /// Attach this to objects that you want to use to clip the surface of the water.
     /// </remarks>
-    [@HelpURL("Manual/Basics/Clipping.html#user-inputs")]
     public sealed partial class ClipLodInput : LodInput
     {
         [@Heading("Primitive")]
@@ -74,8 +73,9 @@ namespace WaveHarmonic.Crest
                 {
                     if (_RecalculateBounds)
                     {
+                        // TODO: sphere is treated like a cube which makes very large rect on rotation.
                         // This mode has full transform support so need to get rect from bounds.
-                        _Rect = transform.Bounds().RectXZ();
+                        _Rect = Transform.Bounds().RectXZ();
                         _RecalculateBounds = false;
                     }
 
@@ -86,17 +86,17 @@ namespace WaveHarmonic.Crest
             }
         }
 
-        internal override void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slices = -1)
+        internal override void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slices = -1, int offset = 0)
         {
             if (Mode == LodInputMode.Primitive)
             {
                 var wrapper = new PropertyWrapperCompute(buffer, PrimitiveShader, 0);
 
-                wrapper.SetMatrix(Crest.ShaderIDs.s_Matrix, transform.worldToLocalMatrix);
+                wrapper.SetMatrix(Crest.ShaderIDs.s_Matrix, Transform.worldToLocalMatrix);
 
                 // For culling.
-                wrapper.SetVector(Crest.ShaderIDs.s_Position, transform.position);
-                wrapper.SetFloat(Crest.ShaderIDs.s_Diameter, transform.lossyScale.Maximum());
+                wrapper.SetVector(Crest.ShaderIDs.s_Position, Transform.position);
+                wrapper.SetFloat(Crest.ShaderIDs.s_Diameter, Transform.lossyScale.Maximum());
 
                 wrapper.SetKeyword(KeywordInverted, _Inverted);
                 wrapper.SetKeyword(KeywordSphere, _Primitive == LodInputPrimitive.Sphere);
@@ -105,8 +105,7 @@ namespace WaveHarmonic.Crest
 
                 wrapper.SetTexture(Crest.ShaderIDs.s_Target, target);
 
-                var threads = simulation.Resolution / Lod.k_ThreadGroupSize;
-                wrapper.Dispatch(threads, threads, slices);
+                Dispatch(wrapper, simulation, slices, offset: offset);
             }
             else
             {
@@ -137,7 +136,7 @@ namespace WaveHarmonic.Crest
             // Prevents possible conflicts since overlapping doesn't work for every case for convex hull.
             if (_WaterHeightDistanceCulling)
             {
-                var position = transform.position;
+                var position = Transform.position;
 
                 if (_SampleHeightHelper.SampleHeight(position, out var waterHeight))
                 {

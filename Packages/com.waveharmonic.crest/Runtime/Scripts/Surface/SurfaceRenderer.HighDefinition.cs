@@ -82,37 +82,42 @@ namespace WaveHarmonic.Crest
 
                 CoreUtils.SetRenderTarget(buffer, s_RenderTargets, context.cameraDepthBuffer);
 
-                var apv = FrameSettingsField.
+                _Water.Surface.RenderAdditionalChunks(buffer);
+
+                if (_Water.RenderBeforeTransparency)
+                {
+                    var apv = FrameSettingsField.
 #if UNITY_6000_0_OR_NEWER
-                    AdaptiveProbeVolume;
+                        AdaptiveProbeVolume;
 #else
-                    ProbeVolume;
+                        ProbeVolume;
 #endif
 
-                var rendererConfiguration = HDUtils.GetRendererConfiguration
-                (
-                    context.hdCamera.frameSettings.IsEnabled(apv),
-                    context.hdCamera.frameSettings.IsEnabled(FrameSettingsField.Shadowmask)
-                );
+                    var rendererConfiguration = HDUtils.GetRendererConfiguration
+                    (
+                        context.hdCamera.frameSettings.IsEnabled(apv),
+                        context.hdCamera.frameSettings.IsEnabled(FrameSettingsField.Shadowmask)
+                    );
 
-                if (hdCamera.frameSettings.IsEnabled(FrameSettingsField.MotionVectors))
-                {
-                    rendererConfiguration |= PerObjectData.MotionVectors;
+                    if (hdCamera.frameSettings.IsEnabled(FrameSettingsField.MotionVectors))
+                    {
+                        rendererConfiguration |= PerObjectData.MotionVectors;
+                    }
+
+                    var rld = new RendererListDesc(_ShaderTagID, context.cullingResults, camera)
+                    {
+                        layerMask = 1 << _Water.Surface.Layer,
+                        // Required to set the pass. Use shader to keep WB material overrides.
+                        overrideShader = _Water.Surface.Material.shader,
+                        overrideShaderPassIndex = _Water.Surface.Material.FindPass("Forward"),
+                        renderQueueRange = RenderQueueRange.transparent,
+                        sortingCriteria = SortingCriteria.CommonOpaque,
+                        excludeObjectMotionVectors = false,
+                        rendererConfiguration = rendererConfiguration,
+                    };
+
+                    buffer.DrawRendererList(context.renderContext.CreateRendererList(rld));
                 }
-
-                var rld = new RendererListDesc(_ShaderTagID, context.cullingResults, camera)
-                {
-                    layerMask = 1 << _Water.Surface.Layer,
-                    // Required to set the pass. Use shader to keep WB material overrides.
-                    overrideShader = _Water.Surface.Material.shader,
-                    overrideShaderPassIndex = _Water.Surface.Material.FindPass("Forward"),
-                    renderQueueRange = RenderQueueRange.transparent,
-                    sortingCriteria = SortingCriteria.CommonOpaque,
-                    excludeObjectMotionVectors = false,
-                    rendererConfiguration = rendererConfiguration,
-                };
-
-                buffer.DrawRendererList(context.renderContext.CreateRendererList(rld));
 
                 buffer.EndSample(k_DrawWaterSurface);
             }

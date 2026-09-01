@@ -17,7 +17,7 @@ using GraphicsFormatUsage = UnityEngine.Experimental.Rendering.FormatUsage;
 namespace WaveHarmonic.Crest
 {
     /// <summary>
-    /// General purpose helpers which, at the moment, do not warrant a seperate file.
+    /// General purpose helpers which, at the moment, do not warrant a separate file.
     /// </summary>
     static partial class Helpers
     {
@@ -241,7 +241,7 @@ namespace WaveHarmonic.Crest
         }
 
         // Taken from Unity
-        // https://docs.unity3d.com/2022.2/Documentation/Manual/BestPracticeUnderstandingPerformanceInUnity5.html
+        // https://docs.unity3d.com/2022.3/Documentation/Manual/UnderstandingPerformanceStringsAndText.html
         public static bool StartsWithNoAlloc(this string a, string b)
         {
             var aLen = a.Length;
@@ -342,7 +342,7 @@ namespace WaveHarmonic.Crest
             {
                 var hdCamera = HDCamera.GetOrCreate(camera);
                 // Scene view camera does appear to support MSAA unlike other RPs.
-                // Querying frame settings on the camera will give the correct results - overriden or not.
+                // Querying frame settings on the camera will give the correct results - overridden or not.
                 return hdCamera.msaaSamples != MSAASamples.None;
             }
 #endif
@@ -1139,6 +1139,8 @@ namespace WaveHarmonic.Crest
 #if d_UnityHDRP
             if (RenderPipelineHelper.IsHighDefinition)
             {
+                s_RenderStandardRequest.destination = camera.targetTexture;
+                s_RenderStandardRequest.slice = slice;
                 camera.SubmitRenderRequest(s_RenderStandardRequest);
                 return;
             }
@@ -1236,6 +1238,15 @@ namespace WaveHarmonic.Crest
             public static Vector4 XNZW(this Vector4 v, float n) => new(v.x, n, v.z, v.w);
             public static float Maximum(this Vector3 v) => Mathf.Max(Mathf.Max(v.x, v.y), v.z);
 
+            // TODO: only handles ideal case. Must check Overlaps first.
+            public static Rect Overlap(this Rect t, Rect o) => new()
+            {
+                xMin = Mathf.Max(t.xMin, o.xMin),
+                yMin = Mathf.Max(t.yMin, o.yMin),
+                xMax = Mathf.Min(t.xMax, o.xMax),
+                yMax = Mathf.Min(t.yMax, o.yMax)
+            };
+
             public static Vector2 Absolute(this Vector2 v) => new
             (
                 Mathf.Abs(v.x),
@@ -1307,12 +1318,17 @@ namespace WaveHarmonic.Crest
             }
 
             /// <summary>
-            /// Applys the transform to local bounds similar to Renderer.
+            /// Applies the transform to local bounds similar to Renderer.
             /// </summary>
             /// <param name="transform">The transform to apply to bounds.</param>
             /// <param name="bounds">Local bounds to transform.</param>
             /// <returns>Bounds with transform applied.</returns>
             public static Bounds TransformBounds(this Transform transform, Bounds bounds)
+            {
+                return transform.localToWorldMatrix.TransformBounds(bounds);
+            }
+
+            public static Bounds TransformBounds(this Matrix4x4 matrix, Bounds bounds)
             {
                 s_BoundsPoints[0] = bounds.min;
                 s_BoundsPoints[1] = bounds.max;
@@ -1323,7 +1339,7 @@ namespace WaveHarmonic.Crest
                 s_BoundsPoints[6] = new(bounds.max.x, bounds.min.y, bounds.max.z);
                 s_BoundsPoints[7] = new(bounds.max.x, bounds.max.y, bounds.min.z);
 
-                return GeometryUtility.CalculateBounds(s_BoundsPoints, transform.localToWorldMatrix);
+                return GeometryUtility.CalculateBounds(s_BoundsPoints, matrix);
             }
 
             public static Bounds Rotate(this Bounds bounds, Quaternion rotation)
@@ -1373,7 +1389,8 @@ namespace WaveHarmonic.Crest
 
             public static Vector2 RotationXZ(this Transform transform)
             {
-                return new Vector2(transform.localToWorldMatrix.m20, transform.localToWorldMatrix.m00).normalized;
+                var m = transform.localToWorldMatrix;
+                return new Vector2(m.m20, m.m00).normalized;
             }
 
             public static Color MaybeLinear(this Color color)
@@ -1397,11 +1414,11 @@ namespace WaveHarmonic.Crest
             }
 
             ///<summary>
-            /// Sets the msaaSamples property to the highest supported MSAA level in the settings.
+            /// Sets the MSAA Samples property to the highest supported MSAA level in the settings.
             ///</summary>
             public static void SetMSAASamples(this ref RenderTextureDescriptor descriptor, Camera camera)
             {
-                // QualitySettings.antiAliasing is zero when disabled which is invalid for msaaSamples.
+                // QualitySettings.antiAliasing is zero when disabled which is invalid for MSAA Samples.
                 // We need to set this first as GetRenderTextureSupportedMSAASampleCount uses it:
                 // https://docs.unity3d.com/ScriptReference/SystemInfo.GetRenderTextureSupportedMSAASampleCount.html
                 descriptor.msaaSamples = Helpers.IsMSAAEnabled(camera) ? Mathf.Max(QualitySettings.antiAliasing, 1) : 1;
@@ -1431,6 +1448,11 @@ namespace WaveHarmonic.Crest
                 return descriptor;
             }
 
+            public static bool HasBoolean(this Material material, int id)
+            {
+                return material.HasFloat(id);
+            }
+
             public static bool GetBoolean(this Material material, int id)
             {
                 return material.GetFloat(id) != 0f;
@@ -1439,6 +1461,16 @@ namespace WaveHarmonic.Crest
             public static void SetBoolean(this Material material, int id, bool value)
             {
                 material.SetFloat(id, value ? 1f : 0f);
+            }
+
+            public static bool GetBoolean(this MaterialPropertyBlock mpb, int id)
+            {
+                return mpb.GetFloat(id) != 0f;
+            }
+
+            public static void SetBoolean(this MaterialPropertyBlock mpb, int id, bool value)
+            {
+                mpb.SetFloat(id, value ? 1f : 0f);
             }
 
             public static void SetGlobalBoolean(this CommandBuffer buffer, int id, bool value)

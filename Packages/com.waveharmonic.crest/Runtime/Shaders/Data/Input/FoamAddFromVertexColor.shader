@@ -5,7 +5,7 @@ Shader "Crest/Inputs/Foam/Add From Vertex Colors"
 {
     Properties
     {
-        _Crest_Strength("Strength", float) = 1
+        _Crest_Strength("Multiplier", float) = 1
 
         [HideInInspector]
         _Crest_Version("Version", Integer) = 0

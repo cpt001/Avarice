@@ -31,7 +31,11 @@ namespace MapMagic.Brush
 		[UnityEditor.InitializeOnLoadMethod] 
 		static void Initialize () 
 		{
+			#if UNITY_6000_3_OR_NEWER
+			lastBrush = FindAnyObjectByType<MapMagicBrush>();
+			#else
 			lastBrush = FindObjectOfType<MapMagicBrush>();
+			#endif
 		}
 
 		static void AssignCurrent (SceneView sceneView) 
@@ -259,7 +263,14 @@ namespace MapMagic.Brush
 								using (Cell.LineStd)
 									if (Draw.Button("All Terrains"))
 									{
-										Terrain[] terrains = GameObject.FindObjectsOfType<Terrain>();
+										Terrain[] terrains = 
+										#if UNITY_6000_5_OR_NEWER
+											GameObject.FindObjectsByType<Terrain>();
+										#elif UNITY_6000_3_OR_NEWER
+											GameObject.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+										#else
+											GameObject.FindObjectsOfType<Terrain>();
+										#endif
 										if (!TerrainManager.TryAddTerrains(ref brush.terrains, terrains, out string error))
 											EditorUtility.DisplayDialog("MapMagic Brush", error, "OK");
 									}

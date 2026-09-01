@@ -36,7 +36,7 @@ namespace WaveHarmonic.Crest
 #endif
 
             // Everything from here depends on the material being transparent.
-            if (!IsTransparent(Material))
+            if (!_MaybeTransparent && !IsTransparent(Material))
             {
                 return;
             }
@@ -49,6 +49,7 @@ namespace WaveHarmonic.Crest
 
             SetUpShadows(camera);
 
+            RenderAdditionalChunks(_DrawWaterSurfaceBuffer);
 
             if (_Water.RenderBeforeTransparency)
             {
@@ -90,13 +91,8 @@ namespace WaveHarmonic.Crest
             Shader.SetGlobalTexture(Crest.ShaderIDs.Unity.s_ShadowMapTexture, Texture2D.whiteTexture);
         }
 
-        // Draws the water surface including lighting.
-        internal void Draw(CommandBuffer commands, Camera camera)
+        internal void SetUpDraw(CommandBuffer commands)
         {
-            commands.BeginSample(k_DrawWaterSurface);
-
-            CoreUtils.SetRenderTarget(commands, BuiltinRenderTextureType.CameraTarget);
-
             var sun = RenderSettings.sun;
             if (sun != null)
             {
@@ -109,11 +105,21 @@ namespace WaveHarmonic.Crest
 
             // Always enabled.
             commands.SetShaderKeyword("LIGHTPROBE_SH", true);
+        }
+
+        // Draws the water surface including lighting.
+        internal void Draw(CommandBuffer commands, Camera camera)
+        {
+            commands.BeginSample(k_DrawWaterSurface);
+
+            CoreUtils.SetRenderTarget(commands, BuiltinRenderTextureType.CameraTarget);
+
+            SetUpDraw(commands);
 
             if (IsQuadMesh)
             {
                 _QuadMeshMPB ??= new();
-                new PropertyWrapperMPB(_QuadMeshMPB).SetSHCoefficients(Root.position);
+                new PropertyWrapperMPB(_QuadMeshMPB).SetSHCoefficients(_Water.Position);
                 Render(camera, commands, Material, pass: 0, mpb: _QuadMeshMPB);
                 commands.EndSample(k_DrawWaterSurface);
                 return;
@@ -164,6 +170,7 @@ namespace WaveHarmonic.Crest
         {
             _ShadowMatrixBuffer ??= new(4, sizeof(float) * 16, ComputeBufferType.Structured);
             _ShadowMatrixBuffer.SetData(_ShadowMatrixDefaults);
+            SetManageLightProbeProxyVolume(!_ManageLightProbeProxyVolume, _ManageLightProbeProxyVolume);
         }
 
         void LegacyOnDisable()
@@ -174,6 +181,7 @@ namespace WaveHarmonic.Crest
             Helpers.Destroy(ref _ScreenSpaceShadowMapBuffer);
             Helpers.Destroy(ref _CaptureShadowMatrices);
             Helpers.Destroy(ref _ForceShadowsMaterial);
+            Helpers.DestroyGameObject(ref _LightProbeProxyVolume);
         }
 
         void SetUpShadows(Camera camera)
@@ -235,7 +243,7 @@ namespace WaveHarmonic.Crest
             _ScreenSpaceShadowMapBuffer.ReleaseTemporaryRT(ShaderIDs.s_DummyTarget);
             _Water.PrimaryLight.AddCommandBuffer(LightEvent.AfterScreenspaceMask, _ScreenSpaceShadowMapBuffer);
 
-            // Make shadow map available to transparents.
+            // Make shadow map available to transparent objects.
             // Call this regardless of rendering path as it has no negative consequences for forward.
             _DeferredShadowMapBuffer ??= new() { name = WaterRenderer.k_DrawWater };
             _DeferredShadowMapBuffer.Clear();
@@ -246,6 +254,90 @@ namespace WaveHarmonic.Crest
             _DrawWaterSurfaceBuffer.SetKeyword(new("SHADOWS_SINGLE_CASCADE"), QualitySettings.shadowCascades == 1);
             _DrawWaterSurfaceBuffer.SetKeyword(new("SHADOWS_SPLIT_SPHERES"), QualitySettings.shadowProjection == ShadowProjection.StableFit);
             _DrawWaterSurfaceBuffer.SetKeyword(new("SHADOWS_SOFT"), QualitySettings.shadows == ShadowQuality.All);
+        }
+    }
+
+    partial class SurfaceRenderer
+    {
+#if UNITY_6000_5_OR_NEWER
+#pragma warning disable CS0618 // Type or member is obsolete
+#endif
+        LightProbeProxyVolume _LightProbeProxyVolume;
+        Vector2 _LightProbeProxyVolumeTexels;
+
+        void AddLightProbeProxyVolume(GameObject go)
+        {
+            _LightProbeProxyVolume = go.AddComponent<LightProbeProxyVolume>();
+            _LightProbeProxyVolume.boundingBoxMode = LightProbeProxyVolume.BoundingBoxMode.Custom;
+            _LightProbeProxyVolume.resolutionMode = LightProbeProxyVolume.ResolutionMode.Custom;
+        }
+#if UNITY_6000_5_OR_NEWER
+#pragma warning restore CS0618 // Type or member is obsolete
+#endif
+
+        void SetManageLightProbeProxyVolume(bool previous, bool current)
+        {
+            if (previous == current) return;
+            if (_Water == null || !_Water.isActiveAndEnabled) return;
+            if (!RenderPipelineHelper.IsLegacy) return;
+
+            if (current)
+            {
+                var go = new GameObject("LPPV");
+                go.transform.parent = _Water.Container.transform;
+                go.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+
+                AddLightProbeProxyVolume(go);
+                _LightProbeProxyVolume.sizeCustom = new(50f, 1f, 50f);
+                _LightProbeProxyVolume.gridResolutionX = 32;
+                _LightProbeProxyVolume.gridResolutionZ = 32;
+                _LightProbeProxyVolume.gridResolutionY = 1;
+
+                _LightProbeProxyVolumeTexels = new
+                (
+                    _LightProbeProxyVolume.sizeCustom.x / _LightProbeProxyVolume.gridResolutionX,
+                    _LightProbeProxyVolume.sizeCustom.z / _LightProbeProxyVolume.gridResolutionZ
+                );
+
+                // TODO: support other mesh options.
+                foreach (var chunk in Chunks)
+                {
+                    chunk.Rend.lightProbeProxyVolumeOverride = _LightProbeProxyVolume.gameObject;
+                    chunk.Rend.lightProbeUsage = LightProbeUsage.UseProxyVolume;
+                }
+            }
+            else
+            {
+                Helpers.DestroyGameObject(_LightProbeProxyVolume);
+                foreach (var chunk in Chunks)
+                {
+                    var renderer = chunk.Rend;
+
+                    if (_RendererTemplate != null)
+                    {
+                        renderer.lightProbeProxyVolumeOverride = _RendererTemplate.lightProbeProxyVolumeOverride;
+                        renderer.lightProbeUsage = _RendererTemplate.lightProbeUsage;
+                    }
+                    else
+                    {
+                        renderer.lightProbeProxyVolumeOverride = null;
+                        renderer.lightProbeUsage = LightProbeUsage.Off;
+                    }
+                }
+            }
+        }
+
+        void UpdateLightProbeProxyVolume(Camera camera)
+        {
+            if (!ManageLightProbeProxyVolume)
+            {
+                return;
+            }
+
+            var position = camera.transform.position;
+            position.x = Mathf.Round(position.x / _LightProbeProxyVolumeTexels.x) * _LightProbeProxyVolumeTexels.x;
+            position.z = Mathf.Round(position.z / _LightProbeProxyVolumeTexels.y) * _LightProbeProxyVolumeTexels.y;
+            _LightProbeProxyVolume.originCustom = position.XNZ();
         }
     }
 }

@@ -10,18 +10,12 @@ namespace WaveHarmonic.Crest
     /// Attach this to objects that you want to influence the horizontal flow of the
     /// water volume.
     /// </remarks>
-    [@HelpURL("Manual/Simulation/Flow.html")]
     [FilterEnum(nameof(_Blend), Filtered.Mode.Include, (int)LodInputBlend.Additive, (int)LodInputBlend.Alpha)]
     public sealed partial class FlowLodInput : LodInput
     {
         // Countering will incur thrashing. Previously we allowed the option so the
         // serialized value could be "false".
         private protected override bool FollowHorizontalMotion => true;
-
-#if d_CrestPaint
-        internal override LodInputMode DefaultMode => LodInputMode.Paint;
-#else
-        internal override LodInputMode DefaultMode => LodInputMode.Renderer;
-#endif
+        internal override LodInputMode DefaultMode => LodInputMode.Area;
     }
 }

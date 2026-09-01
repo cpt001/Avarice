@@ -155,6 +155,7 @@ namespace MapMagic.Nodes.MatrixSetsGenerators
 	{
 		public override (string, int) GetCodeFileLine () => GetCodeFileLineBase();  //to get here with right-click on generator
 
+		[Serializable]
 		public class Layer : IInlet<MatrixWorld>
 		{
 			public PrototypeType prototypeType = PrototypeType.TerrainLayer;
@@ -277,6 +278,7 @@ namespace MapMagic.Nodes.MatrixSetsGenerators
 	{
 		public override (string, int) GetCodeFileLine () => GetCodeFileLineBase();  //to get here with right-click on generator
 
+		[Serializable]
 		public class Layer : IInlet<MatrixSet>
 		{
 			public Generator Gen { get; private set; }

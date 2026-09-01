@@ -43,6 +43,7 @@ namespace WaveHarmonic.Crest
             public static readonly int s_LodChange = Shader.PropertyToID("g_Crest_LodChange");
             public static readonly int s_MeshScaleLerp = Shader.PropertyToID("g_Crest_MeshScaleLerp");
             public static readonly int s_LodCount = Shader.PropertyToID("g_Crest_LodCount");
+            public static readonly int s_LodIndex = Shader.PropertyToID("g_Crest_LodIndex");
 
             public static readonly int s_WaterDepthAtViewer = Shader.PropertyToID("g_Crest_WaterDepthAtViewer");
             public static readonly int s_MaximumVerticalDisplacement = Shader.PropertyToID("g_Crest_MaximumVerticalDisplacement");
@@ -82,7 +83,7 @@ namespace WaveHarmonic.Crest
         {
             if (MultipleViewpoints)
             {
-                return CurrentCamera == null ? null : CurrentCamera.transform;
+                return CurrentViewpoint;
             }
 
 #if UNITY_EDITOR
@@ -150,6 +151,9 @@ namespace WaveHarmonic.Crest
         /// The current viewer (center of detail).
         /// </summary>
         internal Camera CurrentCamera { get; private set; }
+        internal Transform CurrentViewpoint { get; private set; }
+        WaterCamera _CurrentWaterCamera;
+        bool _HasWaterCamera;
 
         readonly SampleCollisionHelper _CenterOfDetailDisplacementCorrectionHelper = new();
 
@@ -197,7 +201,6 @@ namespace WaveHarmonic.Crest
 
         float _TeleportTimerForHeightQueries;
         bool _IsFirstFrameSinceEnabled = true;
-        internal bool _HasTeleportedThisFrame;
         Vector3 _OldViewpointPosition;
 
 #if d_WaveHarmonic_Crest_ShiftingOrigin
@@ -213,16 +216,16 @@ namespace WaveHarmonic.Crest
         internal float WindSpeedKPH => _WindSpeed;
 
 #if d_UnityModuleWind
-        bool WindSpeedOverriden => _WindZone == null || _OverrideWindZoneWindSpeed;
-        bool WindDirectionOverriden => _WindZone == null || _OverrideWindZoneWindDirection;
-        bool WindTurbulenceOverriden => _WindZone == null || _OverrideWindZoneWindTurbulence;
+        bool WindSpeedOverridden => _WindZone == null || _OverrideWindZoneWindSpeed;
+        bool WindDirectionOverridden => _WindZone == null || _OverrideWindZoneWindDirection;
+        bool WindTurbulenceOverridden => _WindZone == null || _OverrideWindZoneWindTurbulence;
 #endif
 
         float GetWindSpeed()
         {
             return
 #if d_UnityModuleWind
-                !WindSpeedOverriden ? _WindZone.windMain * 3.6f :
+                !WindSpeedOverridden ? _WindZone.windMain * 3.6f :
 #endif
                 _WindSpeed;
         }
@@ -231,7 +234,7 @@ namespace WaveHarmonic.Crest
         {
             return
 #if d_UnityModuleWind
-                !WindDirectionOverriden ? Mathf.Atan2(_WindZone.transform.forward.z, _WindZone.transform.forward.x) * Mathf.Rad2Deg :
+                !WindDirectionOverridden ? Mathf.Atan2(_WindZone.transform.forward.z, _WindZone.transform.forward.x) * Mathf.Rad2Deg :
 #endif
                 _WindDirection;
         }
@@ -240,7 +243,7 @@ namespace WaveHarmonic.Crest
         {
             return
 #if d_UnityModuleWind
-                !WindTurbulenceOverriden ? _WindZone.windTurbulence :
+                !WindTurbulenceOverridden ? _WindZone.windTurbulence :
 #endif
                 _WindTurbulence;
         }
@@ -767,8 +770,10 @@ namespace WaveHarmonic.Crest
                 name = "Container",
                 hideFlags = _Debug._ShowHiddenObjects ? HideFlags.DontSave : HideFlags.HideAndDontSave
             };
-            Container.transform.SetParent(transform, worldPositionStays: false);
+            Container.transform.SetParent(Transform, worldPositionStays: false);
             this.Manage(Container);
+
+            InitializeDataTransformOverride();
 
             Scale = Mathf.Clamp(Scale, _ScaleRange.x, _ScaleRange.y);
 
@@ -886,7 +891,8 @@ namespace WaveHarmonic.Crest
 #if d_UnityHDRP
             if (RenderPipelineHelper.IsHighDefinition)
             {
-                if (RenderBeforeTransparency)
+                // TODO: only enable if needed
+                // if (RenderBeforeTransparency)
                 {
                     SurfaceRenderer.WaterSurfaceCustomPass.Enable(this);
                 }
@@ -1049,11 +1055,6 @@ namespace WaveHarmonic.Crest
                 _ActiveModules |= ActiveModules.Meniscus;
             }
 
-            if (Reflections.ShouldRender(camera))
-            {
-                _ActiveModules |= ActiveModules.Reflections;
-            }
-
 #if d_CrestPortals
             // Must execute before the mask, but after the volume.
             if (_ActiveModules.HasFlag(ActiveModules.Portal))
@@ -1077,31 +1078,17 @@ namespace WaveHarmonic.Crest
 
             if (ShouldExecuteViewpoint(camera, Surface.Layer, _CameraExclusions))
             {
-                var last = -1;
-
-                if (_PerCameraLastFrame.ContainsKey(camera))
+                if (!_Cameras.Contains(camera))
                 {
-                    last = _PerCameraLastFrame[camera];
-                }
-                else
-                {
-                    _PerCameraLastFrame.Add(camera, last);
+                    _Cameras.Add(camera);
                 }
 
-                if (last != Time.frameCount)
-                {
-                    if (!_Cameras.Contains(camera))
-                    {
-                        _Cameras.Add(camera);
-                    }
-
-                    ExecuteViewpoint(camera);
-
-                    _PerCameraLastFrame[camera] = Time.frameCount;
-                }
+                ExecuteViewpoint(camera);
 
                 _RenderShadows = true;
             }
+
+            BroadcastBeginCameraRendering(camera);
 
             // Project water normal onto camera plane.
             Shader.SetGlobalVector(ShaderIDs.s_HorizonNormal, new Vector2
@@ -1109,6 +1096,20 @@ namespace WaveHarmonic.Crest
                 Vector3.Dot(Vector3.up, camera.transform.right),
                 Vector3.Dot(Vector3.up, camera.transform.up)
             ));
+
+            {
+                var slice = 0;
+                if (!IsSeparateViewpointCameraLoop)
+                {
+                    var offset = camera.transform.position.XZ() - Position.XZ();
+                    var taxicab = Mathf.Max(Mathf.Abs(offset.x), Mathf.Abs(offset.y));
+                    slice = Mathf.FloorToInt(Mathf.Log(Mathf.Max(taxicab / Scale, 1.0f), 2f));
+                }
+
+                Shader.SetGlobalInteger(ShaderIDs.s_LodIndex, slice);
+            }
+
+            // Viewer height above water is ready beyond this point.
 
             // Chunk visibility must be after the viewpoint.
             if (_ActiveModules.HasFlag(ActiveModules.Surface))
@@ -1120,6 +1121,11 @@ namespace WaveHarmonic.Crest
             {
                 Underwater.UpdateRenderingParameters();
                 Underwater.UpdateChunkCulling(camera);
+            }
+
+            if (Reflections.ShouldRender(camera))
+            {
+                _ActiveModules |= ActiveModules.Reflections;
             }
 
             // Apply surface visibility to render features.
@@ -1415,7 +1421,7 @@ namespace WaveHarmonic.Crest
             {
                 // All we need for servers.
                 BroadcastUpdate();
-                Position = new(0f, transform.position.y, 0f);
+                Position = new(0f, Transform.position.y, 0f);
             }
             else
             {
@@ -1462,10 +1468,21 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
+            s_RunUpdateMarker.Begin(this);
+
+            _HasWaterCamera = MultipleViewpoints && camera.TryGetComponent(out _CurrentWaterCamera) && _CurrentWaterCamera.isActiveAndEnabled;
+
             // Only set to a camera which is a center of detail.
             CurrentCamera = camera;
+            CurrentViewpoint = camera.transform;
 
-            s_RunUpdateMarker.Begin(this);
+            if (_HasWaterCamera)
+            {
+                var viewpoint = _CurrentWaterCamera.Viewpoint;
+                if (viewpoint != null) CurrentViewpoint = viewpoint;
+            }
+
+            UpdateDataTransformOverride();
 
             LoadCameraData(camera);
 
@@ -1477,7 +1494,7 @@ namespace WaveHarmonic.Crest
             }
             else
             {
-                Position = new(0f, transform.position.y, 0f);
+                Position = new(0f, Transform.position.y, 0f);
             }
 
             // Set global shader params
@@ -1592,19 +1609,23 @@ namespace WaveHarmonic.Crest
             }
 
             // maintain y coordinate - sea level
-            position.y = transform.position.y;
+            position.y = Transform.position.y;
 
-            // Don't land very close to regular positions where things are likely to snap to, because different tiles might
-            // land on either side of a snap boundary due to numerical error and snap to the wrong positions. Nudge away from
-            // common by using increments of 1/60 which have lots of factors.
-            // :WaterGridPrecisionErrors
-            if (Mathf.Abs(position.x * 60f - Mathf.Round(position.x * 60f)) < 0.001f)
             {
-                position.x += 0.002f;
-            }
-            if (Mathf.Abs(position.z * 60f - Mathf.Round(position.z * 60f)) < 0.001f)
-            {
-                position.z += 0.002f;
+                // Don't land very close to positions where things are likely to snap to, because
+                // different chunks might land on either side of a snap boundary, due to numerical
+                // error, and snap to the wrong positions. Nudge away from snapping periods.
+                // Test case: Scale >= 8, Position.X = -2.281317E-05
+                // :WaterGridPrecisionErrors
+                var period = 4f * Scale / LodResolution;
+
+                var xOffset = position.x - Mathf.Round(position.x / period) * period;
+                var zOffset = position.z - Mathf.Round(position.z / period) * period;
+
+                // If within 10% of the snap period, apply nudge.
+                period *= 0.1f;
+                if (Mathf.Abs(xOffset) < period) position.x += 0.002f * Mathf.Sign(xOffset);
+                if (Mathf.Abs(zOffset) < period) position.z += 0.002f * Mathf.Sign(zOffset);
             }
 
             Shader.SetGlobalVector(ShaderIDs.s_CenterDelta, (position - Position).XZ());
@@ -1707,7 +1728,7 @@ namespace WaveHarmonic.Crest
             if (viewpoint != CurrentCamera.transform)
             {
                 var viewer = CurrentCamera.transform;
-                // Reuse sampler. Combine hash codes to avoid pontential conflict.
+                // Reuse sampler. Combine hash codes to avoid potential conflict.
                 _SampleHeightHelper.SampleHeight(System.HashCode.Combine(_SampleHeightHelper, viewer), viewpoint.position, out waterHeight, allowMultipleCallsPerFrame: true);
                 ViewerHeightAboveWater = viewer.position.y - waterHeight;
             }
@@ -1753,7 +1774,7 @@ namespace WaveHarmonic.Crest
                     // Find the distance. Adding the FO offset will exclude FO shifts so we can determine a normal teleport.
                     // FO shifts are visually the same position and it is incorrect to treat it as a normal teleport.
                     var teleportDistanceSqr = (_OldViewpointPosition - viewpoint.position - TeleportOriginThisFrame).sqrMagnitude;
-                    // Threshold as sqrMagnitude.
+                    // Threshold as square magnitude.
                     var thresholdSqr = _TeleportThreshold * _TeleportThreshold;
                     hasTeleported = teleportDistanceSqr > thresholdSqr;
                 }
@@ -1763,8 +1784,6 @@ namespace WaveHarmonic.Crest
                     // Height queries can take a few frames so a one second window should be plenty.
                     _TeleportTimerForHeightQueries = 1f;
                 }
-
-                _HasTeleportedThisFrame = hasTeleported;
 
                 _OldViewpointPosition = viewpoint.position;
             }
@@ -1934,7 +1953,6 @@ namespace WaveHarmonic.Crest
         readonly List<Camera> _Cameras = new();
         PerCameraData _CurrentPerCameraData;
         readonly Dictionary<Camera, PerCameraData> _PerCameraData = new();
-        readonly Dictionary<Camera, int> _PerCameraLastFrame = new();
         Coroutine _EndOfFrame;
         bool _IsEndOfFrame;
 
@@ -2272,6 +2290,66 @@ namespace WaveHarmonic.Crest
             var viewpoint = Viewpoint;
 
             return viewpoint == GetClosestViewpoint(position);
+        }
+    }
+
+    // Data Transform Override
+    partial class WaterRenderer
+    {
+        static partial class ShaderIDs
+        {
+            public static readonly int s_DataOffset = Shader.PropertyToID("g_Crest_DataOffset");
+            public static readonly int s_DataChange = Shader.PropertyToID("g_Crest_DataChange");
+        }
+
+        Vector3 _PreviousDataPosition;
+        Vector3 CurrentPreviousDataPosition { get; set; }
+        Transform CurrentViewpointDataOverride { get; set; }
+
+        void InitializeDataTransformOverride()
+        {
+            if (_ViewpointDataOverride != null)
+            {
+                CurrentPreviousDataPosition = _ViewpointDataOverride.position;
+            }
+        }
+
+        void UpdateDataTransformOverride()
+        {
+            CurrentViewpointDataOverride = _ViewpointDataOverride;
+            CurrentPreviousDataPosition = _PreviousDataPosition;
+
+            var offset = Vector3.zero;
+            var change = Vector3.zero;
+
+            if (MultipleViewpoints)
+            {
+                CurrentViewpointDataOverride = null;
+
+                if (_HasWaterCamera)
+                {
+                    CurrentViewpointDataOverride = _CurrentWaterCamera.ViewpointDataOverride;
+                    CurrentPreviousDataPosition = _CurrentWaterCamera._PreviousDataPosition;
+                }
+            }
+
+            if (CurrentViewpointDataOverride != null)
+            {
+                offset = CurrentViewpointDataOverride.position;
+                change = CurrentViewpointDataOverride.position - CurrentPreviousDataPosition;
+
+                if (MultipleViewpoints && _CurrentWaterCamera != null)
+                {
+                    _CurrentWaterCamera._PreviousDataPosition = CurrentViewpointDataOverride.position;
+                }
+                else
+                {
+                    _PreviousDataPosition = CurrentViewpointDataOverride.position;
+                }
+            }
+
+            Shader.SetGlobalVector(ShaderIDs.s_DataOffset, offset);
+            Shader.SetGlobalVector(ShaderIDs.s_DataChange, change);
         }
     }
 

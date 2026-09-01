@@ -37,7 +37,13 @@ namespace MapMagic.Terrains
 			/// Uses GameObject.FindObjectOfType so it's not quick. Just an example.
 			public static DirectTexturesHolder FindHolder (float x, float z)
 			{
+				#if UNITY_6000_5_OR_NEWER
+				DirectTexturesHolder[] holders = GameObject.FindObjectsByType<DirectTexturesHolder>();
+				#elif UNITY_6000_3_OR_NEWER
+				DirectTexturesHolder[] holders = GameObject.FindObjectsByType<DirectTexturesHolder>(FindObjectsSortMode.None);
+				#else
 				DirectTexturesHolder[] holders = GameObject.FindObjectsOfType<DirectTexturesHolder>();
+				#endif
 
 				foreach (DirectTexturesHolder holder in holders)
 				{

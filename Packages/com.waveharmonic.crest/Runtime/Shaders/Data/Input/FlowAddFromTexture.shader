@@ -6,7 +6,7 @@ Shader "Crest/Inputs/Flow/Add From Texture"
     Properties
     {
         [MainTexture] _Crest_Texture("Flow Map", 2D) = "white" {}
-        _Crest_Strength( "Strength", float ) = 1
+        _Crest_Strength("Multiplier", float) = 1
 
         [Toggle(d_FlipX)]
         _Crest_FlipX("Flip X", Float) = 0

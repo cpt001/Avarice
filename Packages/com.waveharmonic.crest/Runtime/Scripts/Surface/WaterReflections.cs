@@ -65,7 +65,7 @@ namespace WaveHarmonic.Crest
         [@Delayed, SerializeField]
         int _Resolution = 256;
 
-        [Tooltip("Overscan amount to capture off-screen content.\n\nRenders the reflections at a larger viewport size to capture off-screen content when the surface reflects off-screen. This avoids a category of artifacts - especially when looking down. This can be expensive, as the value is a multiplier to the capture size.")]
+        [Tooltip("Overscan amount to capture off-screen content.\n\nRenders the reflections at a larger viewport size to capture off-screen content when the surface reflects off-screen. This avoids a category of artifacts - especially when looking down. This can be expensive, as the value is a multiplier to the capture size.\n\nThis feature is disabled when using physical cameras.")]
         [@Range(1, 2)]
         [@GenerateAPI]
         [SerializeField]
@@ -153,7 +153,7 @@ namespace WaveHarmonic.Crest
         [@DecoratedField, SerializeField]
         bool _UseObliqueMatrix = true;
 
-        [Tooltip("Planar relfections using an oblique frustum for better performance.\n\nThis can cause depth issues for TIRs, especially near the surface.")]
+        [Tooltip("Planar reflections using an oblique frustum for better performance.\n\nThis can cause depth issues for TIRs, especially near the surface.")]
         [@Enable(nameof(_UseObliqueMatrix))]
         [@GenerateAPI]
         [@DecoratedField, SerializeField]
@@ -623,11 +623,23 @@ namespace WaveHarmonic.Crest
 
             if (_UseObliqueMatrix && (!nonObliqueNearSurface || Mathf.Abs(_CameraViewpoint.transform.position.y - planePosition.y) > _NonObliqueNearSurfaceThreshold))
             {
+                var isPhysical = _CameraViewpoint.usePhysicalProperties;
+
+                if (isPhysical)
+                {
+                    camera.projectionMatrix = _CameraViewpoint.projectionMatrix;
+                }
+
                 var matrix = _CameraViewpoint.CalculateObliqueMatrix(clipPlane);
+
                 // Overscan.
-                var overscan = 1f - (_Overscan - 1f) * 0.5f;
-                matrix[0, 0] *= overscan;
-                matrix[1, 1] *= overscan;
+                if (!isPhysical)
+                {
+                    var overscan = 1f - (_Overscan - 1f) * 0.5f;
+                    matrix[0, 0] *= overscan;
+                    matrix[1, 1] *= overscan;
+                }
+
                 camera.projectionMatrix = matrix;
             }
 
@@ -749,19 +761,24 @@ namespace WaveHarmonic.Crest
             _CameraReflections.useOcclusionCulling = !_DisableOcclusionCulling && _CameraViewpoint.useOcclusionCulling;
             _CameraReflections.depthTextureMode = _CameraViewpoint.depthTextureMode;
 
+            var overscan = 1f;
+            var usePhysical = false;
+
             // Overscan
+            if (!_CameraViewpoint.usePhysicalProperties && _Overscan > 1f)
             {
-                _CameraReflections.usePhysicalProperties = _Overscan > 1f;
+                usePhysical = true;
 
                 var baseSensor = new Vector2(36f, 24f);
                 var focal = (baseSensor.y * 0.5f) / Mathf.Tan(_CameraViewpoint.fieldOfView * 0.5f * Mathf.Deg2Rad);
 
-                var overscan = 1f - (_Overscan - 1f) * 0.5f;
+                overscan = 1f - (_Overscan - 1f) * 0.5f;
                 _CameraReflections.sensorSize = baseSensor / overscan;
                 _CameraReflections.focalLength = focal;
-
-                Shader.SetGlobalFloat(ShaderIDs.s_Crest_ReflectionOverscan, overscan);
             }
+
+            _CameraReflections.usePhysicalProperties = usePhysical;
+            Shader.SetGlobalFloat(ShaderIDs.s_Crest_ReflectionOverscan, overscan);
         }
 
         void RecreateDepth(Texture depth)

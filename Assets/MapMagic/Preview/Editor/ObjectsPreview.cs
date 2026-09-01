@@ -216,7 +216,7 @@ namespace MapMagic.Previews
 			public class ObjectsPreviewWindow : BaseMatrixWindow, IPreviewWindow
 			{
 				public IPreview Preview { get{return preview;} set{preview = value as ObjectsPreview;} }
-				public ObjectsPreview preview;
+				[NonSerialized] public ObjectsPreview preview;
 
 				public override Matrix Matrix => PreviewManager.heightOutputPreview?.matrix;
 				public override Texture2D PreviewTexture => PreviewManager.heightOutputPreview?.tex;

@@ -181,13 +181,19 @@ namespace MapMagic.Nodes.MatrixGenerators
 			#if UNITY_2019_1_OR_NEWER
 			else //if TextureToHeightmap
 			{
-				byte[] bytes = new byte[arrRes*arrRes*4];
-				float ushortEpsilon = 1f / 65535; //since setheights is using not full ushort range, but range-1
-				matrix.ExportRawFloat(bytes, matrix.rect.offset+margins*upscale, new Coord(arrRes,arrRes), mult:0.5f-ushortEpsilon);
-				//not coord(margins) since matrix rect has -margins offset
-				//somehow requires halved values
+				#if !UNITY_SERVER
+					byte[] bytes = new byte[arrRes*arrRes*4];
+					float ushortEpsilon = 1f / 65535; //since setheights is using not full ushort range, but range-1
+					matrix.ExportRawFloat(bytes, matrix.rect.offset+margins*upscale, new Coord(arrRes,arrRes), mult:0.5f-ushortEpsilon);
+					//not coord(margins) since matrix rect has -margins offset
+					//somehow requires halved values
 
-				applyData = new ApplyTexData() { res=arrRes, margins=margins, splitSize=splitSize, height=data.globals.height, texBytes=bytes }; 
+					applyData = new ApplyTexData() { res=arrRes, margins=margins, splitSize=splitSize, height=data.globals.height, texBytes=bytes }; 
+				#else
+					float[,] heights2Dfull = new float[arrRes,arrRes];
+					matrix.ExportHeights(heights2Dfull, matrix.rect.offset + margins*upscale);
+					applyData = new ApplySetData() {heights2D=heights2Dfull, height=data.globals.height};
+				#endif
 			}
 			#else
 			else

@@ -30,7 +30,7 @@ namespace WaveHarmonic.Crest
 
         [Obsolete(k_SurfaceRendererObsoleteMessage)]
         [HideInInspector]
-        [Tooltip("Underwater will copy from this material if set.\n\nUseful for overriding properties for the underwater effect. To see what properties can be overriden, see the disabled properties on the underwater material. This does not affect the surface.")]
+        [Tooltip("Underwater will copy from this material if set.\n\nUseful for overriding properties for the underwater effect. To see what properties can be overridden, see the disabled properties on the underwater material. This does not affect the surface.")]
         [@GenerateAPI(Getter.Custom, Setter.Custom)]
         [SerializeField]
         internal Material _VolumeMaterial = null;
@@ -65,7 +65,7 @@ namespace WaveHarmonic.Crest
 
         [Obsolete(k_SurfaceRendererObsoleteMessage)]
         [HideInInspector]
-        [Tooltip("How to handle self-intersections of the water surface.\n\nThey can be caused by choppy waves which can cause a flipped underwater effect. When not using the portals/volumes, this fix is only applied when within 2 metres of the water surface. Automatic will disable the fix if portals/volumes are used which is the recommend setting.")]
+        [Tooltip("How to handle self-intersections of the water surface.\n\nThey can be caused by choppy waves which can cause a flipped underwater effect. When not using the portals/volumes, this fix is only applied when within 2 meters of the water surface. Automatic will disable the fix if portals/volumes are used which is the recommend setting.")]
         [SerializeField]
         internal SurfaceRenderer.SurfaceSelfIntersectionFixMode _SurfaceSelfIntersectionFixMode = SurfaceRenderer.SurfaceSelfIntersectionFixMode.Automatic;
 

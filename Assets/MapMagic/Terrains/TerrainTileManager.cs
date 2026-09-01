@@ -15,7 +15,7 @@ namespace MapMagic.Core
 	public class TerrainTileManager : TileManager<TerrainTile>, ISerializationCallbackReceiver
 	{
 		[SerializeField] public TerrainTile[] customTiles = new TerrainTile[0];
-		public Dictionary<Coord,TerrainTile> pinned = new Dictionary<Coord,TerrainTile>();
+		[NonSerialized] public Dictionary<Coord,TerrainTile> pinned = new Dictionary<Coord,TerrainTile>();
 
 	
 		public void Pin (Coord coord, bool asDraft, MonoBehaviour holder=null)

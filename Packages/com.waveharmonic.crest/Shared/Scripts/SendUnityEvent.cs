@@ -13,27 +13,35 @@ namespace WaveHarmonic.Crest.Examples
     [@ExecuteDuringEditMode]
     sealed partial class SendUnityEvent : CustomBehaviour
     {
+        [@DecoratedField]
         [SerializeField]
         float _ExecuteUpdateEvery;
 
+        [@DecoratedField]
         [SerializeField]
         float _StopExecutingUpdateAfter = Mathf.Infinity;
 
+        [@DecoratedField]
         [SerializeField]
         UnityEvent _OnEnable = new();
 
+        [@DecoratedField]
         [SerializeField]
         UnityEvent _OnDisable = new();
 
+        [@DecoratedField]
         [SerializeField]
         UnityEvent<float> _OnUpdate = new();
 
+        [@DecoratedField]
         [SerializeField]
         UnityEvent _OnLegacyRenderPipeline = new();
 
+        [@DecoratedField]
         [SerializeField]
         UnityEvent _OnHighDefinitionPipeline = new();
 
+        [@DecoratedField]
         [SerializeField]
         UnityEvent _OnUniversalRenderPipeline = new();
 

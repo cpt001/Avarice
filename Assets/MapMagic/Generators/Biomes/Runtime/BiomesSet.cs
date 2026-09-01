@@ -11,6 +11,7 @@ using Den.Tools.GUI;
 
 namespace MapMagic.Nodes.Biomes
 {
+	[Serializable]
 	public class BiomeLayer : IBiome, IInlet<MatrixWorld>, IOutlet<MatrixWorld>
 	{
 		public float Opacity { get; set; }

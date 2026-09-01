@@ -9,13 +9,12 @@ namespace WaveHarmonic.Crest
     /// Registers a custom input to the <see cref="AnimatedWavesLod"/>.
     /// </summary>
     /// <remarks>
-    /// Attach this to objects that you want to render into the displacment textures to
+    /// Attach this to objects that you want to render into the displacement textures to
     /// affect the water shape.
     /// </remarks>
-    [@HelpURL("Manual/Simulation/Waves.html#animated-waves-inputs")]
     public sealed partial class AnimatedWavesLodInput : LodInput
     {
-        [@Space(10)]
+        [@Heading("Filtering")]
 
         [Tooltip("When to render the input into the displacement data.")]
         [@GenerateAPI]
@@ -36,15 +35,17 @@ namespace WaveHarmonic.Crest
         float _OctaveWavelength = 512f;
 
 
-        [Header("Culling")]
+        [@Heading("Culling")]
 
         [Tooltip("Inform the system how much this input will displace the water surface vertically.\n\nThis is used to set bounding box heights for the water chunks.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         float _MaximumDisplacementVertical = 0f;
 
         [Tooltip("Inform the system how much this input will displace the water surface horizontally.\n\nThis is used to set bounding box widths for the water chunks.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         float _MaximumDisplacementHorizontal = 0f;
 

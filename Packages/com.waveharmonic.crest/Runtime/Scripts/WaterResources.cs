@@ -38,6 +38,7 @@ namespace WaveHarmonic.Crest
             public Shader _PortalsMask;
 
             public Shader _ClipConvexHull;
+            public Shader _AnimatedWavesConvexHull;
 
             public Shader _ShallowWaterSimulationVisualizer;
 
@@ -77,6 +78,13 @@ namespace WaveHarmonic.Crest
             public ComputeShader _DepthTexture;
             public ComputeShader _ScatteringTexture;
 
+            public ComputeShader _AbsorptionArea;
+            public ComputeShader _FlowArea;
+            public ComputeShader _FoamArea;
+            public ComputeShader _LevelArea;
+            public ComputeShader _ScatteringArea;
+            public ComputeShader _ShadowArea;
+
             public ComputeShader _ClipPrimitive;
             public ComputeShader _SphereWaterInteraction;
 
@@ -109,8 +117,9 @@ namespace WaveHarmonic.Crest
 
         public sealed class KeywordResources
         {
+            public LocalKeyword AnimatedWavesTransferWavesArea { get; private set; }
             public LocalKeyword AnimatedWavesTransferWavesTexture { get; private set; }
-            public LocalKeyword AnimatedWavesTransferWavesTextureBlend { get; private set; }
+            public LocalKeyword AnimatedWavesTransferWavesBlend { get; private set; }
             public LocalKeyword ClipPrimitiveInverted { get; private set; }
             public LocalKeyword ClipPrimitiveSphere { get; private set; }
             public LocalKeyword ClipPrimitiveCube { get; private set; }
@@ -129,8 +138,9 @@ namespace WaveHarmonic.Crest
 
                 {
                     var keywords = compute._ShapeWavesTransfer.keywordSpace;
+                    AnimatedWavesTransferWavesArea = keywords.FindKeyword("d_Area");
                     AnimatedWavesTransferWavesTexture = keywords.FindKeyword("d_Texture");
-                    AnimatedWavesTransferWavesTextureBlend = keywords.FindKeyword("d_TextureBlend");
+                    AnimatedWavesTransferWavesBlend = keywords.FindKeyword("d_Blend");
                 }
 
                 {
@@ -189,7 +199,7 @@ namespace WaveHarmonic.Crest
         }
 
 #if UNITY_EDITOR
-        // AssetPostprocessor cannot be nested in a generic type so this cannot be moved to abstraction.
+        // Cannot be nested in a generic type so this cannot be moved to abstraction.
         sealed class AssetPostprocessor : UnityEditor.AssetPostprocessor
         {
             static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] movedTo, string[] movedFrom, bool domainReload)

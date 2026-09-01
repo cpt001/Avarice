@@ -80,11 +80,11 @@ Varyings Vertex(const Attributes i_Input)
     // Data that needs to be sampled at the undisplaced position.
     if (weight0 > m_CrestSampleLodThreshold)
     {
-        Cascade::MakeAnimatedWaves(slice0).SampleAnimatedWaves(undisplaced, weight0, displacement);
+        Cascade::MakeAnimatedWaves(slice0).SampleMeshDisplacement(undisplaced, weight0, 1.0 - weight1, displacement);
     }
     if (weight1 > m_CrestSampleLodThreshold)
     {
-        Cascade::MakeAnimatedWaves(slice1).SampleAnimatedWaves(undisplaced, weight1, displacement);
+        Cascade::MakeAnimatedWaves(slice1).SampleMeshDisplacement(undisplaced, weight1, weight1, displacement);
     }
 
 #if !d_WaterLevelDisplacementOnly

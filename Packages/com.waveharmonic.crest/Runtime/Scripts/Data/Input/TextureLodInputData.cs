@@ -29,20 +29,20 @@ namespace WaveHarmonic.Crest
 
         internal override void RecalculateRect()
         {
-            _Rect = _Input.transform.RectXZ();
+            _Rect = _Input.Transform.RectXZ();
         }
 
         internal override void RecalculateBounds()
         {
-            var transform = _Input.transform;
+            var transform = _Input.Transform;
             var scale = transform.lossyScale.XZ();
             scale = Helpers.RotateAndEncapsulateXZ(scale, transform.rotation.eulerAngles.y);
-            _Bounds = new(_Input.transform.position, scale.XNZ());
+            _Bounds = new(transform.position, scale.XNZ());
         }
 
-        internal override void Draw(Lod lod, Component component, CommandBuffer buffer, RenderTargetIdentifier target, int slices)
+        internal override void Draw(Lod lod, Component component, CommandBuffer buffer, RenderTargetIdentifier target, int slices, int offset)
         {
-            var transform = component.transform;
+            var transform = _Input.Transform;
             var wrapper = new PropertyWrapperCompute(buffer, TextureShader, 0);
             var rotation = new Vector2(transform.localToWorldMatrix.m20, transform.localToWorldMatrix.m00).normalized;
             wrapper.SetVector(ShaderIDs.s_TextureSize, transform.lossyScale.XZ());
@@ -54,6 +54,7 @@ namespace WaveHarmonic.Crest
             wrapper.SetTexture(ShaderIDs.s_Texture, _Texture);
             wrapper.SetInteger(ShaderIDs.s_Blend, (int)_Input.Blend);
             wrapper.SetTexture(ShaderIDs.s_Target, target);
+            wrapper.SetBoolean(ShaderIDs.s_InvertSource, false);
 
             if (this is LevelTextureLodInputData height)
             {
@@ -65,8 +66,7 @@ namespace WaveHarmonic.Crest
                 wrapper.SetBoolean(ShaderIDs.s_NegativeValues, data._NegativeValues);
             }
 
-            var threads = lod.Resolution / Lod.k_ThreadGroupSize;
-            wrapper.Dispatch(threads, threads, slices);
+            LodInput.Dispatch(wrapper, lod, slices, offset, transform, Rect);
         }
 
         internal override void OnEnable()

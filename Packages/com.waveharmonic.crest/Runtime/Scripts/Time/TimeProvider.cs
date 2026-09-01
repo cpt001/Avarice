@@ -26,7 +26,6 @@ namespace WaveHarmonic.Crest
 
     /// <inheritdoc/>
     [@ExecuteDuringEditMode]
-    [@HelpURL("Manual/Advanced/TimeProviders.html")]
     public abstract class TimeProvider : ManagedBehaviour<WaterRenderer>, ITimeProvider
     {
         /// <inheritdoc/>

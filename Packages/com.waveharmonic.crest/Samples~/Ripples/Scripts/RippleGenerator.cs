@@ -14,15 +14,18 @@ namespace WaveHarmonic.Crest.Examples
     {
         [Tooltip("Amount of time before it starts.")]
         [FormerlySerializedAs("_WarmUp")]
+        [@DecoratedField]
         [SerializeField]
         float _StartTime = 3f;
 
         [Tooltip("The time interval to inject a ripple.\n\nTime will loop around by this number (in seconds). Increase to make ripples more frequent.")]
+        [@DecoratedField]
         [SerializeField]
         float _Period = 4f;
 
         [Tooltip("The length of time in the period the input runs for.\n\nFrom the start of the period until this time, the input will continue to render. The longer it is active, the further the water will be pushed/pulled per period. If it is too long for the period, the surface may never return to rest.")]
         [FormerlySerializedAs("_OnTime")]
+        [@DecoratedField]
         [SerializeField]
         float _Length = 0.2f;
 

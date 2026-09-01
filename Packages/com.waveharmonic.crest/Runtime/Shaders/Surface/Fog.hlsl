@@ -9,13 +9,13 @@
 
 #define d_Crest_WaterSurface 1
 
-#if (CREST_LEGACY_UNDERWATER != 1)
+#if !d_Crest_LegacyUnderwater
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Volume/Graph/IntegrateWaterVolume.hlsl"
 #endif
 
 m_CrestNameSpace
 
-#if (CREST_LEGACY_UNDERWATER != 0)
+#if d_Crest_LegacyUnderwater
 static bool s_IsUnderWater;
 #endif
 
@@ -31,7 +31,7 @@ void SetUpFog(bool i_Underwater, float3 i_PositionWS, float i_Multiplier, float 
     }
 #endif
 
-#if (CREST_LEGACY_UNDERWATER != 1)
+#if !d_Crest_LegacyUnderwater
     ApplyUnderwaterEffect
     (
         0,                  // Not used (color)
@@ -53,8 +53,8 @@ void SetUpFog(bool i_Underwater, float3 i_PositionWS, float i_Multiplier, float 
 
 m_CrestNameSpaceEnd
 
-#if (CREST_LEGACY_UNDERWATER != 0)
-#if (CREST_DISCARD_ATMOSPHERIC_SCATTERING != 0)
+#if d_Crest_LegacyUnderwater
+#if d_Crest_DiscardAtmosphericScattering
 
 #if CREST_BIRP
 #ifdef UNITY_PASS_FORWARDADD
@@ -76,7 +76,11 @@ if (!m_Crest::s_IsUnderWater) \
 #endif
 
 #if CREST_URP
+#if UNITY_VERSION < 60070000
 #define MixFog(color, coord) m_Crest::s_IsUnderWater ? color : MixFog(color, coord)
+#else
+#define BlendDistanceFog(color, coord) m_Crest::s_IsUnderWater ? color : BlendDistanceFog(color, coord)
+#endif
 #endif
 
 #endif // CREST_DISCARD_ATMOSPHERIC_SCATTERING

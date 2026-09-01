@@ -59,7 +59,11 @@
         }
     ],
     "m_GroupDatas": [],
-    "m_StickyNoteDatas": [],
+    "m_StickyNoteDatas": [
+        {
+            "m_Id": "71245ebfdb804bf89abc3be53858e42b"
+        }
+    ],
     "m_Edges": [
         {
             "m_OutputSlot": {
@@ -203,8 +207,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": -164.0,
-            "y": 179.5,
+            "x": -900.0,
+            "y": 165.5,
             "width": 126.5,
             "height": 34.0
         }
@@ -474,6 +478,26 @@
 
 {
     "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.StickyNoteData",
+    "m_ObjectId": "71245ebfdb804bf89abc3be53858e42b",
+    "m_Title": "Place Your Integrate Sub-Graph Here",
+    "m_Content": "Do not place all your work here, as this graph will be replaced every time you update or re-import the asset - regardless if it changed it not. You can drag this sub-graph into your Assets directory for version control. See the Integrations page in the documentation for more information.",
+    "m_TextSize": 0,
+    "m_Theme": 0,
+    "m_Position": {
+        "serializedVersion": "2",
+        "x": -557.5,
+        "y": -184.0,
+        "width": 380.0,
+        "height": 112.0
+    },
+    "m_Group": {
+        "m_Id": ""
+    }
+}
+
+{
+    "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.PropertyNode",
     "m_ObjectId": "74a7acf692b54b4c8635c91fe0731654",
     "m_Group": {
@@ -484,8 +508,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": -142.5,
-            "y": 213.5,
+            "x": -878.5,
+            "y": 199.5,
             "width": 105.0,
             "height": 34.0
         }
@@ -520,8 +544,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": -160.5,
-            "y": 111.5,
+            "x": -896.5,
+            "y": 97.5,
             "width": 123.0,
             "height": 34.0
         }
@@ -744,8 +768,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": -160.5,
-            "y": 77.5,
+            "x": -896.5,
+            "y": 63.5,
             "width": 123.0,
             "height": 34.0
         }
@@ -841,8 +865,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": -177.5,
-            "y": 145.5,
+            "x": -913.5,
+            "y": 131.5,
             "width": 140.0,
             "height": 34.0
         }
@@ -905,8 +929,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": -142.5,
-            "y": 9.5,
+            "x": -878.5,
+            "y": -4.5,
             "width": 105.0,
             "height": 34.0
         }
@@ -956,8 +980,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": -152.0,
-            "y": 43.5,
+            "x": -888.0,
+            "y": 29.5,
             "width": 114.5,
             "height": 34.0
         }

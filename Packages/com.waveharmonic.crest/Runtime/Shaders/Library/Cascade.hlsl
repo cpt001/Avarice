@@ -292,13 +292,12 @@ struct Cascade
 
     uint3 WorldToID(const float2 i_Position) m_ConstantReturn
     {
-        const float3 uv = WorldToUV(i_Position);
-        return uint3(uv.xy * _Resolution, _IndexI);
+        return uint3((i_Position - _PositionSnapped) / _Texel + _Resolution * 0.5, _IndexI);
     }
 
     float2 IDToWorld(const uint2 i_ID) m_ConstantReturn
     {
-        return UVToWorld(IDToUV(i_ID));
+        return _PositionSnapped + (i_ID - _Resolution * 0.5 + 0.5) * _Texel;
     }
 
     bool IsOutOfBounds(float2 uv, float offset) m_ConstantReturn
@@ -355,7 +354,7 @@ struct Cascade
     // Wraps to next slice if coordinates outside of range.
     float3 WrapToNextSlice(float3 i_uv, float i_depth) m_ConstantReturn
     {
-        return Internal_WrapToNextSlice(i_uv, any(i_uv.xy > 1.0) || any(i_uv.xy < 0.0) && i_uv.z + 1.0 < i_depth);
+        return Internal_WrapToNextSlice(i_uv, (any(i_uv.xy > 1.0) || any(i_uv.xy < 0.0)) && i_uv.z + 1.0 < i_depth);
     }
 
     m_Sample(Absorption, half3, .xyz)
@@ -403,9 +402,9 @@ struct Cascade
         return SampleAnimatedWaves(i_UV).xyz;
     }
 
-    half4 __SampleDisplacements(const float2 i_Position, out float3 o_DisplacementX, out float3 o_DisplacementZ) m_ConstantReturn
+    half4 __SampleDisplacements(const float3 i_UV, out float3 o_DisplacementX, out float3 o_DisplacementZ) m_ConstantReturn
     {
-        const float3 uv = WorldToUV(i_Position);
+        const float3 uv = i_UV;
         const half4 displacement = SampleAnimatedWaves(uv);
         const float3 dd = float3(_OneOverResolution, 0.0, _Texel);
         o_DisplacementX = dd.zyy + SampleWaveDisplacement(uv + dd.xyy);
@@ -413,13 +412,18 @@ struct Cascade
         return displacement;
     }
 
-    void SampleDisplacement(const float2 i_Position, const float i_Weight, inout float3 io_Position, inout half2 io_Derivatives, inout half io_LevelOffset) m_ConstantReturn
+    half4 __SampleDisplacements(const float2 i_Position, out float3 o_DisplacementX, out float3 o_DisplacementZ) m_ConstantReturn
+    {
+        return __SampleDisplacements(WorldToUV(i_Position), o_DisplacementX, o_DisplacementZ);
+    }
+
+    void SampleDisplacement(const float2 i_Position, const float i_Weight, const float i_LevelWeight, inout float3 io_Position, inout half2 io_Derivatives, inout half io_LevelOffset) m_ConstantReturn
     {
         float3 uv = WorldToUV(i_Position);
         float4 position = SampleAnimatedWaves(uv);
-        io_LevelOffset += position.w * i_Weight;
+        io_LevelOffset += position.w * i_LevelWeight;
         io_Position += position.xyz * i_Weight;
-        io_Position.y += position.w * i_Weight;
+        io_Position.y += position.w * i_LevelWeight;
 
         // Derivatives
         {
@@ -427,22 +431,38 @@ struct Cascade
             // normal, normal map etc is then added to base normal.
             const float2 dd = float2(_OneOverResolution, 0.0);
             const float2 offset = float2(SampleAnimatedWaves(uv + dd.xyy).w, SampleAnimatedWaves(uv + dd.yxy).w);
-            io_Derivatives += ((offset - position.w) / _Texel) * i_Weight;
+            io_Derivatives += ((offset - position.w) / _Texel) * i_LevelWeight;
         }
     }
 
-    void SampleDisplacement(const float2 i_Position, const float i_Weight, inout float3 io_Position, inout half2 io_Derivatives) m_ConstantReturn
+    void SampleMeshDisplacement(const float2 i_Position, const float i_Weight, const float i_LevelWeight, inout float4 io_Displacement)
     {
-        half offset = 0.0;
-        SampleDisplacement(i_Position, i_Weight, io_Position, io_Derivatives, offset);
-        io_Position.y += offset;
+        float4 displacement = SampleAnimatedWaves(i_Position);
+        displacement.xyz *= i_Weight;
+        displacement.w *= i_LevelWeight;
+        io_Displacement += displacement;
     }
 
     half3 SampleDisplacement(const float2 i_Position, out half o_Determinent) m_ConstantReturn
     {
-        float3 xDisplacement; float3 zDisplacement;
-        half4 displacement = __SampleDisplacements(i_Position, xDisplacement, zDisplacement);
-        o_Determinent = __ComputeDisplacementDeterminant(displacement.xyz, xDisplacement, zDisplacement);
+        o_Determinent = 1.0;
+        half4 displacement;
+
+        // Needs 3 pixel border for offset and linear sampling.
+        const float3 uv = WorldToUV(i_Position);
+        const half2 r = abs(uv.xy - 0.5);
+        const half rMax = 0.5 - _OneOverResolution * 3.0;
+        if (max(r.x, r.y) <= rMax)
+        {
+            float3 xDisplacement; float3 zDisplacement;
+            displacement = __SampleDisplacements(uv, xDisplacement, zDisplacement);
+            o_Determinent = __ComputeDisplacementDeterminant(displacement.xyz, xDisplacement, zDisplacement);
+        }
+        else
+        {
+            displacement = Sample(uv);
+        }
+
         displacement.y += displacement.w;
         return displacement.xyz;
     }
@@ -579,6 +599,12 @@ struct Cascade
         displacement.xz = clamp(displacement.xz, -maxDisp, maxDisp);
 
         return displacement;
+    }
+
+    uint2 InputIDToLodID(const uint2 i_ID, const uint2 i_Size, const float2 i_Position) m_ConstantReturn
+    {
+        // Align to input position and then convert to LOD texture space.
+        return i_ID - i_Size * 0.5 + int2((i_Position - _PositionSnapped) / _Texel + _Resolution * 0.5);
     }
 };
 

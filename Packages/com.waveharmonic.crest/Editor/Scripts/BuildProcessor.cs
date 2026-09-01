@@ -329,7 +329,7 @@ namespace WaveHarmonic.Crest.Editor.Build
         {
             // Fixes point light cookie variant trigger shader compiler error:
             // > Shader error in 'Crest/Water': call to 'texCUBE' is ambiguous at
-            // > Buidin/Library/PackageCache/com.unity.shadergraph/Editor/Generation/Targets/BuiltIn/Editor/ShaderGraph/Includes/PBRForwardAddPass.hlsl(58) (on gamecore_scarlett)
+            // > com.unity.shadergraph/Editor/Generation/Targets/BuiltIn/Editor/ShaderGraph/Includes/PBRForwardAddPass.hlsl(58) (on gamecore_scarlett)
             if (ProjectSettings.Instance.StripBrokenVariants && RenderPipelineHelper.IsLegacy && shader.name == "Crest/Water")
             {
                 var pointCookie = new LocalKeyword(shader, "POINT_COOKIE");

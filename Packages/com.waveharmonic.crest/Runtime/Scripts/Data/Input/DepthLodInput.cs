@@ -18,7 +18,6 @@ namespace WaveHarmonic.Crest
     /// static objects, use a <see cref="DepthProbe"/>
     /// </para>
     /// </remarks>
-    [@HelpURL("Manual/Simulation/ShallowsAndShorelines.html#depth-simulation")]
     public sealed partial class DepthLodInput : LodInput
     {
         [@Space(10)]
@@ -49,11 +48,11 @@ namespace WaveHarmonic.Crest
             _Blend = LodInputBlend.Maximum;
         }
 
-        internal override void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slice = -1)
+        internal override void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slice = -1, int offset = 0)
         {
             var wrapper = new PropertyWrapperBuffer(buffer);
 
-            wrapper.SetFloat(ShaderIDs.s_HeightOffset, _Relative ? transform.position.y : 0f);
+            wrapper.SetFloat(ShaderIDs.s_HeightOffset, _Relative ? Transform.position.y : 0f);
 
             if (IsCompute)
             {

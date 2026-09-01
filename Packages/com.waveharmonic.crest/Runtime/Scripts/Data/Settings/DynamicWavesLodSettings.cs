@@ -8,11 +8,11 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// Settings for fine tuning the <see cref="DynamicWavesLod"/>.
     /// </summary>
-    [CreateAssetMenu(fileName = "DynamicWavesSettings", menuName = "Crest/Simulation Settings/Dynamic Waves")]
-    [@HelpURL("Manual/Simulation/Ripples.html#simulation-settings")]
+    [CreateAssetMenu(menuName = "Crest/Simulation Settings/Dynamic Waves Settings", fileName = "DynamicWavesSettings")]
+    [@HelpURL(typeof(DynamicWavesLodSettings))]
     public sealed partial class DynamicWavesLodSettings : LodSettings
     {
-        [Header("Simulation")]
+        [@Heading("Simulation")]
 
         [Tooltip("How much energy is dissipated each frame.\n\nHelps simulation stability, but limits how far ripples will propagate. Set this as large as possible/acceptable. Default is 0.05.")]
         [@Range(0f, 1f)]
@@ -27,7 +27,7 @@ namespace WaveHarmonic.Crest
         internal float _CourantNumber = 0.7f;
 
 
-        [Header("Displacement Generation")]
+        [@Heading("Displacement Generation")]
 
         [Tooltip("Induce horizontal displacements to sharpen simulated waves.")]
         [@Range(0f, 20f)]

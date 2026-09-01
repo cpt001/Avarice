@@ -21,7 +21,12 @@ namespace WaveHarmonic.Crest.Editor
     [CustomPropertyDrawer(typeof(DecoratedProperty), true)]
     sealed class DecoratedDrawer : PropertyDrawer
     {
+        internal static bool s_MarkedShow = false;
+        internal static bool s_MarkedHide = false;
+        internal static bool s_MarkedEnable = false;
+        internal static bool s_MarkedDisable = false;
         internal static bool s_HideInInspector = false;
+        internal static bool s_LockInInspector = false;
         public static bool s_IsFoldout = false;
         public static bool s_IsFoldoutOpen = false;
         public static bool s_IsList = false;
@@ -130,7 +135,7 @@ namespace WaveHarmonic.Crest.Editor
             if (s_TemporaryColor) GUI.color = s_PreviousColor;
 
             // Execute all non visual attributes like Predicated. If these change any IMGUI
-            // properties they might be overriden with EditorGUI.GetPropertyHeight call.
+            // properties they might be overridden with EditorGUI.GetPropertyHeight call.
             for (var index = 0; index < Decorators.Count; index++)
             {
                 var attribute = (Decorator)Decorators[index];
@@ -158,6 +163,9 @@ namespace WaveHarmonic.Crest.Editor
                     attribute.Decorate(position, property, label, this);
                 }
 
+                // Keep current disabled state.
+                GUI.enabled &= !s_LockInInspector;
+
                 var a = (DecoratedProperty)Attribute;
                 position = a.NeedsControlRectangle(property) && (!s_IsList || property.isArray)
                     ? EditorGUILayout.GetControlRect(true, EditorGUI.GetPropertyHeight(property, label, true))
@@ -172,7 +180,7 @@ namespace WaveHarmonic.Crest.Editor
                     label = attribute.BuildLabel(property, label, this);
                 }
 
-                var skipChange = Field.FieldType == typeof(UnityEvent) || property.isArray;
+                var skipChange = property.isArray || Field.FieldType == typeof(UnityEvent) || (Field.FieldType.IsGenericType && Field.FieldType.GetGenericTypeDefinition() == typeof(UnityEvent<>));
 
                 var isExpanded = property.isExpanded;
                 var isUndoRedo = false;
@@ -226,6 +234,11 @@ namespace WaveHarmonic.Crest.Editor
 
             // Handle resetting the GUI state.
             s_HideInInspector = false;
+            s_LockInInspector = false;
+            s_MarkedHide = false;
+            s_MarkedShow = false;
+            s_MarkedEnable = false;
+            s_MarkedDisable = false;
             GUI.color = originalColor;
             GUI.enabled = originalEnabled;
         }

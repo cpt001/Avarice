@@ -1,7 +1,7 @@
 // Crest Water System
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
-// Unity 6.4 breaks these previews. It appears they aggresively cache available
+// Unity 6.4 breaks these previews. It appears they aggressively cache available
 // previews, which means they no longer get added or removed dynamically based on
 // HasPreviewGUI.
 

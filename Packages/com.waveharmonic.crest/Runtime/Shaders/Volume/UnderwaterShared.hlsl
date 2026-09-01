@@ -225,19 +225,19 @@ half3 ApplyUnderwaterEffect
 
         // We sample shadows at the camera position. Pass a user defined slice offset for smoothing out detail.
         // Offset slice so that we dont get high freq detail. But never use last lod as this has crossfading.
-        uint sliceIndex = clamp(_Crest_DataSliceOffset, 0, g_Crest_LodCount - 2);
+        const uint sliceIndex = clamp(max(g_Crest_LodIndex, _Crest_DataSliceOffset), 0, g_Crest_LodCount - 2);
 
 #if d_Crest_AbsorptionLod
         if (g_Crest_SampleAbsorptionSimulation)
         {
-            absorption = Cascade::MakeAbsorption(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
+            absorption = Cascade::MakeAbsorption(g_Crest_LodIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
         }
 #endif
 
 #if d_Crest_ScatteringLod
         if (g_Crest_SampleScatteringSimulation)
         {
-            scattering = Cascade::MakeScattering(sliceIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
+            scattering = Cascade::MakeScattering(g_Crest_LodIndex).Sample(_WorldSpaceCameraPos.xz).xyz;
         }
 #endif
 

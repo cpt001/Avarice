@@ -85,9 +85,9 @@ namespace WaveHarmonic.Crest
             _AllocatedColor = false;
         }
 
-        public void Execute(Camera camera, CommandBuffer buffer, RTHandle color, RTHandle depth, MaterialPropertyBlock mpb = null)
+        public void Execute(Camera camera, CommandBuffer buffer, RTHandle color, RTHandle depth, MaterialPropertyBlock mpb = null, bool overlay = false)
         {
-            _Renderer.UpdateEffectMaterial(camera);
+            _Renderer.UpdateEffectMaterial(camera, overlay);
 
             _ColorTarget = color;
             _DepthTarget = depth;

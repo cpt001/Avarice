@@ -13,7 +13,7 @@ namespace WaveHarmonic.Crest
         const string k_Prefix = "Crest ";
 #endif
         const string k_MenuScripts = "Crest/";
-        public const string k_MenuPrefixScripts = k_MenuScripts + k_Prefix;
+        public const string k_MenuPrefixScripts = k_MenuScripts + "System/" + k_Prefix;
         public const string k_MenuPrefixInternal = k_MenuScripts + "Internal/";
         public const string k_MenuPrefixDebug = k_MenuScripts + "Debug/" + k_Prefix;
         public const string k_MenuPrefixInputs = k_MenuScripts + "Inputs/" + k_Prefix;
@@ -40,6 +40,7 @@ namespace WaveHarmonic.Crest
 #if d_Crest_SimpleTransparency
                 "CREST_NOOP";
 #else
+                // Hack to force it to run, as symbol is guaranteed to be there.
                 "UNITY_2022_3_OR_NEWER";
 #endif
         }

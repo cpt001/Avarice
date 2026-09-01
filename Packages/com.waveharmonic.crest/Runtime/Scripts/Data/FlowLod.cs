@@ -28,6 +28,7 @@ namespace WaveHarmonic.Crest
         internal override Color GizmoColor => s_GizmoColor;
         private protected override Color ClearColor => Color.black;
         private protected override bool NeedToReadWriteTextureData => true;
+        private protected override bool RequiresClearBorder => base.RequiresClearBorder;
 
         private protected override GraphicsFormat RequestedTextureFormat => _TextureFormatMode switch
         {

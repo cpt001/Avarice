@@ -10,6 +10,7 @@
 #define d_Crest_MotionVectors defined(_TRANSPARENT_WRITES_MOTION_VEC)
 
 #define d_Crest_CustomMesh defined(_CREST_CUSTOM_MESH)
+#define d_Crest_OffLodMesh defined(_CREST_OFF_LOD_MESH)
 
 #define d_Crest_AdditionalLights CREST_ADDITIONAL_LIGHTS
 #define d_Crest_CausticsForceDistortion CREST_CAUSTICS_FORCE_DISTORTION

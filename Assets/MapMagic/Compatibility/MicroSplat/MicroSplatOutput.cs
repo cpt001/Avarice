@@ -140,6 +140,7 @@ namespace MapMagic.Nodes.MatrixGenerators
 				if (stop!=null && stop.stop) return;
 				float[,,] splats3D = TexturesOutput200.BlendLayers(matrices, masks, data.area, channelNumbers:channelNums, stop:stop);
 
+				if (stop!=null && stop.stop) return;
 				TerrainLayer[] tlayers = new TerrainLayer[splats3D.GetLength(2)];
 				for (int i=0; i<layers.Length; i++)
 				{

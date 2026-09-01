@@ -12,7 +12,6 @@ namespace WaveHarmonic.Crest
     /// Base class for Shape components.
     /// </summary>
     [@ExecuteDuringEditMode(ExecuteDuringEditMode.Include.None)]
-    [@HelpURL("Manual/Simulation/Waves.html")]
     [@FilterEnum(nameof(_Blend), Filtered.Mode.Include, (int)LodInputBlend.Off, (int)LodInputBlend.Additive, (int)LodInputBlend.Alpha, (int)LodInputBlend.AlphaClip)]
     public abstract partial class ShapeWaves : LodInput
     {
@@ -49,7 +48,7 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         float _RespectShallowWaterAttenuation = 1f;
 
-        [Tooltip("Whether global waves is applied above or below sea level.\n\nWaves are faded out to avoid hard transitionds. They are fully faded by 1m from sea level.")]
+        [Tooltip("Whether global waves is applied above or below sea level.\n\nWaves are faded out to avoid hard transitions. They are fully faded by 1m from sea level.")]
         [@Enable(nameof(_Mode), nameof(LodInputMode.Global))]
         [@GenerateAPI]
         [@DecoratedField]
@@ -109,6 +108,7 @@ namespace WaveHarmonic.Crest
         // Debug
 
         [Tooltip("In Editor, shows the wave generation buffers on screen.")]
+        [@ExcludeDoc]
         [@DecoratedField(order = k_DebugGroupOrder * Constants.k_FieldGroupOrder), SerializeField]
         internal bool _DrawSlicesInEditor = false;
 
@@ -151,6 +151,7 @@ namespace WaveHarmonic.Crest
         private protected abstract int MaximumResolution { get; }
 
         static ComputeShader s_TransferWavesComputeShader;
+        static LocalKeyword s_KeywordArea;
         static LocalKeyword s_KeywordTexture;
         static LocalKeyword s_KeywordTextureBlend;
         readonly Vector4[] _WaveBufferParameters = new Vector4[Lod.k_MaximumSlices];
@@ -213,7 +214,7 @@ namespace WaveHarmonic.Crest
             return OverrideGlobalWindSpeed ? WindSpeedSource.ShapeWaves : WindSpeedSource.WaterRenderer;
         }
 
-        internal override void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slice = -1)
+        internal override void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slice = -1, int offset = 0)
         {
             if (weight * Weight <= 0f)
             {
@@ -288,16 +289,18 @@ namespace WaveHarmonic.Crest
             wrapper.SetFloat(ShaderIDs.s_TransitionalWavelengthThreshold, water.MaximumWavelength(water.LodLevels - 1, simulation.Resolution) * 0.5f);
             wrapper.SetVectorArray(ShaderIDs.s_WaveBufferParameters, _WaveBufferParameters);
 
+            var isArea = Mode is LodInputMode.Area;
             var isTexture = Mode is LodInputMode.Paint or LodInputMode.Texture;
-            var isAlphaBlend = Blend is LodInputBlend.Off or LodInputBlend.Alpha or LodInputBlend.AlphaClip;
+            var isBlend = Blend is LodInputBlend.Off or LodInputBlend.Alpha or LodInputBlend.AlphaClip;
 
-            wrapper.SetKeyword(s_KeywordTexture, isTexture && !isAlphaBlend);
-            wrapper.SetKeyword(s_KeywordTextureBlend, isTexture && isAlphaBlend);
+            wrapper.SetKeyword(s_KeywordArea, isArea);
+            wrapper.SetKeyword(s_KeywordTexture, isTexture);
+            wrapper.SetKeyword(s_KeywordTextureBlend, isBlend);
             wrapper.SetKeyword(new LocalKeyword(s_TransferWavesComputeShader, "d_Bicubic"), _BicubicSampling);
 
             wrapper.SetFloatArray(ShaderIDs.s_WaveBufferAttenuation, _ActiveSpectrum._Attenuation);
 
-            if (isTexture)
+            if (isTexture || isArea)
             {
                 wrapper.SetInteger(Crest.ShaderIDs.s_Blend, (int)_Blend);
             }
@@ -452,7 +455,7 @@ namespace WaveHarmonic.Crest
 
             _FirstUpdate = true;
 
-            // Initialise with spectrum
+            // Initialize with spectrum
             if (_Spectrum != null)
             {
                 _ActiveSpectrum = _Spectrum;
@@ -462,6 +465,8 @@ namespace WaveHarmonic.Crest
             {
                 _ActiveSpectrum = DefaultSpectrum;
             }
+
+            EnableQueries();
         }
 
         private protected override void OnDisable()
@@ -469,13 +474,16 @@ namespace WaveHarmonic.Crest
             base.OnDisable();
 
             WaterResources.Instance.AfterEnabled -= InitializeResources;
+
+            DisableQueries();
         }
 
         void InitializeResources()
         {
             s_TransferWavesComputeShader = WaterResources.Instance.Compute._ShapeWavesTransfer;
+            s_KeywordArea = WaterResources.Instance.Keywords.AnimatedWavesTransferWavesArea;
             s_KeywordTexture = WaterResources.Instance.Keywords.AnimatedWavesTransferWavesTexture;
-            s_KeywordTextureBlend = WaterResources.Instance.Keywords.AnimatedWavesTransferWavesTextureBlend;
+            s_KeywordTextureBlend = WaterResources.Instance.Keywords.AnimatedWavesTransferWavesBlend;
         }
 
         bool ReportDisplacement(WaterRenderer water, ref Rect bounds, ref float horizontal, ref float vertical)
@@ -565,6 +573,19 @@ namespace WaveHarmonic.Crest
 
     partial class ShapeWaves
     {
+        private protected virtual void EnableQueries()
+        {
+
+        }
+
+        private protected virtual void DisableQueries()
+        {
+
+        }
+    }
+
+    partial class ShapeWaves
+    {
         Reporter _Reporter;
 
         sealed class Reporter : IReportsDisplacement, IReportWaveDisplacement
@@ -594,6 +615,8 @@ namespace WaveHarmonic.Crest
             {
                 Helpers.Destroy(ref s_WindSpectrum);
             }
+
+            DisableQueries();
         }
     }
 

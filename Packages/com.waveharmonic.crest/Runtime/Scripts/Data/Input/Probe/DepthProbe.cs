@@ -75,7 +75,7 @@ namespace WaveHarmonic.Crest
     /// <see cref="DepthLodInput"/> component.
     /// </remarks>
     [@ExecuteDuringEditMode]
-    [@HelpURL("Manual/Simulation/ShallowsAndShorelines.html#depth-simulation")]
+    [@HelpURL(typeof(DepthProbe))]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Depth Probe")]
     public sealed partial class DepthProbe : ManagedBehaviour<WaterRenderer>
     {
@@ -174,8 +174,8 @@ namespace WaveHarmonic.Crest
         internal bool _GenerateSignedDistanceField = true;
 
         // Additional rounds of JFA, over the standard log2(resolution), can help reduce
-        // innacuracies from JFA, see paper for details.
-        [Tooltip("How many additional Jump Flood rounds to use.\n\nThe standard number of rounds is log2(resolution). Additional rounds can reduce innaccuracies.")]
+        // inaccuracies from JFA, see paper for details.
+        [Tooltip("How many additional Jump Flood rounds to use.\n\nThe standard number of rounds is log2(resolution). Additional rounds can reduce inaccuracies.")]
         [@Enable(nameof(_Type), nameof(DepthProbeMode.RealTime))]
         [@Enable(nameof(_GenerateSignedDistanceField))]
         [@GenerateAPI(Setter.Dirty)]
@@ -218,7 +218,7 @@ namespace WaveHarmonic.Crest
             {
                 if (_RecalculateBounds)
                 {
-                    _Rect = Managed ? new(Position.XZ() - Scale * 0.5f, Scale) : transform.RectXZ();
+                    _Rect = Managed ? new(Position.XZ() - Scale * 0.5f, Scale) : Transform.RectXZ();
                     _RecalculateBounds = false;
                 }
 
@@ -288,7 +288,7 @@ namespace WaveHarmonic.Crest
         {
             get
             {
-                return Managed && OverridePosition ? _Position.XNZ(transform.position.y) : transform.position;
+                return Managed && OverridePosition ? _Position.XNZ(Transform.position.y) : Transform.position;
             }
 
             set
@@ -298,13 +298,13 @@ namespace WaveHarmonic.Crest
             }
         }
 
-        // Only allow axis-aligned when mananged for now.
-        internal Quaternion Rotation => Managed ? Quaternion.identity : Quaternion.Euler(transform.rotation.eulerAngles.NYN());
+        // Only allow axis-aligned when managed for now.
+        internal Quaternion Rotation => Managed ? Quaternion.identity : Quaternion.Euler(Transform.rotation.eulerAngles.NYN());
 
         Vector2 _Scale;
         internal Vector2 Scale
         {
-            get => Managed ? _Scale : transform.lossyScale.XZ();
+            get => Managed ? _Scale : Transform.lossyScale.XZ();
 
             set
             {
@@ -355,7 +355,7 @@ namespace WaveHarmonic.Crest
         internal void Bind<T>(T wrapper) where T : IPropertyWrapper
         {
             wrapper.SetTexture(ShaderIDs.s_DepthProbe, Texture);
-            wrapper.SetFloat(ShaderIDs.s_DepthProbeHeightOffset, transform.position.y);
+            wrapper.SetFloat(ShaderIDs.s_DepthProbeHeightOffset, Transform.position.y);
             wrapper.SetFloat(ShaderIDs.s_DepthProbeResolution, _Resolution);
         }
 
@@ -396,13 +396,13 @@ namespace WaveHarmonic.Crest
                 Populate();
             }
 
-            if (transform.hasChanged)
+            if (Transform.hasChanged)
             {
                 _RecalculateBounds = true;
 
                 if (Placement == Placement.Transform)
                 {
-                    UpdatePosition(water, transform);
+                    UpdatePosition(water, Transform);
                 }
             }
         }
@@ -410,7 +410,7 @@ namespace WaveHarmonic.Crest
         private protected override System.Action<WaterRenderer> OnLateUpdateMethod => OnLateUpdate;
         void OnLateUpdate(WaterRenderer water)
         {
-            transform.hasChanged = false;
+            Transform.hasChanged = false;
         }
 
         void OnBeforeBuildCommandBuffer(WaterRenderer water, Camera camera)
@@ -451,7 +451,7 @@ namespace WaveHarmonic.Crest
 
             if (!target)
             {
-                Debug.Assert(SystemInfo.IsFormatSupported(format, GraphicsFormatUsage.Sample), "Crest: The graphics device does not support the render texture format " + format.ToString());
+                Debug.AssertFormat(SystemInfo.IsFormatSupported(format, GraphicsFormatUsage.Sample), "Crest: The graphics device does not support the render texture format {0}", format);
             }
         }
 
@@ -484,7 +484,7 @@ namespace WaveHarmonic.Crest
             if (_Camera == null)
             {
                 _Camera = new GameObject("_Crest_DepthProbeCamera").AddComponent<Camera>();
-                _Camera.transform.parent = transform;
+                _Camera.transform.parent = Transform;
                 _Camera.transform.localEulerAngles = 90f * Vector3.right;
                 _Camera.transform.localPosition = Vector3.zero;
                 _Camera.transform.localScale = Vector3.one;
@@ -494,7 +494,7 @@ namespace WaveHarmonic.Crest
                 _Camera.allowMSAA = false;
                 _Camera.allowDynamicResolution = false;
                 _Camera.depthTextureMode = DepthTextureMode.Depth;
-                // Stops behaviour from changing in VR. I tried disabling XR before/after camera render but it makes the editor
+                // Stops behavior from changing in VR. I tried disabling XR before/after camera render but it makes the editor
                 // go bonkers with split windows.
                 _Camera.cameraType = CameraType.Reflection;
                 // I'd prefer to destroy the camera object, but I found sometimes (on first start of editor) it will fail to render.
@@ -700,9 +700,9 @@ namespace WaveHarmonic.Crest
 
             var wrapper = new PropertyWrapperCompute(_CommandBuffer, WaterResources.Instance.Compute._RenderDepthProbe, kernel);
 
-            wrapper.SetFloat(ShaderIDs.s_HeightOffset, transform.position.y);
+            wrapper.SetFloat(ShaderIDs.s_HeightOffset, Transform.position.y);
 
-            // Zbuffer params
+            // Z-buffer params
             //float4 _ZBufferParams;            // x: 1-far/near,     y: far/near, z: x/far,     w: y/far
             float near = _Camera.nearClipPlane, far = _Camera.farClipPlane;
             wrapper.SetVector(ShaderIDs.s_CustomZBufferParams, new(1f - far / near, far / near, (1f - far / near) / far, (far / near) / far));
@@ -721,7 +721,7 @@ namespace WaveHarmonic.Crest
                 far = _CaptureRange.x + _CaptureRange.y;
 
                 // Altitudes for near and far planes.
-                ymax = transform.position.y + _CaptureRange.y - near;
+                ymax = Transform.position.y + _CaptureRange.y - near;
                 wrapper.SetTexture(ShaderIDs.s_CameraDepthBufferBackfaces, backFaces);
                 wrapper.SetFloat(ShaderIDs.s_PreviousPlane, ymax + _Camera.nearClipPlane);
             }
@@ -752,14 +752,14 @@ namespace WaveHarmonic.Crest
             var projectionToWorldMatrix = cameraToWorldMatrix * projectionMatrix.inverse;
 
             // Common uniforms.
-            buffer.SetComputeFloatParam(shader, DepthLodInput.ShaderIDs.s_HeightOffset, transform.position.y);
+            buffer.SetComputeFloatParam(shader, DepthLodInput.ShaderIDs.s_HeightOffset, Transform.position.y);
             buffer.SetComputeIntParam(shader, Crest.ShaderIDs.s_TextureSize, _Resolution);
             buffer.SetComputeMatrixParam(shader, ShaderIDs.s_ProjectionToWorld, projectionToWorldMatrix);
 
             // Allow generating without water present.
             {
                 var water = WaterRenderer.Instance;
-                var height = water != null ? water.SeaLevel : transform.position.y;
+                var height = water != null ? water.SeaLevel : Transform.position.y;
                 buffer.SetComputeFloatParam(shader, ShaderIDs.s_WaterLevel, height);
                 buffer.SetKeyword(shader, WaterResources.Instance.Keywords.JumpFloodStandalone, water == null);
             }
@@ -955,7 +955,7 @@ namespace WaveHarmonic.Crest
                 _Probe = probe;
             }
 
-            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slices = -1)
+            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slices = -1, int offset = 0)
             {
 #if CREST_DEBUG
                 if (lod is ClipLod)
@@ -998,8 +998,7 @@ namespace WaveHarmonic.Crest
                 wrapper.SetInteger(DepthLodInput.ShaderIDs.s_SDF, _Probe._GenerateSignedDistanceField ? 1 : 0);
                 wrapper.SetKeyword(resources.Keywords.DepthTextureSDF, lod._Water._DepthLod._EnableSignedDistanceFields);
 
-                var threads = lod.Resolution / Lod.k_ThreadGroupSize;
-                wrapper.Dispatch(threads, threads, slices);
+                LodInput.Dispatch(wrapper, lod, slices, offset, _Probe.Transform, Rect);
             }
         }
     }
@@ -1015,7 +1014,7 @@ namespace WaveHarmonic.Crest
                 return;
             }
 
-            var position = target.position.XNZ(water.transform.position.y);
+            var position = target.position.XNZ(water.Transform.position.y);
             var texelSize = Scale / _Resolution;
             position.x = Mathf.Round(position.x / texelSize.x) * texelSize.x;
             position.z = Mathf.Round(position.z / texelSize.y) * texelSize.y;
@@ -1032,7 +1031,7 @@ namespace WaveHarmonic.Crest
                 Managed = true;
                 OverridePosition = true;
                 Position = position;
-                Scale = new(transform.lossyScale.x, transform.lossyScale.z);
+                Scale = new(Transform.lossyScale.x, Transform.lossyScale.z);
                 Populate();
                 _PreviousPosition = position;
             }
@@ -1072,7 +1071,7 @@ namespace WaveHarmonic.Crest
             base.OnMigrate();
 
             // Version 1 (2024.06.04)
-            // - Added new capture options replacing Maximum Height's behaviour.
+            // - Added new capture options replacing Maximum Height's behavior.
             if (_Version < 1)
             {
                 _CaptureRange.y = _FillHolesCaptureHeight;

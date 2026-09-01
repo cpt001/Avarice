@@ -25,6 +25,7 @@ namespace WaveHarmonic.Crest
     [@ExecuteDuringEditMode]
     sealed partial class WaterChunkRenderer : ManagedBehaviour<WaterRenderer>
     {
+        [@DecoratedField]
         [SerializeField]
         internal bool _DrawRenderBounds = false;
 
@@ -32,7 +33,6 @@ namespace WaveHarmonic.Crest
 
         static readonly Unity.Profiling.ProfilerMarker s_UpdateMeshBoundsMarker = new(k_UpdateMeshBoundsMarker);
 
-        internal Transform _Transform;
         internal Mesh _Mesh;
         public Renderer Rend { get; private set; }
         internal MaterialPropertyBlock _MaterialPropertyBlock;
@@ -53,6 +53,9 @@ namespace WaveHarmonic.Crest
 
         // Frustum visibility.
         internal bool _Visible;
+
+        // Precise Material Override.
+        internal bool _Duplicate;
 
         internal bool _CulledByVolume;
 
@@ -78,7 +81,6 @@ namespace WaveHarmonic.Crest
             _LodIndex = index;
             Rend = renderer;
             _Mesh = mesh;
-            _Transform = transform;
         }
 
         private protected override void OnStart()
@@ -123,7 +125,7 @@ namespace WaveHarmonic.Crest
         internal void OnLateUpdate()
         {
             _PreviousObjectToWorld = _Water.Surface.PreviousObjectToWorld[_SiblingIndex];
-            _CurrentObjectToWorld = _Transform.localToWorldMatrix;
+            _CurrentObjectToWorld = Transform.localToWorldMatrix;
             _Water.Surface.PreviousObjectToWorld[_SiblingIndex] = _CurrentObjectToWorld;
         }
 
@@ -166,14 +168,14 @@ namespace WaveHarmonic.Crest
 
             var bounds = _LocalBounds;
 
-            bounds = ComputeBounds(_Transform, bounds);
+            bounds = ComputeBounds(Transform, bounds);
 
             _UnexpandedBoundsXZ = new(0, 0, bounds.size.x, bounds.size.z)
             {
                 center = bounds.center.XZ(),
             };
 
-            bounds = ExpandBoundsForDisplacements(_Transform, bounds);
+            bounds = ExpandBoundsForDisplacements(Transform, bounds);
 
             Rend.bounds = bounds;
 
@@ -183,7 +185,17 @@ namespace WaveHarmonic.Crest
         internal void Bind()
         {
             _MaterialPropertyBlock = _Water.Surface.PerCascadeMPB[_LodIndex];
-            new PropertyWrapperMPB(_MaterialPropertyBlock).SetSHCoefficients(_Transform.position);
+            var wrapper = new PropertyWrapperMPB(_MaterialPropertyBlock);
+            wrapper.SetSHCoefficients(Transform.position);
+
+            if (_LodIndex == _Water.LodLevels - 1)
+            {
+                var material = Rend.sharedMaterial;
+                _Water.FoamLod.SetMaterialRenderingParameters(wrapper, material);
+                _Water.AbsorptionLod.SetMaterialRenderingParameters(wrapper, material);
+                _Water.ScatteringLod.SetMaterialRenderingParameters(wrapper, material);
+            }
+
             Rend.SetPropertyBlock(_MaterialPropertyBlock);
 
             _WaterDataHasBeenBound = true;

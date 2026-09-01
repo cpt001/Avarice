@@ -11,6 +11,7 @@ using MapMagic.Expose;
 
 namespace MapMagic.Nodes.Biomes
 {
+	[Serializable]
 	public abstract class BaseFunctionGenerator : Generator
 	/// Separate class mainly for gui purpose, to not distinguish between fn, loop and cluster
 	{

@@ -16,7 +16,7 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Vertex/Surface.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Depth.hlsl"
 
-#if (CREST_PORTALS != 0)
+#if d_Crest_PackagePortals
 #include "Packages/com.waveharmonic.crest.portals/Runtime/Shaders/Library/Portals.hlsl"
 #endif
 
@@ -32,7 +32,7 @@ half4 Fragment(const Varyings i_Input, const bool i_FrontFace)
 
     half result = 0.0;
 
-#if (CREST_PORTALS != 0)
+#if d_Crest_PackagePortals
 #if !d_Tunnel
     if (m_CrestPortal)
     {
@@ -50,7 +50,7 @@ half4 Fragment(const Varyings i_Input, const bool i_FrontFace)
         result = CREST_MASK_ABOVE_SURFACE;
     }
 
-#if (CREST_PORTALS != 0)
+#if d_Crest_PackagePortals
 #if d_Crest_NegativeVolumePass
     result = Portal::FixMaskForNegativeVolume(result, i_Input._PositionCS.xy);
 #endif

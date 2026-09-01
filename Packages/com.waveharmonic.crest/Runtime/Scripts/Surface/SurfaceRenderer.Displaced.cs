@@ -51,9 +51,9 @@ namespace WaveHarmonic.Crest
 
         internal void UpdateDisplacedSurfaceData(Camera camera)
         {
-            Helpers.SetGlobalBoolean(ShaderIDs.s_WaterLineFlatWater, IsQuadMesh);
+            Helpers.SetGlobalBoolean(ShaderIDs.s_WaterLineFlatWater, !IsChunkMesh);
 
-            if (IsQuadMesh)
+            if (!IsChunkMesh)
             {
                 return;
             }
@@ -61,9 +61,11 @@ namespace WaveHarmonic.Crest
             // World size of the texture. Formula should effectively cover the camera.
             var size = 1f + (camera.nearClipPlane * 2f);
 
+            var transform = camera.transform;
+
             // Do not use the water position. It will cause a mismatch when using displacement
             // correction.
-            var bounds = new Bounds(camera.transform.position, Vector3.one * size);
+            var bounds = new Bounds(transform.position, Vector3.one * size);
 
             if (_DisplacedMaterial == null)
             {
@@ -97,7 +99,7 @@ namespace WaveHarmonic.Crest
 
             var viewpoint = _Water.Viewpoint;
 
-            if (viewpoint == null || (viewpoint != camera.transform && Vector3.Distance(viewpoint.position, camera.transform.position) > 0.01f))
+            if (viewpoint == null || (viewpoint != transform && Vector3.Distance(viewpoint.position, transform.position) > 0.01f))
             {
                 foreach (var chunk in _Water.Surface.Chunks)
                 {
@@ -109,7 +111,7 @@ namespace WaveHarmonic.Crest
                     commands.DrawMesh
                     (
                         chunk._Mesh,
-                        chunk.transform.localToWorldMatrix,
+                        chunk.Transform.localToWorldMatrix,
                         _DisplacedMaterial,
                         submeshIndex: 0,
                         shaderPass: k_SurfaceDataShaderPass,
@@ -119,18 +121,15 @@ namespace WaveHarmonic.Crest
             }
             else
             {
-                for (var i = 0; i < 4; i++)
-                {
-                    commands.DrawMesh
-                    (
-                        _Meshes[lod],
-                        Root.localToWorldMatrix * Matrix4x4.TRS(Builder.s_OffsetsFirstLod[i].XNZ(), Quaternion.identity, Vector3.one),
-                        _DisplacedMaterial,
-                        submeshIndex: 0,
-                        k_SurfaceDataShaderPass,
-                        mpb
-                    );
-                }
+                commands.DrawMesh
+                (
+                    _Meshes[lod],
+                    Root.localToWorldMatrix,
+                    _DisplacedMaterial,
+                    submeshIndex: 0,
+                    k_SurfaceDataShaderPass,
+                    mpb
+                );
             }
 
             Graphics.ExecuteCommandBuffer(commands);
@@ -163,7 +162,7 @@ namespace WaveHarmonic.Crest
             }
 
             // Snapping for spatial stability. Different results, but could not tell which is
-            // more accurate. At higher resolution, appears negligable anyway.
+            // more accurate. At higher resolution, appears negligible anyway.
             var snapped = position - new Vector2(Mathf.Repeat(position.x, texel), Mathf.Repeat(position.y, texel));
 
             // Store for binding later.

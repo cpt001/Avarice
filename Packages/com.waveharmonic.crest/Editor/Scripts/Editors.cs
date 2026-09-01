@@ -436,6 +436,9 @@ namespace WaveHarmonic.Crest.Editor
             EditorGUILayout.BoundsField("Bounds XZ", boundsXZ);
             EditorGUILayout.BoundsField("Expanded Bounds", _Renderer.bounds);
             EditorGUILayout.IntField("Sibling Index", target._SiblingIndex);
+            EditorGUILayout.Toggle("Culled", target._Culled);
+            EditorGUILayout.Toggle("Duplicate", target._Duplicate);
+            EditorGUILayout.Toggle("Visible", target._Visible);
             GUI.enabled = true;
         }
     }
@@ -561,7 +564,7 @@ namespace WaveHarmonic.Crest.Editor
                 "For the Above/Below Water Surface Events, whenever this game object goes below or above the water " +
                 "surface, the appropriate event is fired once per state change. It can be used to trigger audio to " +
                 "play underwater and much more. For the Distance From Water Surface event, it will pass the " +
-                "distance every frame (passing normalised distance to audio volume as an example).",
+                "distance every frame (passing normalized distance to audio volume as an example).",
                 MessageType.Info
             );
             EditorGUILayout.Space();

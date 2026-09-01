@@ -20,6 +20,8 @@ namespace WaveHarmonic.Crest.Editor
     {
         public static bool s_SkipDecorators;
 
+        // NOTE: this is the maximum step before integer limits!
+        public const int k_FieldLastOrder = k_FieldGroupOrder * 100;
         public const int k_FieldGroupOrder = k_FieldHeadingOrder * 100;
         public const int k_FieldHeadingOrder = k_FieldOrder * 100;
         public const int k_FieldOrder = 1000;
@@ -131,6 +133,66 @@ namespace WaveHarmonic.Crest.Editor
             }
         }
 
+        public static int GetPropertyOrder(FieldInfo field, ref int index, ref int group, ref Type groupType, List<string> headings, Func<string, int> getKey)
+        {
+            // If field is on a new type (inheritance) then reset the group to prevent group leakage.
+            if (field.DeclaringType != groupType)
+            {
+                group = 0;
+                groupType = field.DeclaringType;
+            }
+
+            var headingAttribute = field.GetCustomAttribute<Heading>();
+            if (headingAttribute != null)
+            {
+                headings.Add(headingAttribute._Text.text);
+            }
+
+            var heading = Mathf.Max(0, headings.Count - 1);
+
+            var orderAttribute = field.GetCustomAttribute<Order>();
+            if (orderAttribute != null)
+            {
+                var target = orderAttribute._Target;
+
+                if (orderAttribute._Placement == Order.Placement.Heading)
+                {
+                    heading = headings.FindIndex(x => x == target);
+                }
+            }
+
+            var groupAttribute = field.GetCustomAttribute<Group>();
+            if (groupAttribute != null)
+            {
+                group = groupAttribute.order;
+            }
+
+            var key =
+                (field.GetCustomAttribute<Attributes.DecoratedProperty>()?.order ?? 0) +
+                group * k_FieldGroupOrder +
+                heading * k_FieldHeadingOrder +
+                index++ * k_FieldOrder;
+
+            // Override.
+            if (orderAttribute != null)
+            {
+                var target = orderAttribute._Target;
+
+                switch (orderAttribute._Placement)
+                {
+                    case Order.Placement.Below: key = string.IsNullOrEmpty(target) ? k_FieldLastOrder + key : getKey(target) + index; break;
+                    case Order.Placement.Above: key = string.IsNullOrEmpty(target) ? int.MinValue + key : getKey(target) - index; break;
+                }
+            }
+
+            return key;
+        }
+
+        int GetKey(string target)
+        {
+            return _Properties.First(x => x.Value.name == target).Key;
+        }
+
         protected virtual void RenderInspectorGUI()
         {
             var previous = Current;
@@ -148,7 +210,7 @@ namespace WaveHarmonic.Crest.Editor
             {
                 var index = 0;
                 var group = 0;
-                Type type = null;
+                Type groupType = null;
 
                 do
                 {
@@ -156,61 +218,14 @@ namespace WaveHarmonic.Crest.Editor
                     if (iterator.name == "m_Script")
                     {
 #if CREST_DEBUG
-                        _Properties.Add(index++ * k_FieldOrder, property);
+                        _Properties.Add(int.MinValue, property);
 #endif
                         continue;
                     }
 
                     var field = property.GetFieldInfo(out _);
-
-                    // If field is on a new type (inheritance) then reset the group to prevent group leakage.
-                    if (field.DeclaringType != type)
-                    {
-                        group = 0;
-                        type = field.DeclaringType;
-                    }
-
-                    // Null checking but there should always be one DecoratedProperty.
-                    var order = field.GetCustomAttribute<Attributes.DecoratedProperty>()?.order ?? 0;
-                    group = field.GetCustomAttribute<Group>()?.order * k_FieldGroupOrder ?? group;
-
-                    var headingAttribute = field.GetCustomAttribute<Heading>();
-                    if (headingAttribute != null)
-                    {
-                        _Headings.Add(headingAttribute._Text.text);
-                    }
-
-                    var heading = Mathf.Max(0, _Headings.Count - 1);
-
-                    var orderAttribute = field.GetCustomAttribute<Order>();
-
-                    if (orderAttribute != null)
-                    {
-                        var target = orderAttribute._Target;
-
-                        if (orderAttribute._Placement == Order.Placement.Heading)
-                        {
-                            heading = _Headings.FindIndex(x => x == target);
-                        }
-                    }
-
-                    var key = order + group + heading * k_FieldHeadingOrder + index * k_FieldOrder;
-
-                    // Override.
-                    if (orderAttribute != null)
-                    {
-                        var target = orderAttribute._Target;
-
-                        switch (orderAttribute._Placement)
-                        {
-                            case Order.Placement.Below: key = _Properties.First(x => x.Value.name == target).Key + index; break;
-                            case Order.Placement.Above: key = _Properties.First(x => x.Value.name == target).Key - index; break;
-                        }
-                    }
-
+                    var key = GetPropertyOrder(field, ref index, ref group, ref groupType, _Headings, GetKey);
                     _Properties.Add(key, property);
-
-                    index += 1;
                 }
                 while (iterator.NextVisible(false));
             }

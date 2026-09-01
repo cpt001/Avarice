@@ -7,18 +7,21 @@ using WaveHarmonic.Crest.Internal;
 namespace WaveHarmonic.Crest.Examples
 {
     /// <summary>
-    /// Shoves the gameobject around random amounts, occasionally useful for debugging where some motion is required to reproduce an issue.
+    /// Shoves the game object around random amounts, occasionally useful for debugging where some motion is required to reproduce an issue.
     /// </summary>
 #if !CREST_DEBUG
     [AddComponentMenu("")]
 #endif
     sealed partial class RandomMotion : CustomBehaviour
     {
+        [@DecoratedField]
         [SerializeField]
         bool _WorldSpace;
 
-        [Header("Translation")]
 
+        [@Heading("Translation")]
+
+        [@DecoratedField]
         [SerializeField]
         Vector3 _Axis = Vector3.up;
 
@@ -35,12 +38,13 @@ namespace WaveHarmonic.Crest.Examples
         float _OrthogonalMotion = 0f;
 
 
-        [Header("Rotation")]
+        [@Heading("Rotation")]
 
         [@Range(0, 5)]
         [SerializeField]
         float _RotationFrequency = 1f;
 
+        [@DecoratedField]
         [SerializeField]
         float _RotationVelocity = 0f;
 
@@ -52,7 +56,7 @@ namespace WaveHarmonic.Crest.Examples
         {
             base.OnStart();
 
-            _Origin = _WorldSpace ? transform.position : transform.localPosition;
+            _Origin = _WorldSpace ? Transform.position : Transform.localPosition;
 
             _OrthogonalAxis = Quaternion.AngleAxis(90f, Vector3.up) * _Axis;
         }
@@ -61,7 +65,7 @@ namespace WaveHarmonic.Crest.Examples
         {
             // Translation
             {
-                // Do circles in perlin noise
+                // Do circles in Perlin noise
                 var rnd = 2f * (Mathf.PerlinNoise(0.5f + 0.5f * Mathf.Cos(_Frequency * Time.time), 0.5f + 0.5f * Mathf.Sin(_Frequency * Time.time)) - 0.5f);
 
                 // Prevent jump at start.
@@ -73,11 +77,11 @@ namespace WaveHarmonic.Crest.Examples
 
                 if (_WorldSpace)
                 {
-                    transform.position = position;
+                    Transform.position = position;
                 }
                 else
                 {
-                    transform.localPosition = position;
+                    Transform.localPosition = position;
                 }
             }
 
@@ -86,7 +90,7 @@ namespace WaveHarmonic.Crest.Examples
                 var f1 = Mathf.Sin(Time.time * _RotationFrequency * 1.0f);
                 var f2 = Mathf.Sin(Time.time * _RotationFrequency * 0.83f);
                 var f3 = Mathf.Sin(Time.time * _RotationFrequency * 1.14f);
-                transform.rotation *= Quaternion.Euler(
+                Transform.rotation *= Quaternion.Euler(
                     f1 * _RotationVelocity * Time.deltaTime,
                     f2 * _RotationVelocity * Time.deltaTime,
                     f3 * _RotationVelocity * Time.deltaTime);

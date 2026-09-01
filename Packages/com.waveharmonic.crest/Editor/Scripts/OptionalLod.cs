@@ -165,7 +165,7 @@ namespace WaveHarmonic.Crest.Editor
     sealed class ClipOptionalLod : OptionalLod
     {
         // BIRP SG has prefixes for Unity properties but other RPs do not. These prefixes
-        // are for serialisation only and are not used in the shader.
+        // are for serialization only and are not used in the shader.
         internal override string MaterialPropertyPath => "Alpha Clipping";
         internal override string MaterialProperty => RenderPipelineHelper.RenderPipeline switch
         {

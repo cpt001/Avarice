@@ -2,6 +2,7 @@
 // Copyright © 2024 Wave Harmonic. All rights reserved.
 
 using UnityEngine;
+using WaveHarmonic.Crest.Internal;
 
 namespace WaveHarmonic.Crest
 {
@@ -16,6 +17,13 @@ namespace WaveHarmonic.Crest
         {
             _SnappedPosition = snapped;
             _Texel = texel;
+            _Resolution = resolution;
+        }
+
+        public Cascade(Vector4 parameters, int resolution)
+        {
+            _SnappedPosition = parameters.XY();
+            _Texel = parameters.z;
             _Resolution = resolution;
         }
 

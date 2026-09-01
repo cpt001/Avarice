@@ -153,7 +153,7 @@ namespace WaveHarmonic.Crest
                 else
 #endif
                 {
-                    // As recommended by Unity, in 2021.2 using SystemInfo.GetGraphicsFormat with DefaultFormat.LDR is
+                    // As recommended by Unity, using SystemInfo.GetGraphicsFormat with DefaultFormat.LDR is
                     // necessary or gamma color space texture is returned:
                     // https://docs.unity3d.com/ScriptReference/Experimental.Rendering.DefaultFormat.html
                     descriptor = new(camera.pixelWidth, camera.pixelHeight, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR), 0);

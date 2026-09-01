@@ -14,10 +14,10 @@ namespace WaveHarmonic.Crest
     /// Multiple spheres can be used to model the interaction of a non-spherical shape.
     /// </remarks>
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Sphere Water Interaction")]
-    [@HelpURL("Manual/Simulation/Ripples.html#adding-interaction-forces")]
+    [@HelpURL(typeof(SphereWaterInteraction))]
     public sealed partial class SphereWaterInteraction : ManagedBehaviour<WaterRenderer>
     {
-        [Tooltip("Radius of the sphere that is modelled from which the interaction forces are calculated.")]
+        [Tooltip("Radius of the sphere that is modeled from which the interaction forces are calculated.")]
         [@Range(0.01f, 50f)]
         [@GenerateAPI]
         [SerializeField]
@@ -35,7 +35,7 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         float _WeightVerticalMultiplier = 0.5f;
 
-        [Tooltip("Model parameter that can be used to modify the shape of the interaction.\n\nInternally the interaction is modelled by a pair of nested spheres. The forces from the two spheres combine to create the final effect. This parameter scales the effect of the inner sphere and can be tweaked to adjust the shape of the result.")]
+        [Tooltip("Model parameter that can be used to modify the shape of the interaction.\n\nInternally the interaction is modeled by a pair of nested spheres. The forces from the two spheres combine to create the final effect. This parameter scales the effect of the inner sphere and can be tweaked to adjust the shape of the result.")]
         [@Range(0f, 10f)]
         [@GenerateAPI]
         [SerializeField]
@@ -47,7 +47,7 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         float _InnerSphereOffset = 0.109f;
 
-        [Tooltip("Offset in direction of motion to help ripples appear in front of sphere.\n\nThere is some latency between applying a force to the wave simualtion and the resulting waves appearing. Applying this offset can help to ensure the waves do not lag behind the sphere.")]
+        [Tooltip("Offset in direction of motion to help ripples appear in front of sphere.\n\nThere is some latency between applying a force to the wave simulation and the resulting waves appearing. Applying this offset can help to ensure the waves do not lag behind the sphere.")]
         [@Range(0f, 2f)]
         [@GenerateAPI]
         [SerializeField]
@@ -61,36 +61,42 @@ namespace WaveHarmonic.Crest
 
         [Tooltip("Whether to improve visibility in larger LODs.\n\nIf the dynamic waves are not visible far enough in the distance from the camera, this can be used to boost the output.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         bool _BoostLargeWaves = false;
 
 
-        [Header("Limits")]
+        [@Heading("Limits")]
 
         [Tooltip("Teleport speed (km/h).\n\nIf the calculated speed is larger than this amount, the object is deemed to have teleported and the computed velocity is discarded.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         float _TeleportSpeed = 500f;
 
         [Tooltip("Outputs a warning to the console on teleport.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         bool _WarnOnTeleport = false;
 
         [Tooltip("Maximum speed clamp (km/h).\n\nUseful for controlling/limiting wake.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         float _MaximumSpeed = 100f;
 
         [Tooltip("Outputs a warning to the console on speed clamp.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         bool _WarnOnSpeedClamp = false;
 
 #pragma warning disable 414
-        [Header("Debug")]
+        [@Heading("Debug")]
 
         [Tooltip("Draws debug lines at each substep position. Editor only.")]
+        [@DecoratedField]
         [SerializeField]
         bool _DebugSubsteps = false;
 #pragma warning restore 414
@@ -119,21 +125,21 @@ namespace WaveHarmonic.Crest
         static ComputeShader ComputeShader => WaterResources.Instance.Compute._SphereWaterInteraction;
         Rect Rect => new
         (
-            transform.position.XZ() - _Displacement.XZ() * _CompensateForWaveMotion - Vector2.one * (_Radius * 4f * 0.5f),
+            Transform.position.XZ() - _Displacement.XZ() * _CompensateForWaveMotion - Vector2.one * (_Radius * 4f * 0.5f),
             Vector2.one * (_Radius * 4f)
         );
 
         private protected override System.Action<WaterRenderer> OnUpdateMethod => OnUpdate;
         void OnUpdate(WaterRenderer water)
         {
-            _SampleHeightHelper.SampleDisplacement(transform.position, out _Displacement, minimumLength: 2f * _Radius);
+            _SampleHeightHelper.SampleDisplacement(Transform.position, out _Displacement, minimumLength: 2f * _Radius);
 
             LateUpdateComputeVel(water);
 
             // Velocity relative to water
             _RelativeVelocity = _VelocityClamped;
             {
-                _SampleFlowHelper.Sample(transform.position, out var surfaceFlow, minimumLength: 2f * _Radius);
+                _SampleFlowHelper.Sample(Transform.position, out var surfaceFlow, minimumLength: 2f * _Radius);
                 _RelativeVelocity -= new Vector3(surfaceFlow.x, 0, surfaceFlow.y);
 
                 _RelativeVelocity.y *= _WeightVerticalMultiplier;
@@ -149,14 +155,14 @@ namespace WaveHarmonic.Crest
             var gravityMul = Mathf.Sqrt(water._DynamicWavesLod.Settings._GravityMultiplier) / 5f;
             _WeightThisFrame *= gravityMul;
 
-            _PreviousPosition = transform.position;
+            _PreviousPosition = Transform.position;
         }
 
         // Velocity of the sphere, relative to the water. Computes on the fly, discards if teleport detected.
         void LateUpdateComputeVel(WaterRenderer water)
         {
-            // Compue vel using finite difference
-            _Velocity = (transform.position - _PreviousPosition) / water.DeltaTime;
+            // Compute velocity using finite difference.
+            _Velocity = (Transform.position - _PreviousPosition) / water.DeltaTime;
             if (water.DeltaTime < 0.0001f)
             {
                 _Velocity = Vector3.zero;
@@ -195,7 +201,7 @@ namespace WaveHarmonic.Crest
         // Weight based on submerged-amount of sphere
         void LateUpdateSphereWeight(float waterHeight, ref float weight)
         {
-            var centerDepthInWater = waterHeight - transform.position.y;
+            var centerDepthInWater = waterHeight - Transform.position.y;
 
             if (centerDepthInWater >= 0f)
             {
@@ -218,7 +224,7 @@ namespace WaveHarmonic.Crest
             base.Initialize();
             _Input ??= new(this);
             ILodInput.Attach(_Input, DynamicWavesLod.s_Inputs);
-            _PreviousPosition = transform.position;
+            _PreviousPosition = Transform.position;
         }
 
         private protected override void OnDisable()
@@ -227,7 +233,7 @@ namespace WaveHarmonic.Crest
             ILodInput.Detach(_Input, DynamicWavesLod.s_Inputs);
         }
 
-        void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slices = -1)
+        void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slices = -1, int offset = 0)
         {
             var waves = simulation as DynamicWavesLod;
             var timeBeforeCurrentTime = waves.TimeLeftToSimulate;
@@ -235,21 +241,21 @@ namespace WaveHarmonic.Crest
             var wrapper = new PropertyWrapperCompute(buffer, ComputeShader, 0);
 
 #if UNITY_EDITOR
-            // Draw debug lines at each substep position. Alternate colours each frame so that substeps are clearly visible.
+            // Draw debug lines at each substep position. Alternate colors each frame so that substeps are clearly visible.
             if (_DebugSubsteps)
             {
                 var col = 0.7f * (Time.frameCount % 2 == 1 ? Color.green : Color.red);
-                var pos = transform.position - _Velocity * (timeBeforeCurrentTime - _VelocityOffset);
+                var pos = Transform.position - _Velocity * (timeBeforeCurrentTime - _VelocityOffset);
                 var right = Vector3.Cross(Vector3.up, _Velocity.normalized);
-                Debug.DrawLine(pos - right + transform.up, pos + right + transform.up, col, 0.5f);
+                Debug.DrawLine(pos - right + Transform.up, pos + right + Transform.up, col, 0.5f);
             }
 #endif
 
             // Reconstruct the position of this input at the current substep time. This produces
-            // much smoother interaction shapes for moving objects. Increasing sim freq helps further.
-            var offset = _Velocity * (timeBeforeCurrentTime - _VelocityOffset);
+            // much smoother interaction shapes for moving objects. Increasing sim frequency helps further.
+            var velocity = _Velocity * (timeBeforeCurrentTime - _VelocityOffset);
             var displacement = _Displacement.XNZ() * _CompensateForWaveMotion;
-            wrapper.SetVector(Crest.ShaderIDs.s_Position, transform.position - offset - displacement);
+            wrapper.SetVector(Crest.ShaderIDs.s_Position, Transform.position - velocity - displacement);
 
             // Enlarge radius slightly - this tends to help waves 'wrap' the sphere slightly better
             wrapper.SetFloat(ShaderIDs.s_Radius, _Radius * 1.1f);
@@ -262,8 +268,7 @@ namespace WaveHarmonic.Crest
 
             wrapper.SetTexture(Crest.ShaderIDs.s_Target, target);
 
-            var threads = simulation.Resolution / Lod.k_ThreadGroupSize;
-            wrapper.Dispatch(threads, threads, slices);
+            LodInput.Dispatch(wrapper, simulation, slices, offset, Transform, Rect);
         }
     }
 
@@ -282,7 +287,7 @@ namespace WaveHarmonic.Crest
             public Rect Rect => _Input.Rect;
             public MonoBehaviour Component => _Input;
             public float Filter(WaterRenderer water, int slice) => 1f;
-            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1) => _Input.Draw(lod, buffer, target, pass, weight, slice);
+            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1, int offset = 0) => _Input.Draw(lod, buffer, target, pass, weight, slice, offset);
         }
     }
 }

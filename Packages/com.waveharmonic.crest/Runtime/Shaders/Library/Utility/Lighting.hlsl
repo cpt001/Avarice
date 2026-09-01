@@ -26,7 +26,7 @@
 #if CREST_HDRP_FORWARD_PASS
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
 
-#if UNITY_VERSION < 202310
+#if UNITY_VERSION < 60000000
 #define GetMeshRenderingLayerMask GetMeshRenderingLightLayer
 #endif // UNITY_VERSION
 
@@ -255,7 +255,7 @@ half3 AmbientLight()
 
 #if d_Crest_AdditionalLights
 #if d_Crest_WaterSurface
-half3 AdditionalLighting(const float3 i_PositionWS, const float4 i_ScreenPosition, const float2 i_StaticLightMapUV, const float2 i_PositionSS, const half3 i_Normal)
+half3 AdditionalLighting(const float3 i_PositionWS, const float4 i_ScreenPosition, const float2 i_PositionSS, const half3 i_Normal)
 {
     half3 color = 0.0;
 
@@ -264,11 +264,6 @@ half3 AdditionalLighting(const float3 i_PositionWS, const float4 i_ScreenPositio
     InputData inputData = (InputData)0;
     inputData.normalizedScreenSpaceUV = i_ScreenPosition.xy / i_ScreenPosition.w;
     inputData.positionWS = i_PositionWS;
-
-    // Shadowmask.
-#if defined(SHADOWS_SHADOWMASK) && defined(LIGHTMAP_ON)
-    inputData.shadowMask = SAMPLE_SHADOWMASK(i_StaticLightMapUV);
-#endif
 
     const half4 shadowMask = CalculateShadowMask(inputData);
 

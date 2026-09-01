@@ -58,6 +58,11 @@ namespace WaveHarmonic.Crest
         [@DecoratedField, SerializeField]
         float _ShorelineColorFalloff = 2f;
 
+        [Tooltip("Renders shoreline color where there is no data.\n\nThis is experimental, and has compatibility issues.")]
+        [@DecoratedField]
+        [@SerializeField]
+        bool _AddShorelineColorToExtents;
+
         static new class ShaderIDs
         {
             public static readonly int s_ShorelineColor = Shader.PropertyToID("_Crest_ShorelineColor");
@@ -66,10 +71,14 @@ namespace WaveHarmonic.Crest
         }
 
         private protected abstract int GlobalShaderID { get; }
+        private protected abstract int MaterialShaderID { get; }
+        private protected abstract int MaterialColorShaderID { get; }
         private protected abstract void SetShorelineColor(Color previous, Color current);
         private protected Vector4 _ShorelineColorValue;
         ShorelineColorInput _ShorelineColorInput;
         internal override bool SkipEndOfFrame => true;
+        private protected override bool CanRenderToOneSlice => !_Water.ShadowLod.Enabled;
+        internal override bool NeedsOffset => true;
 
         private protected override GraphicsFormat RequestedTextureFormat => _TextureFormatMode switch
         {
@@ -113,6 +122,19 @@ namespace WaveHarmonic.Crest
             Inputs.Remove(_ShorelineColorInput);
         }
 
+        internal void SetMaterialRenderingParameters(PropertyWrapperMPB wrapper, Material material)
+        {
+            var enabled = _AddShorelineColorToExtents && Enabled && ShorelineColorSource == ShorelineVolumeColorSource.Depth;
+            wrapper.SetBoolean(MaterialShaderID, enabled);
+
+            if (enabled)
+            {
+                wrapper.SetVector(MaterialColorShaderID, _ShorelineColorValue);
+                wrapper.SetFloat(ShaderIDs.s_ShorelineColorMaximumDistance, ShorelineColorMaximumDistance);
+                wrapper.SetFloat(ShaderIDs.s_ShorelineColorFalloff, ShorelineColorFalloff);
+            }
+        }
+
         sealed class ShorelineColorInput : ILodInput
         {
             public bool Enabled => _VolumeColorLod._ShorelineColorSource != ShorelineVolumeColorSource.None &&
@@ -131,7 +153,7 @@ namespace WaveHarmonic.Crest
                 _VolumeColorLod = lod;
             }
 
-            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slices = -1)
+            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slices = -1, int offset = 0)
             {
                 var resources = WaterResources.Instance;
                 var wrapper = new PropertyWrapperCompute(buffer, resources.Compute._ShorelineColor, 0);
@@ -139,6 +161,9 @@ namespace WaveHarmonic.Crest
                 wrapper.SetVector(ShaderIDs.s_ShorelineColor, _VolumeColorLod._ShorelineColorValue);
                 wrapper.SetFloat(ShaderIDs.s_ShorelineColorMaximumDistance, _VolumeColorLod._ShorelineColorMaximumDistance);
                 wrapper.SetFloat(ShaderIDs.s_ShorelineColorFalloff, _VolumeColorLod._ShorelineColorFalloff);
+
+                // Needs to always be set since shader has it.
+                wrapper.SetInteger(Lod.ShaderIDs.s_LodOffset, offset);
 
                 wrapper.SetKeyword(WaterResources.Instance.Keywords.ShorelineColorScattering, lod.GetType() == typeof(ScatteringLod));
                 wrapper.SetKeyword(WaterResources.Instance.Keywords.ShorelineColorSourceDistance, _VolumeColorLod._ShorelineColorSource == ShorelineVolumeColorSource.Distance);

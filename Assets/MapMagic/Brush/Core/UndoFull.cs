@@ -128,7 +128,13 @@ namespace MapMagic.Brush
 				applyData.Apply(terrainData);
 			}
 
+			#if UNITY_6000_5_OR_NEWER
+			foreach (MapMagicBrush brush in GameObject.FindObjectsByType<MapMagicBrush>())
+			#elif UNITY_6000_3_OR_NEWER
+			foreach (MapMagicBrush brush in GameObject.FindObjectsByType<MapMagicBrush>(FindObjectsSortMode.None))
+			#else
 			foreach (MapMagicBrush brush in GameObject.FindObjectsOfType<MapMagicBrush>())
+			#endif
 				brush.UpdateCaches();
 		}
 	}

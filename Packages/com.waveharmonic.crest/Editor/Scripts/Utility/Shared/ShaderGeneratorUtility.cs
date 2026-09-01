@@ -11,7 +11,14 @@ using System.Reflection;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Rendering;
+
+#if UNITY_6000_7_OR_NEWER
+using UnityEngine.Pool;
+#else
 using UnityEngine.Rendering;
+#endif
+
+using GenerateHLSL = UnityEngine.Rendering.GenerateHLSL;
 
 namespace WaveHarmonic.Crest.Editor
 {

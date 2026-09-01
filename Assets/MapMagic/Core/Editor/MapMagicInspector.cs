@@ -682,8 +682,15 @@ namespace MapMagic.Core.GUI
 		public bool GetDebug ()
 		{
 			#if UNITY_EDITOR
+
 			UnityEditor.BuildTargetGroup buildGroup = UnityEditor.EditorUserBuildSettings.selectedBuildTargetGroup;
-			string defineSymbols = UnityEditor.PlayerSettings.GetScriptingDefineSymbolsForGroup(buildGroup);
+
+			#if UNITY_2021_3_OR_NEWER
+				UnityEditor.Build.NamedBuildTarget namedBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildGroup);
+				string defineSymbols = UnityEditor.PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+			#else
+				string defineSymbols = UnityEditor.PlayerSettings.GetScriptingDefineSymbols(buildGroup);
+			#endif
 
 			return (defineSymbols.Contains("WDEBUG;") || defineSymbols.EndsWith("WDEBUG"));
 			#else
@@ -696,7 +703,13 @@ namespace MapMagic.Core.GUI
 		{
 			#if UNITY_EDITOR
 			UnityEditor.BuildTargetGroup buildGroup = UnityEditor.EditorUserBuildSettings.selectedBuildTargetGroup;
-			string defineSymbols = UnityEditor.PlayerSettings.GetScriptingDefineSymbolsForGroup(buildGroup);
+			
+			#if UNITY_2021_3_OR_NEWER
+				UnityEditor.Build.NamedBuildTarget namedBuildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(buildGroup);
+				string defineSymbols = UnityEditor.PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+			#else
+				string defineSymbols = UnityEditor.PlayerSettings.GetScriptingDefineSymbols(buildGroup);
+			#endif
 			
 			if (debug)
 			{
@@ -708,7 +721,12 @@ namespace MapMagic.Core.GUI
 				defineSymbols = defineSymbols.Replace(";;", ";"); 
 			}
 			
-			UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(buildGroup, defineSymbols);
+			#if UNITY_2021_3_OR_NEWER
+				UnityEditor.PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, defineSymbols);
+			#else
+				UnityEditor.PlayerSettings.SetScriptingDefineSymbolsForGroup(buildGroup, defineSymbols);
+			#endif
+
 			#endif
 		}
 

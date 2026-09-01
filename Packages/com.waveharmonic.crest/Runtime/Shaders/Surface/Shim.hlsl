@@ -25,6 +25,10 @@
 
     #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Utility/Legacy/Core.hlsl"
 
+    // Fixes tiling artifacts for LPPVs.
+    #undef UNITY_SAMPLE_FULL_SH_PER_PIXEL
+    #define UNITY_SAMPLE_FULL_SH_PER_PIXEL 1
+
 #if _BUILTIN_SURFACE_TYPE_TRANSPARENT
     #define d_Transparent 1
 #endif

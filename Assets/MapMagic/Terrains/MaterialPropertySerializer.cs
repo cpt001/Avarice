@@ -34,10 +34,13 @@ namespace MapMagic.Terrains
 		}*/
 
 		
-		//public void OnEnable () //called after each lod change, causing blinking
-		public void Start ()
+		public void OnEnable ()
 		{
-			if (terrain == null) return;
+			if (terrain == null) 
+				return;
+
+			if (matProps != null) //OnEnable called after each lod change, assigning each time causing blinking. So checking if it's initialized
+				return;
 
 			matProps = new MaterialPropertyBlock();
 

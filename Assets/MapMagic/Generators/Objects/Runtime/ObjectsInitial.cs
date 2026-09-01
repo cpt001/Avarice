@@ -11,6 +11,79 @@ using MapMagic.Products;
 namespace MapMagic.Nodes.ObjectsGenerators
 {
 	[System.Serializable]
+	[GeneratorMenu (menu="Objects/Initial", name ="Transition", iconName="GeneratorIcons/Position", disengageable = true, helpLink = "https://gitlab.com/denispahunov/mapmagic/wikis/object_generators/Scatter")]
+	public class Transitions2119 : Generator, IOutlet<TransitionsList>, ISceneGizmo
+	{
+		public override (string, int) GetCodeFileLine () => GetCodeFileLineBase();  //to get here with right-click on generator
+
+		//public Transition[] transitions = new Transition[1]; //array element properties are not exposable
+
+		public Vector3 pos;
+		public Vector3 eulerRot;
+		public Vector3 scale = new Vector3(1,1,1);
+
+		public bool drawGizmo = false;
+
+		public override void Generate (TileData data, StopToken stop)
+		{
+			if (!enabled) return;
+
+			TransitionsList trns = new TransitionsList();
+			//for (int p=0; p<transitions.Length; p++)
+			//	trns.Add(transitions[p]);
+			trns.Add(new Transition() {pos=pos, rotation=Quaternion.Euler(eulerRot), scale=scale} );
+
+			data.StoreProduct(this, trns);
+		}
+
+		public void DrawGizmo ()
+		{
+			#if UNITY_EDITOR
+
+			if (!drawGizmo)
+				return;
+
+			UnityEditor.EditorGUI.BeginChangeCheck();
+
+			//for (int t=0; t<transitions.Length; t++)
+			//{
+				//Vector3 pos = transition.pos;
+				//Quaternion rot = transition.rotation.normalized;;
+				//Vector3 scale = transition.scale;
+				
+				switch (UnityEditor.Tools.current)
+				{
+					case UnityEditor.Tool.Move: 
+						pos = UnityEditor.Handles.PositionHandle(pos, Quaternion.Euler(eulerRot)); 
+						break;
+
+					case UnityEditor.Tool.Rotate: 
+						eulerRot = UnityEditor.Handles.RotationHandle(Quaternion.Euler(eulerRot), pos).eulerAngles;
+						break;
+
+					case UnityEditor.Tool.Scale: 
+						scale = UnityEditor.Handles.ScaleHandle(scale, pos, Quaternion.Euler(eulerRot)); 
+						break;
+				}
+			//}
+
+			if (UnityEditor.EditorGUI.EndChangeCheck())
+			{
+				version++;
+				MapMagic.Core.MapMagicObject mmo = GameObject.FindAnyObjectByType<MapMagic.Core.MapMagicObject>();
+				mmo.Refresh();
+				UnityEditor.Undo.RecordObject(mmo.graph, "Handle Change");
+			}
+
+			#endif
+		}
+
+		private bool _hideDefaultToolGizmo = true;
+		public bool hideDefaultToolGizmo { get=>_hideDefaultToolGizmo; set=>_hideDefaultToolGizmo=value; }
+	}
+
+
+	[System.Serializable]
 	[GeneratorMenu (menu="Objects/Initial", name ="Positions", iconName="GeneratorIcons/Position", disengageable = true, helpLink = "https://gitlab.com/denispahunov/mapmagic/wikis/object_generators/Scatter")]
 	public class Positions200 : Generator, IOutlet<TransitionsList>
 	{

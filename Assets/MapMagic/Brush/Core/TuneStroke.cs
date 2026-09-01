@@ -20,7 +20,7 @@ namespace MapMagic.Brush
 
 		public bool drawTune;
 
-		public Stamp[] stamps = new Stamp[0];
+		[NonSerialized] public Stamp[] stamps = new Stamp[0];
 
 		
 		public void StampTune (Vector2D pos)

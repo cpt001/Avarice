@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using MapMagic.Terrains;
+using MapMagic.Products;
 
 /// <summary>
 /// Contains data on initial island generation rules
@@ -46,7 +48,7 @@ public class IslandMaster : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("Targeted parent: " + transform.parent.parent);
+        //Debug.Log("Targeted parent: " + transform.parent.parent);
         terrainTile = transform.parent.parent;
         terrainTile.Find("Main Terrain").gameObject.layer = LayerMask.NameToLayer("Terrain");
         //Debug.Log("Tile status: " + terrainTile.GetComponent<MapMagic.Terrains.TerrainTile>().)

@@ -6,7 +6,7 @@ Shader "Crest/Inputs/Animated Waves/Add From Texture"
     Properties
     {
         [MainTexture] _Crest_Texture("Texture", 2D) = "black" {}
-        _Crest_Strength( "Strength", float ) = 1
+        _Crest_Strength("Multiplier", float) = 1
 
         [Toggle(d_HeightsOnly)]
         _Crest_HeightsOnly("Heights Only", Float) = 1

@@ -8,15 +8,16 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// Settings for fine tuning the <see cref="FoamLod"/>.
     /// </summary>
-    [CreateAssetMenu(fileName = "FoamSettings", menuName = "Crest/Simulation Settings/Foam")]
-    [@HelpURL("Manual/Appearance/Foam.html#simulation-settings")]
+    [CreateAssetMenu(menuName = "Crest/Simulation Settings/Foam Settings", fileName = "FoamSettings")]
+    [@HelpURL(typeof(FoamLodSettings))]
     public sealed partial class FoamLodSettings : LodSettings
     {
-        [Header("General settings")]
+        [@Heading("General settings")]
 
         [Tooltip("Foam will not exceed this value in the simulation which can be used to prevent foam from accumulating too much.")]
-        [Min(0f)]
+        [@Minimum(0f)]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         float _Maximum = 10f;
 
@@ -26,7 +27,7 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         internal float _FoamFadeRate = 0.8f;
 
-        [Header("Whitecaps")]
+        [@Heading("Whitecaps")]
 
         [Tooltip("Scales intensity of foam generated from waves.\n\nThis setting should be balanced with the Foam Fade Rate setting.")]
         [@Range(0f, 5f)]
@@ -47,7 +48,14 @@ namespace WaveHarmonic.Crest
         internal int _FilterWaves = 2;
 
 
-        [Header("Shoreline")]
+        [@Heading("Shoreline")]
+
+        [@Label("Enabled")]
+        [Tooltip("Generate foam at shorelines.\n\nThis is a superior option to camera depth shoreline foam on the water material - make sure both are not enabled.")]
+        [@GenerateAPI]
+        [@DecoratedField]
+        [@SerializeField]
+        internal bool _ShorelineFoamEnabled = true;
 
         [Tooltip("Foam will be generated in water shallower than this depth.\n\nControls how wide the band of foam at the shoreline will be. Note that this is not a distance to shoreline, but a threshold on water depth, so the width of the foam band can vary based on terrain slope. To address this limitation we allow foam to be manually added from geometry or from a texture, see the next section.")]
         [@Range(0.01f, 3f)]

@@ -9,8 +9,8 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// Water shape representation - power values for each octave of wave components.
     /// </summary>
-    [CreateAssetMenu(fileName = "Waves", menuName = "Crest/Wave Spectrum", order = 10000)]
-    [@HelpURL("Manual/Simulation/Waves.html#wave-conditions")]
+    [CreateAssetMenu(menuName = "Crest/Data/Wave Spectrum", fileName = "Waves", order = 10000)]
+    [@HelpURL(typeof(WaveSpectrum))]
     public sealed partial class WaveSpectrum : CustomScriptableObject
     {
         // These must match corresponding constants in FFTSpectrum.compute
@@ -113,7 +113,7 @@ namespace WaveHarmonic.Crest
 
             if (index >= _PowerLogarithmicScales.Length || index >= _PowerDisabled.Length)
             {
-                Debug.AssertFormat(index < _PowerLogarithmicScales.Length && index < _PowerDisabled.Length, this, $"Crest: {0} index {index} is out of range.", nameof(WaveSpectrum));
+                Debug.AssertFormat(index < _PowerLogarithmicScales.Length && index < _PowerDisabled.Length, this, "Crest: {0} index {1} is out of range.", nameof(WaveSpectrum), index);
                 power = 0f;
                 return 0f;
             }
@@ -165,7 +165,7 @@ namespace WaveHarmonic.Crest
             // Amplitude
             var a = Mathf.Sqrt(a2);
 
-            // Gerstner fudge - one hack to get Gerstners looking on par with FFT
+            // Gerstner fudge - one hack to get Gerstner looking on par with FFT
             a *= 5f;
 
             return a * _Multiplier;

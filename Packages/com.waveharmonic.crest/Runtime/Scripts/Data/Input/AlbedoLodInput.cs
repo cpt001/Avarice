@@ -9,7 +9,6 @@ namespace WaveHarmonic.Crest
     /// <remarks>
     /// Attach this to objects that you want to influence the surface color.
     /// </remarks>
-    [@HelpURL("Manual/Appearance/Albedo.html")]
     public sealed partial class AlbedoLodInput : LodInput
     {
         internal override LodInputMode DefaultMode => LodInputMode.Renderer;

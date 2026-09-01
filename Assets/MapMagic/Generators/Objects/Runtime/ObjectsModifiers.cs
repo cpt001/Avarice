@@ -338,6 +338,7 @@ namespace MapMagic.Nodes.ObjectsGenerators
 	{
 		public override (string, int) GetCodeFileLine () => GetCodeFileLineBase();  //to get here with right-click on generator
 
+		[Serializable]
 		public class SplitLayer : IOutlet<TransitionsList>
 		{
 			public string name = "Object Layer";
@@ -941,7 +942,7 @@ namespace MapMagic.Nodes.ObjectsGenerators
 		[Val("Positions", "Inlet")]		public readonly Inlet<TransitionsList> positionsIn = new Inlet<TransitionsList>();
 		[Val("Stamp", "Inlet")]			public readonly Inlet<MatrixWorld> stampIn = new Inlet<MatrixWorld>();
 		
-		[Val("Size", "Custom")]	public float size = 1;
+		[Val("Size", "Custom")]			public float size = 1;
 		[Val("Intensity", "Custom")]	public float intensity = 1;
 		[Val("Hardness", "UseFallof")]	public float hardness = 0.8f;
 		[Val("Size Factor", "Custom")]	public float sizeFactor = 1;
@@ -970,7 +971,7 @@ namespace MapMagic.Nodes.ObjectsGenerators
 				if (stop!=null && stop.stop) return;
 
 				float radius = size/2;
-				float currRadius = radius*(1-sizeFactor) + radius*positions.arr[t].scale.y*sizeFactor;
+				float currRadius = radius*(1-sizeFactor) + radius*positions.arr[t].scale.x*sizeFactor;
 				if (useRotation) currRadius *= 1.414213562373095f; //it will be then reduced in stamp
 
 				StampMatrix(dst, stamp, 
@@ -1022,7 +1023,7 @@ namespace MapMagic.Nodes.ObjectsGenerators
 					coord.x = x; coord.z = z;
 
 					falloff = coord.GetInterpolatedFalloff(mapCenter, mapRadius / (useRotation ? 1.414213562373095f : 1), hardness, smooth:1);
-					if (falloff < 0.00001f) continue;
+					if (falloff < 0.0000001f) continue;
 				}
 
 				//value
@@ -1042,11 +1043,11 @@ namespace MapMagic.Nodes.ObjectsGenerators
 				//applying
 				value *= intensity;
 				int pos = (z-matrix.rect.offset.z)*matrix.rect.size.x + x - matrix.rect.offset.x;  //coord.GetPos
-				if (blendAdditive)
+//				if (blendAdditive)
 					matrix.arr[pos] += value*falloff;
-				else //max
-					if (value*falloff > matrix.arr[pos]) 
-						matrix.arr[pos] = value*falloff;
+//				else //max
+//					if (value*falloff > matrix.arr[pos]) 
+//						matrix.arr[pos] = value*falloff;
 			}
 		}
 

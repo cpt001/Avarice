@@ -8,7 +8,7 @@ public class SlotBuilder : MonoBehaviour
     public int distanceFromCenter;
     [SerializeField] private GameObject slotPrefab;
     private BoxCollider bldgCol => GetComponent<BoxCollider>();
-    [SerializeField] private float roadOffset;
+    public float roadOffset;
     private Vector3 adjustedCollider;
     public List<GameObject> slots = new List<GameObject>();
     private GameObject neCorner;

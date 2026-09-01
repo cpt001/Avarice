@@ -59,12 +59,9 @@ namespace WaveHarmonic.Crest
     /// <summary>
     /// Demarcates an AABB area where water is present in the world.
     /// </summary>
-    /// <remarks>
-    /// If present, water tiles will be culled if they don't overlap any WaterBody.
-    /// </remarks>
     [@ExecuteDuringEditMode]
     [AddComponentMenu(Constants.k_MenuPrefixScripts + "Local Override")]
-    [@HelpURL("Manual/Advanced/LocalOverrides.html")]
+    [@HelpURL(typeof(WaterBody))]
     public sealed partial class WaterBody : ManagedBehaviour<WaterRenderer>
     {
         [Tooltip("What aspects of water does this area affect.")]
@@ -107,7 +104,7 @@ namespace WaveHarmonic.Crest
         [@Label("Enable")]
         [Tooltip("Whether this area overrides materials.\n\nIf enabled and no materials are set, then the global materials are used.")]
         [@Disable(nameof(_Exclusion), nameof(WaterBodyExclusion.Exclude))]
-        [@GenerateAPI]
+        [@GenerateAPI(Setter.Custom)]
         [@DecoratedField]
         [@SerializeField]
         bool _OverrideMaterials;
@@ -144,6 +141,25 @@ namespace WaveHarmonic.Crest
 
         internal Material _MotionVectorMaterial;
 
+        internal void RenderMaterialClip(WaterRenderer water, CommandBuffer commands)
+        {
+            if (!water.ClipLod.Enabled)
+            {
+                return;
+            }
+
+            var slices = water.ClipLod.OverlappingSlicesCount(Rect, out var offset);
+
+            if (slices < 1)
+            {
+                return;
+            }
+
+            _ClipInput.ForceExclude = _ForceClipInput || OverrideMaterials;
+            _ClipInput.Draw(water.ClipLod, commands, water.ClipLod.DataTexture, -1, 1f, slices, offset);
+            _ClipInput.ForceExclude = false;
+        }
+
         sealed class ClipInput : ILodInput
         {
             readonly WaterBody _Owner;
@@ -152,6 +168,8 @@ namespace WaveHarmonic.Crest
             public bool Enabled => _Owner.Affects.HasFlag(WaterBodyAffects.Surface) && ((_Owner.Precise && _Owner.Exclusion != WaterBodyExclusion.None) || (_Owner._ForceClipInput && _Owner.Exclusion == WaterBodyExclusion.Include));
             public bool IsCompute => true;
             public int Pass => -1;
+
+            public bool ForceExclude { get; set; }
 
             internal int _Queue;
 
@@ -163,10 +181,10 @@ namespace WaveHarmonic.Crest
             public ClipInput(WaterBody owner)
             {
                 _Owner = owner;
-                _Transform = owner.transform;
+                _Transform = owner.Transform;
             }
 
-            public void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slices = -1)
+            public void Draw(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1f, int slices = -1, int offset = 0)
             {
                 var wrapper = new PropertyWrapperCompute(buffer, WaterResources.Instance.Compute._ClipPrimitive, 0);
 
@@ -176,15 +194,14 @@ namespace WaveHarmonic.Crest
                 wrapper.SetVector(ShaderIDs.s_Position, _Transform.position);
                 wrapper.SetFloat(ShaderIDs.s_Diameter, _Transform.lossyScale.Maximum());
 
-                wrapper.SetKeyword(WaterResources.Instance.Keywords.ClipPrimitiveInverted, _Owner._Exclusion == WaterBodyExclusion.Include);
+                wrapper.SetKeyword(WaterResources.Instance.Keywords.ClipPrimitiveInverted, !ForceExclude && _Owner._Exclusion == WaterBodyExclusion.Include);
                 wrapper.SetKeyword(WaterResources.Instance.Keywords.ClipPrimitiveSphere, false);
                 wrapper.SetKeyword(WaterResources.Instance.Keywords.ClipPrimitiveCube, false);
                 wrapper.SetKeyword(WaterResources.Instance.Keywords.ClipPrimitiveRectangle, true);
 
                 wrapper.SetTexture(ShaderIDs.s_Target, target);
 
-                var threads = simulation.Resolution / Lod.k_ThreadGroupSize;
-                wrapper.Dispatch(threads, threads, slices);
+                LodInput.Dispatch(wrapper, simulation, slices, offset, _Transform, Rect);
             }
 
             public float Filter(WaterRenderer water, int slice)
@@ -234,7 +251,7 @@ namespace WaveHarmonic.Crest
         }
 
         internal Material AboveOrBelowSurfaceMaterial => _BelowSurfaceMaterial == null ? _AboveSurfaceMaterial : _BelowSurfaceMaterial;
-        bool RequiresClipInput => Affects.HasFlag(WaterBodyAffects.Surface) && (_ForceClipInput || (Precise && Exclusion != WaterBodyExclusion.None));
+        bool RequiresClipInput => Affects.HasFlag(WaterBodyAffects.Surface) && (_ForceClipInput || (Precise && (Exclusion != WaterBodyExclusion.None || OverrideMaterials)));
 
         ClipInput _ClipInput;
 
@@ -263,20 +280,20 @@ namespace WaveHarmonic.Crest
         void CalculateBounds()
         {
             var bounds = new Bounds();
-            bounds.center = transform.position;
-            bounds.Encapsulate(transform.TransformPoint(Vector3.right / 2f + Vector3.forward / 2f));
-            bounds.Encapsulate(transform.TransformPoint(Vector3.right / 2f - Vector3.forward / 2f));
-            bounds.Encapsulate(transform.TransformPoint(Vector3.left / 2f + Vector3.forward / 2f));
-            bounds.Encapsulate(transform.TransformPoint(Vector3.left / 2f - Vector3.forward / 2f));
+            bounds.center = Transform.position;
+            bounds.Encapsulate(Transform.TransformPoint(Vector3.right / 2f + Vector3.forward / 2f));
+            bounds.Encapsulate(Transform.TransformPoint(Vector3.right / 2f - Vector3.forward / 2f));
+            bounds.Encapsulate(Transform.TransformPoint(Vector3.left / 2f + Vector3.forward / 2f));
+            bounds.Encapsulate(Transform.TransformPoint(Vector3.left / 2f - Vector3.forward / 2f));
 
             _BoundsArea = bounds.size.x * bounds.size.z;
 
             if (_Vertical)
             {
-                bounds.Encapsulate(transform.TransformPoint(Vector3.up / 2f + Vector3.forward / 2f));
-                bounds.Encapsulate(transform.TransformPoint(Vector3.up / 2f - Vector3.forward / 2f));
-                bounds.Encapsulate(transform.TransformPoint(Vector3.down / 2f + Vector3.forward / 2f));
-                bounds.Encapsulate(transform.TransformPoint(Vector3.down / 2f - Vector3.forward / 2f));
+                bounds.Encapsulate(Transform.TransformPoint(Vector3.up / 2f + Vector3.forward / 2f));
+                bounds.Encapsulate(Transform.TransformPoint(Vector3.up / 2f - Vector3.forward / 2f));
+                bounds.Encapsulate(Transform.TransformPoint(Vector3.down / 2f + Vector3.forward / 2f));
+                bounds.Encapsulate(Transform.TransformPoint(Vector3.down / 2f - Vector3.forward / 2f));
 
                 _BoundsVolume = _BoundsArea * bounds.size.y;
             }
@@ -331,7 +348,7 @@ namespace WaveHarmonic.Crest
         private protected override System.Action<WaterRenderer> OnUpdateMethod => OnUpdate;
         void OnUpdate(WaterRenderer water)
         {
-            if (transform.hasChanged)
+            if (Transform.hasChanged)
             {
                 _RecalculateRect = _RecalculateBounds = true;
             }
@@ -340,7 +357,7 @@ namespace WaveHarmonic.Crest
         private protected override System.Action<WaterRenderer> OnLateUpdateMethod => OnLateUpdate;
         void OnLateUpdate(WaterRenderer water)
         {
-            transform.hasChanged = false;
+            Transform.hasChanged = false;
 
             // We need to use clip if we want to include the surface in the following case.
             var force = water.ClipLod.Enabled &&
@@ -434,6 +451,13 @@ namespace WaveHarmonic.Crest
             if (!isActiveAndEnabled) return;
             HandleClipInputRegistration();
         }
+
+        void SetOverrideMaterials(bool previous, bool current)
+        {
+            if (previous == current) return;
+            if (!isActiveAndEnabled) return;
+            HandleClipInputRegistration();
+        }
     }
 
 #if UNITY_EDITOR
@@ -459,6 +483,9 @@ namespace WaveHarmonic.Crest
                     break;
                 case nameof(_Vertical):
                     SetVertical((bool)previous, _Vertical);
+                    break;
+                case nameof(_OverrideMaterials):
+                    SetOverrideMaterials((bool)previous, _OverrideMaterials);
                     break;
                 case nameof(_Precise):
                     SetPrecise((bool)previous, _Precise);

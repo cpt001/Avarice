@@ -14,7 +14,7 @@ namespace WaveHarmonic.Crest
     /// this client's time to the shared server time.
     /// </remarks>
     [AddComponentMenu(Constants.k_MenuPrefixTime + "Networked Time Provider")]
-    [@HelpURL("Manual/Advanced/TimeProviders.html#network-synchronisation")]
+    [@HelpURL(typeof(NetworkedTimeProvider))]
     public sealed class NetworkedTimeProvider : TimeProvider
     {
         /// <summary>

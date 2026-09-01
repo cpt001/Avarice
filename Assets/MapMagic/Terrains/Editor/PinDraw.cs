@@ -215,7 +215,14 @@ namespace MapMagic.Terrains.GUI
 				{
 					//excluding tiles
 					HashSet<Terrain> possibleTerrains = new HashSet<Terrain>();
-					Terrain[] allTerrains = GameObject.FindObjectsOfType<Terrain>();
+					Terrain[] allTerrains = 
+					#if UNITY_6000_5_OR_NEWER
+						GameObject.FindObjectsByType<Terrain>();
+					#elif UNITY_6000_3_OR_NEWER
+						GameObject.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+					#else
+						GameObject.FindObjectsOfType<Terrain>();
+					#endif
 					foreach (Terrain terrain in allTerrains)
 						if (!pinnedTileTerrains.Contains(terrain)) possibleTerrains.Add(terrain);
 

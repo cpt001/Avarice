@@ -130,7 +130,9 @@ namespace WaveHarmonic.Crest
                 _DepthBuffer = _CopyDepthBufferPass._DepthBufferCopy;
             }
 
-            _UnderwaterEffectPass.Execute(data.cameraData.camera, buffer, _ColorBuffer, _DepthBuffer);
+            var overlay = data.cameraData.renderType == CameraRenderType.Overlay;
+
+            _UnderwaterEffectPass.Execute(data.cameraData.camera, buffer, _ColorBuffer, _DepthBuffer, overlay: overlay);
 
             context.ExecuteCommandBuffer(buffer);
             CommandBufferPool.Release(buffer);

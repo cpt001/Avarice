@@ -18,7 +18,14 @@
     const float3 i_PositionWS, \
     const float3 i_PositionVS, \
     const half3 i_NormalWS, \
-    const float2 i_StaticLightMapUV, \
+    const float4 i_UV0, \
+    const float4 i_UV1, \
+    const float4 i_UV2, \
+    const float4 i_UV3, \
+    const float i_Smoothness, \
+    const float i_SmoothnessFar, \
+    const float i_NormalMapStrength, \
+    const float i_NormalMapTurbulenceStrength, \
     iomod half3 o_Albedo, \
     iomod half3 o_NormalWS, \
     iomod half3 o_Specular, \
@@ -41,7 +48,14 @@
     i_PositionWS, \
     i_PositionVS, \
     i_NormalWS, \
-    i_StaticLightMapUV, \
+    i_UV0, \
+    i_UV1, \
+    i_UV2, \
+    i_UV3, \
+    i_Smoothness, \
+    i_SmoothnessFar, \
+    i_NormalMapStrength, \
+    i_NormalMapTurbulenceStrength, \
     o_Albedo, \
     o_NormalWS, \
     o_Specular, \
@@ -83,12 +97,28 @@
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Alpha.hlsl"
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Surface/Fog.hlsl"
 
-#if (CREST_PORTALS != 0)
+#if d_Crest_PackagePortals
 #include "Packages/com.waveharmonic.crest.portals/Runtime/Shaders/Library/Portals.hlsl"
 #endif
 
 bool _Crest_DrawBoundaryXZ;
 float4 _Crest_BoundaryXZ;
+
+bool _Crest_HasBoundsXZ;
+bool _Crest_InvertBoundsXZ;
+float4 _Crest_BoundsXZ;
+bool _Crest_DataFromUVs;
+float4 _Crest_Weight;
+float4 _Crest_FeatherWidth;
+
+bool _Crest_ShorelineFoamBlend;
+
+bool _Crest_AbsorptionShoreline;
+bool _Crest_ScatteringShoreline;
+half3 _Crest_AbsorptionShorelineColor;
+half3 _Crest_ScatteringShorelineColor;
+float _Crest_ShorelineColorMaximumDistance;
+float _Crest_ShorelineColorFalloff;
 
 m_CrestNameSpace
 
@@ -145,16 +175,14 @@ void Fragment
 
     // Data that fades towards the edge.
     half foam = 0.0; half _determinant = 0.0; half4 albedo = 0.0; half2 shadow = 0.0; half waterDepth = i_WaterLevelOffset; half shorelineDistance = 0.0; half2 flowData = 0.0;
+
+#if !d_Crest_OffLodMesh
     if (weight0 > m_CrestSampleLodThreshold)
     {
         if (_Crest_ApplyDisplacementNormals)
         {
             Cascade::MakeAnimatedWaves(slice0).SampleDisplacementNormal(i_UndisplacedXZ, weight0, o_NormalWS.xz, _determinant);
         }
-
-#if d_Crest_CustomMesh && d_Crest_FlowLod
-        Cascade::MakeFlow(slice0).SampleFlow(i_UndisplacedXZ, weight0, flowData);
-#endif
 
         if (_Crest_FoamEnabled)
         {
@@ -192,10 +220,6 @@ void Fragment
             Cascade::MakeAnimatedWaves(slice1).SampleDisplacementNormal(i_UndisplacedXZ, weight1, o_NormalWS.xz, _determinant);
         }
 
-#if d_Crest_CustomMesh && d_Crest_FlowLod
-        Cascade::MakeFlow(slice1).SampleFlow(i_UndisplacedXZ, weight1, flowData);
-#endif
-
         if (_Crest_FoamEnabled)
         {
             Cascade::MakeFoam(slice1).SampleFoam(i_UndisplacedXZ, weight1, foam);
@@ -225,6 +249,16 @@ void Fragment
 #endif
     }
 
+#if d_Crest_CustomMesh && d_Crest_FlowLod
+#if !d_Crest_OffLodMesh
+    if (!_Crest_DataFromUVs)
+#endif
+    {
+        if (weight0 > 0.0 || weight1 > 0.0) flowData = Cascade::MakeFlow(slice0).SampleFlow(i_UndisplacedXZ);
+    }
+#endif
+#endif // !d_Crest_OffLodMesh
+
     // Invert so shadows are black as we normally multiply this by lighting.
     shadow = 1.0 - shadow;
 
@@ -232,7 +266,11 @@ void Fragment
     // The default simulation value has been written to the border of the last slice.
     half3 absorption = _Crest_Absorption.xyz; half3 scattering = _Crest_Scattering.xyz;
 
+#if !d_Crest_OffLodMesh
 #if d_Crest_AbsorptionLod || d_Crest_ScatteringLod
+#if d_Crest_CustomMesh
+    if (!_Crest_DataFromUVs)
+#endif
     {
         const float weight0 = (1.0 - (isLastLod ? 0.0 : i_LodAlpha)) * cascade0._Weight;
         const float weight1 = (1.0 - weight0) * cascade1._Weight;
@@ -286,6 +324,69 @@ void Fragment
         }
     }
 #endif
+#endif // !d_Crest_OffLodMesh
+
+#if d_Transparent
+    // Can be extents, off-lod mesh or custom mesh.
+    if (_Crest_ShorelineFoam || _Crest_AbsorptionShoreline || _Crest_ScatteringShoreline)
+    {
+        if (!i_Underwater && i_SceneDepthRaw > 0.0)
+        {
+            float waterDepth = i_PositionWS.y - ComputeWorldSpacePosition(i_ScreenPosition.xy, i_SceneDepthRaw, UNITY_MATRIX_I_VP).y;
+            const float blend = pow(saturate(dot(o_NormalWS, half3(0.0, 1.0, 0.0))), 128.0);
+            waterDepth = lerp(sceneZ - pixelZ, waterDepth, blend);
+
+            if (_Crest_ShorelineFoam)
+            {
+                float shorelineFoam = _Crest_ShorelineFoamStrength * (saturate(1.0 - waterDepth / _Crest_ShorelineFoamMaxDepth));
+                if (_Crest_ShorelineFoamBlend) shorelineFoam *= (1.0 - weight0);
+                foam += shorelineFoam;
+            }
+
+            if (_Crest_AbsorptionShoreline || _Crest_ScatteringShoreline)
+            {
+                const float shoreline = pow(1.0 - saturate(waterDepth / _Crest_ShorelineColorMaximumDistance), _Crest_ShorelineColorFalloff);
+
+                if (_Crest_AbsorptionShoreline)
+                {
+                    half3 shorelineColor = lerp(_Crest_Absorption.xyz, _Crest_AbsorptionShorelineColor, shoreline);
+                    absorption = lerp(absorption, shorelineColor, (1.0 - weight0));
+                }
+                if (_Crest_ScatteringShoreline)
+                {
+                    half3 shorelineColor = lerp(_Crest_Scattering.xyz, _Crest_ScatteringShorelineColor, shoreline);
+                    scattering = lerp(scattering, shorelineColor, (1.0 - weight0));
+                }
+            }
+        }
+    }
+#endif
+
+#if d_Crest_CustomMesh
+    if (_Crest_DataFromUVs)
+    {
+        const float2 axis = normalize(i_UV0.w * UNITY_MATRIX_M._m00_m20 - i_UV0.z * UNITY_MATRIX_M._m02_m22);
+        const float distance = min(i_UV0.x > 0.5 ? 1.0 - i_UV0.x : i_UV0.x, i_UV0.y > 0.5 ? 1.0 - i_UV0.y : i_UV0.y);
+
+        if (i_UV1.z > 0.0)
+        {
+            const float feathering = min(distance / _Crest_FeatherWidth.x, 1.0);
+            flowData += axis * i_UV1.z * feathering * _Crest_Weight.x;
+        }
+
+        if (i_UV2.a > 0.0)
+        {
+            const float feathering = min(distance / _Crest_FeatherWidth.z, 1.0);
+            absorption = lerp(absorption, i_UV2.xyz, i_UV2.a * feathering  * _Crest_Weight.z);
+        }
+
+        if (i_UV3.a > 0.0)
+        {
+            const float feathering = min(distance / _Crest_FeatherWidth.w, 1.0);
+            scattering = lerp(scattering, i_UV3.xyz, i_UV3.a * feathering * _Crest_Weight.w);
+        }
+    }
+#endif
 
 #if d_Crest_FlowLod
 #if !d_Crest_CustomMesh
@@ -302,12 +403,12 @@ void Fragment
     }
 
 #if d_Transparent
-        // Feather at intersection. Cannot be used for shadows since depth is not available.
-        const float feather =
+    // Feather at intersection. Cannot be used for shadows since depth is not available.
+    const float feather =
 #if d_Crest_SimpleTransparency
-            saturate(waterDepth / 0.2);
+        saturate(waterDepth / 0.2);
 #else
-            saturate((sceneZ - pixelZ) / 0.2);
+        saturate((sceneZ - pixelZ) / 0.2);
 #endif
 #endif
 
@@ -328,19 +429,19 @@ void Fragment
 #if d_Crest_NormalMap
         if (_Crest_NormalMapEnabled)
         {
+            half normalMapStrength = i_NormalMapStrength;
+
             const half2 normalMap = SampleNormalMaps
             (
 #if d_Crest_FlowLod
                 flow,
 #endif
                 _Crest_NormalMapTiledTexture,
-                _Crest_NormalMapStrength,
+                normalMapStrength,
                 i_UndisplacedXZ,
                 i_LodAlpha,
                 cascade0
             );
-
-            half normalMapStrength = _Crest_NormalMapStrength;
 
             if (_Crest_NormalMapTurbulenceEnabled)
             {
@@ -350,7 +451,7 @@ void Fragment
                     normalMap,
                     normalMapStrength,
                     _Crest_NormalMapTurbulenceCoverage,
-                    _Crest_NormalMapTurbulenceStrength,
+                    i_NormalMapTurbulenceStrength,
                     i_ViewDirectionWS,
                     _determinant,
                     g_Crest_WaterCenter.y + i_WaterLevelOffset,
@@ -375,7 +476,7 @@ void Fragment
     const half3 ambientLight = AmbientLight();
     half3 additionalLight = 0.0;
 #if d_Crest_AdditionalLights
-    additionalLight = AdditionalLighting(i_PositionWS, i_ScreenPositionRaw, i_StaticLightMapUV, i_PositionSS, o_NormalWS);
+    additionalLight = AdditionalLighting(i_PositionWS, i_ScreenPositionRaw, i_PositionSS, o_NormalWS);
 #endif
 
 #if CREST_BIRP
@@ -585,7 +686,7 @@ void Fragment
     // Smoothness
     {
         // Vary smoothness by distance.
-        o_Smoothness = lerp(_Crest_Smoothness, _Crest_SmoothnessFar, pow(saturate(pixelZ / _Crest_SmoothnessFarDistance), _Crest_SmoothnessFalloff));
+        o_Smoothness = lerp(i_Smoothness, i_SmoothnessFar, pow(saturate(pixelZ / _Crest_SmoothnessFarDistance), _Crest_SmoothnessFalloff));
     }
 
     // Occlusion
@@ -710,6 +811,7 @@ void Fragment
     }
 
     // Albedo
+#if !d_Crest_OffLodMesh
 #if d_Crest_AlbedoLod
     if (_Crest_AlbedoEnabled)
     {
@@ -717,6 +819,7 @@ void Fragment
         o_Albedo = lerp(o_Albedo, albedo.rgb, albedo.a * foamMask);
         o_Emission *= 1.0 - albedo.a * foamMask;
     }
+#endif
 #endif
 
 #if d_Crest_SimpleTransparency
@@ -782,13 +885,15 @@ void Fragment(m_Properties(inout))
 #if d_Crest_AlphaTest
 #if !d_Crest_SimpleTransparency
 #ifndef CREST_SHADOWPASS
-#if (CREST_PORTALS != 0)
+#if d_Crest_PackagePortals
     if (m_CrestPortal)
     {
         const float pixelRawZ = i_ScreenPositionRaw.z / i_ScreenPositionRaw.w;
         o_Alpha = Portal::EvaluateSurface(i_ScreenPosition.xy, pixelRawZ, i_PositionWS, underwater, sceneRawZ, negativeFog) ? -1.0 : 1.0;
 #ifndef SHADER_API_WEBGPU
+#ifndef SHADER_STAGE_RAY_TRACING
         clip(o_Alpha);
+#endif
 #endif
     }
 #endif
@@ -800,33 +905,39 @@ void Fragment(m_Properties(inout))
     uint slice1;
     float alpha;
 
+#if d_Crest_OffLodMesh
+    slice0 = g_Crest_LodCount - 1;
+    slice1 = slice0 + 1;
+    alpha = 1.0;
+#else
 #if d_Crest_AlphaTest || d_Crest_CustomMesh
     PositionToSliceIndices(i_PositionWS.xz, 0, g_Crest_LodCount - 1, g_Crest_WaterScale, slice0, slice1, alpha);
 #endif
+#endif
+
 
 #if d_Crest_AlphaTest
     {
-        const Cascade cascade0 = Cascade::Make(slice0);
-        const Cascade cascade1 = Cascade::Make(slice1);
-        const float weight0 = (1.0 - alpha) * cascade0._Weight;
-        const float weight1 = (1.0 - weight0) * cascade1._Weight;
-
-        float clipSurface = 0.0;
-        if (weight0 > m_CrestSampleLodThreshold)
-        {
-            Cascade::MakeClip(slice0).SampleClip(i_PositionWS.xz, weight0, clipSurface);
-        }
-        if (weight1 > m_CrestSampleLodThreshold)
-        {
-            Cascade::MakeClip(slice1).SampleClip(i_PositionWS.xz, weight1, clipSurface);
-        }
+#if !d_Crest_OffLodMesh
+        const float clipSurface = Cascade::MakeClip(slice0).SampleClip(i_PositionWS.xz);
 
         // Add 0.5 bias for LOD blending and texel resolution correction. This will help to
         // tighten and smooth clipped edges.
         o_Alpha -= clipSurface > 0.5 ? 2.0 : 0.0;
+#endif
+
+        if (_Crest_HasBoundsXZ)
+        {
+            bool remove = (i_PositionWS.x < _Crest_BoundsXZ.x || i_PositionWS.x > _Crest_BoundsXZ.z ||
+                i_PositionWS.z < _Crest_BoundsXZ.y || i_PositionWS.z > _Crest_BoundsXZ.w);
+            if (_Crest_InvertBoundsXZ) remove = !remove;
+            o_Alpha -= remove ? 2.0 : 0.0;
+        }
 
 #ifndef SHADER_API_WEBGPU
+#ifndef SHADER_STAGE_RAY_TRACING
         clip(o_Alpha);
+#endif
 #endif
     }
 #endif

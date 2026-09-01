@@ -5,12 +5,11 @@
 
 #pragma kernel CrestTransferWaves
 
-#pragma multi_compile_local __ d_Texture d_TextureBlend
+#pragma multi_compile_local __ d_Area d_Texture
+#pragma multi_compile_local __ d_Blend
 #pragma multi_compile_local __ d_Bicubic
 
-#if defined(d_TextureBlend)
-#define d_Texture 1
-#endif
+#define d_Local (defined(d_Area) || defined(d_Texture))
 
 #define d_Quantize defined(d_Texture)
 #define d_QuantizeTexture defined(d_Texture)
@@ -45,13 +44,15 @@ uint _Crest_Resolution;
 bool _Crest_SeaLevelOnly;
 
 // Texture
-#if d_Texture
+#if d_Local
 float2 _Crest_TextureSize;
 float2 _Crest_TexturePosition;
 float2 _Crest_TextureRotation;
 float2 _Crest_Multiplier;
 bool _Crest_NegativeValues;
 int _Crest_Blend;
+bool  _Crest_TargetRegion;
+uint2 _Crest_TargetRegionSize;
 #endif
 CBUFFER_END
 
@@ -74,7 +75,7 @@ void TransferWaves(uint3 id)
 
     const uint2 resolution = uint2(_Crest_Resolution, _Crest_Resolution);
 
-#if !d_TextureBlend
+#if !d_Blend
     // Additive only. All wavelengths filtered out for this LOD so nothing to do.
     if (parameters.x < 0 || parameters.y < 0)
     {
@@ -83,6 +84,14 @@ void TransferWaves(uint3 id)
 #endif
 
     const Cascade cascade = Cascade::MakeAnimatedWaves(slice0);
+
+#if d_Local
+    if (_Crest_TargetRegion)
+    {
+        id.xy = cascade.InputIDToLodID(id.xy, _Crest_TargetRegionSize, _Crest_TexturePosition);
+    }
+#endif
+
     const float2 positionWS = cascade.IDToWorld(id.xy);
 
     half _weight = _Crest_Weight;
@@ -90,14 +99,11 @@ void TransferWaves(uint3 id)
 
     float2 axis = _Crest_AxisX;
 
-#if d_Texture
-    float2 uvPainted = (positionWS - _Crest_TexturePosition) / _Crest_TextureSize;
-    // Clockwise transform rotation.
-    uvPainted = uvPainted.x * float2(_Crest_TextureRotation.y, -_Crest_TextureRotation.x) + uvPainted.y * _Crest_TextureRotation;
-    uvPainted += 0.5;
+#if d_Local
+    const float2 uv = DataIDToInputUV(id.xy, cascade, _Crest_TexturePosition, _Crest_TextureRotation, _Crest_TextureSize);
 
     // Feather boundaries.
-    _weight *= FeatherWeightFromUV(uvPainted, _Crest_FeatherWidth);
+    _weight *= FeatherWeightFromUV(uv, _Crest_FeatherWidth);
 
     // Check we are within bounds.
     if (_weight <= 0.0)
@@ -105,12 +111,14 @@ void TransferWaves(uint3 id)
         return;
     }
 
-    alpha = _weight;
+    alpha = _Crest_Blend == m_CrestBlendNone ? _Crest_Weight : _weight;
+#endif
 
+#if d_Texture
     // Initialize or "use of potentially uninitialized variable" due to early return.
     float axisLength = 1.0; float4 axisXZ0 = 0.0; float4 axisXZ1 = 0.0; float t = 0.0;
     {
-        axis = _Crest_Texture.SampleLevel(LODData_linear_clamp_sampler, uvPainted, 0).xy * _Crest_Multiplier;
+        axis = _Crest_Texture.SampleLevel(LODData_linear_clamp_sampler, uv, 0).xy * _Crest_Multiplier;
 
         if (!_Crest_NegativeValues)
         {
@@ -123,7 +131,7 @@ void TransferWaves(uint3 id)
         // Zero data so exit early and apply blending if needed.
         if (!(axisLength2 > 0.00001))
         {
-#if d_TextureBlend
+#if d_Blend
             if (_Crest_Blend > m_None)
             {
                 // If zero affects blend weight, then reduce alpha by axis length so that it
@@ -163,6 +171,15 @@ void TransferWaves(uint3 id)
     const half depth = Cascade::MakeDepth(slice0).SampleSignedDepthFromSeaLevel(positionWS) + level;
 
     half3 _displacement = 0.0;
+
+    float2 samplePositionWS = positionWS;
+
+#if d_Crest_PackageShiftingOrigin
+    if (g_Crest_ShiftingOriginWaveCompatibilityMode)
+    {
+        samplePositionWS -= g_Crest_ShiftingOriginOffset.xz;
+    }
+#endif
 
     // Loop through wave buffer slices.
     for (uint i = first; i <= last; i++)
@@ -213,7 +230,7 @@ void TransferWaves(uint3 id)
             float3 displacement = SampleWaves
             (
                 // Interpolate waves.
-                positionWS / waveBufferSize,
+                (samplePositionWS - g_Crest_DataOffset.xz) / waveBufferSize,
                 axis,
 #if d_Quantize
                 axisXZ0,
@@ -234,7 +251,7 @@ void TransferWaves(uint3 id)
         }
     }
 
-#if d_TextureBlend
+#if d_Blend
     // Global waves are always additive.
     _Crest_Target[id] *= 1.0 - saturate(alpha);
 #endif

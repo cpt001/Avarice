@@ -7,6 +7,8 @@
 
 #pragma kernel CrestExecute
 
+#define k_Crest_LodOffset _Crest_LodOffset
+
 #include "HLSLSupport.cginc"
 
 #include "Packages/com.waveharmonic.crest/Runtime/Shaders/Library/Macros.hlsl"
@@ -21,9 +23,13 @@ RWTexture2DArray<float> _Crest_Target;
 
 CBUFFER_START(CrestPerMaterial)
 float _Crest_Multiplier;
+bool _Crest_InvertSource;
 float2 _Crest_TextureSize;
 float2 _Crest_TexturePosition;
 float2 _Crest_TextureRotation;
+bool  _Crest_TargetRegion;
+uint2 _Crest_TargetRegionSize;
+uint _Crest_LodOffset;
 CBUFFER_END
 
 m_CrestNameSpace
@@ -31,6 +37,12 @@ m_CrestNameSpace
 void Execute(uint3 id)
 {
     const Cascade cascade = Cascade::MakeClip(id.z);
+
+    if (_Crest_TargetRegion)
+    {
+        id.xy = cascade.InputIDToLodID(id.xy, _Crest_TargetRegionSize, _Crest_TexturePosition);
+    }
+
     const float2 uv = DataIDToInputUV(id.xy, cascade, _Crest_TexturePosition, _Crest_TextureRotation, _Crest_TextureSize);
 
     // Check we are within bounds.
@@ -39,7 +51,12 @@ void Execute(uint3 id)
         return;
     }
 
-    const float result = _Crest_Texture.SampleLevel(LODData_linear_clamp_sampler, uv, 0).x * _Crest_Multiplier;
+    float result = _Crest_Texture.SampleLevel(LODData_linear_clamp_sampler, uv, 0).x * _Crest_Multiplier;
+
+    if (_Crest_InvertSource)
+    {
+        result = 1.0 - result;
+    }
 
     // Painted clip defines a minimum value of the clip.
     _Crest_Target[id] = max(_Crest_Target[id], result);

@@ -14,17 +14,25 @@ namespace WaveHarmonic.Crest.Examples
 #endif
     sealed partial class SimpleMotion : CustomBehaviour
     {
+        [@DecoratedField]
         [SerializeField]
         bool _ResetOnDisable;
 
+        [@DecoratedField]
         [SerializeField]
         bool _IsLocal;
 
-        [Header("Translation")]
+
+        [@Heading("Translation")]
+
+        [@DecoratedField]
         [SerializeField]
         Vector3 _Velocity;
 
-        [Header("Rotation")]
+
+        [@Heading("Rotation")]
+
+        [@DecoratedField]
         [SerializeField]
         Vector3 _AngularVelocity;
 
@@ -35,8 +43,8 @@ namespace WaveHarmonic.Crest.Examples
         {
             base.OnEnable();
 
-            _OldPosition = transform.position;
-            _OldRotation = transform.rotation;
+            _OldPosition = Transform.position;
+            _OldRotation = Transform.rotation;
         }
 
         private protected override void OnDisable()
@@ -45,7 +53,7 @@ namespace WaveHarmonic.Crest.Examples
 
             if (_ResetOnDisable)
             {
-                transform.SetPositionAndRotation(_OldPosition, _OldRotation);
+                Transform.SetPositionAndRotation(_OldPosition, _OldRotation);
             }
         }
 
@@ -53,12 +61,12 @@ namespace WaveHarmonic.Crest.Examples
         {
             // Translation
             {
-                transform.position += (_IsLocal ? transform.TransformDirection(_Velocity) : _Velocity) * Time.deltaTime;
+                Transform.position += (_IsLocal ? Transform.TransformDirection(_Velocity) : _Velocity) * Time.deltaTime;
             }
 
             // Rotation
             {
-                transform.rotation *= Quaternion.Euler(_AngularVelocity * Time.deltaTime);
+                Transform.rotation *= Quaternion.Euler(_AngularVelocity * Time.deltaTime);
             }
         }
     }

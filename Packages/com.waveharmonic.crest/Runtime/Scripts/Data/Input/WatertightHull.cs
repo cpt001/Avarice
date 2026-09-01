@@ -17,7 +17,7 @@ namespace WaveHarmonic.Crest
     public enum WatertightHullMode
     {
         /// <inheritdoc cref="Generated.WatertightHullMode.Displacement"/>
-        [Tooltip("Use displacement to remove water.\n\nUsing displacement will also affect the underwater and can nest bouyant objects. Requires the displacement layer to be enabled.")]
+        [Tooltip("Use displacement to remove water.\n\nUsing displacement will also affect the underwater and can nest buoyant objects. Requires the displacement layer to be enabled.")]
         Displacement,
 
         /// <inheritdoc cref="Generated.WatertightHullMode.Clip"/>
@@ -30,7 +30,7 @@ namespace WaveHarmonic.Crest
     /// </summary>
     [@ExecuteDuringEditMode]
     [AddComponentMenu(Constants.k_MenuPrefixInputs + "Watertight Hull")]
-    [@HelpURL("Manual/Basics/Clipping.html#watertight-hull")]
+    [@HelpURL(typeof(WatertightHull))]
     public sealed partial class WatertightHull : ManagedBehaviour<WaterRenderer>
     {
         [@Label("Convex Hull")]
@@ -64,6 +64,14 @@ namespace WaveHarmonic.Crest
         [@DecoratedField, SerializeField]
         bool _UseClipWithDisplacement = true;
 
+        [Tooltip("Scales the clip input.\n\nHaving the clip input larger than the displacement input helps to ensure the surface is fully removed inside.")]
+        [@Hide(nameof(_Mode), nameof(WatertightHullMode.Clip))]
+        [@Enable(nameof(_UseClipWithDisplacement))]
+        [@Range(1.0f, 1.1f)]
+        [@GenerateAPI]
+        [@SerializeField]
+        float _ClipScale = 1.05f;
+
         [@Space(10)]
 
         [@DecoratedField, SerializeField]
@@ -90,7 +98,7 @@ namespace WaveHarmonic.Crest
             {
                 if (_RecalculateBounds)
                 {
-                    _Rect = transform.TransformBounds(_Mesh.bounds).RectXZ();
+                    _Rect = Transform.TransformBounds(_Mesh.bounds).RectXZ();
                     _RecalculateBounds = false;
                 }
 
@@ -100,6 +108,8 @@ namespace WaveHarmonic.Crest
 
         readonly SampleCollisionHelper _SampleCollisionHelper = new();
         Vector3 _Displacement;
+
+        bool _RegisteredForAnimatedWavesCopy;
 
         internal bool UsesClip => _Mode == WatertightHullMode.Clip || _UseClipWithDisplacement;
         internal bool UsesDisplacement => _Mode == WatertightHullMode.Displacement;
@@ -123,9 +133,11 @@ namespace WaveHarmonic.Crest
             if (UsesDisplacement)
             {
                 _AnimatedWavesInput ??= new(this);
-                _AnimatedWavesMaterial = new(Shader.Find("Crest/Inputs/Animated Waves/Push Water Under Convex Hull"));
+                _AnimatedWavesMaterial = new(Shader.Find("Hidden/Crest/Inputs/Animated Waves/Convex Hull"));
                 _AnimatedWavesMaterial.SetFloat(LodInput.ShaderIDs.s_Weight, 1f);
                 ILodInput.Attach(_AnimatedWavesInput, AnimatedWavesLod.s_Inputs);
+                AnimatedWavesLod.s_NeedsAnimatedWavesCopy += 1;
+                _RegisteredForAnimatedWavesCopy = true;
             }
         }
 
@@ -136,6 +148,12 @@ namespace WaveHarmonic.Crest
             ILodInput.Detach(_ClipInput, ClipLod.s_Inputs);
             Helpers.Destroy(ref _AnimatedWavesMaterial);
             ILodInput.Detach(_AnimatedWavesInput, AnimatedWavesLod.s_Inputs);
+
+            if (_RegisteredForAnimatedWavesCopy)
+            {
+                AnimatedWavesLod.s_NeedsAnimatedWavesCopy -= 1;
+                _RegisteredForAnimatedWavesCopy = false;
+            }
         }
 
         private protected override System.Action<WaterRenderer> OnUpdateMethod => OnUpdate;
@@ -143,10 +161,10 @@ namespace WaveHarmonic.Crest
         {
             if (_Mode == WatertightHullMode.Displacement)
             {
-                _SampleCollisionHelper.SampleDisplacement(transform.position, out _Displacement);
+                _SampleCollisionHelper.SampleDisplacement(Transform.position, out _Displacement);
             }
 
-            if (transform.hasChanged)
+            if (Transform.hasChanged)
             {
                 _RecalculateBounds = true;
             }
@@ -155,19 +173,22 @@ namespace WaveHarmonic.Crest
         private protected override System.Action<WaterRenderer> OnLateUpdateMethod => OnLateUpdate;
         void OnLateUpdate(WaterRenderer water)
         {
-            transform.hasChanged = false;
+            Transform.hasChanged = false;
         }
 
-        void DrawClip(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1)
+        void DrawClip(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1, int offset = 0)
         {
             _ClipMaterial.SetBoolean(ShaderIDs.s_Inverted, _Inverted);
-            buffer.DrawMesh(_Mesh, transform.localToWorldMatrix, _ClipMaterial);
+            var matrix = _Mode == WatertightHullMode.Clip || _ClipScale == 1f
+                ? Transform.localToWorldMatrix
+                : Matrix4x4.TRS(Transform.position, Transform.rotation, Transform.lossyScale * 1.01f);
+            buffer.DrawMesh(_Mesh, matrix, _ClipMaterial);
         }
 
-        void DrawDisplacement(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1)
+        void DrawDisplacement(Lod simulation, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1, int offset = 0)
         {
             _AnimatedWavesMaterial.SetVector(LodInput.ShaderIDs.s_DisplacementAtInputPosition, _Displacement);
-            buffer.DrawMesh(_Mesh, transform.localToWorldMatrix, _AnimatedWavesMaterial);
+            buffer.DrawMesh(_Mesh, Transform.localToWorldMatrix, _AnimatedWavesMaterial);
         }
 
         void SetQueue(int previous, int current)
@@ -225,7 +246,7 @@ namespace WaveHarmonic.Crest
             public Rect Rect => _Input.Rect;
             public MonoBehaviour Component => _Input;
             public float Filter(WaterRenderer water, int slice) => 1f;
-            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1) => _Input.DrawClip(lod, buffer, target, pass, weight, slice);
+            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1, int offset = 0) => _Input.DrawClip(lod, buffer, target, pass, weight, slice, offset);
         }
     }
 
@@ -244,7 +265,7 @@ namespace WaveHarmonic.Crest
             public Rect Rect => _Input.Rect;
             public MonoBehaviour Component => _Input;
             public float Filter(WaterRenderer water, int slice) => 1f;
-            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1) => _Input.DrawDisplacement(lod, buffer, target, pass, weight, slice);
+            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slice = -1, int offset = 0) => _Input.DrawDisplacement(lod, buffer, target, pass, weight, slice, offset);
         }
     }
 

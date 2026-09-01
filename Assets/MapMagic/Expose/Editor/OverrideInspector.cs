@@ -99,6 +99,9 @@ namespace MapMagic.Expose.GUI
 		/// Makes MM generate if override changed
 		/// Automaticaly finds current mm and it's graph
 		{
+			if (GraphWindow.current?.mapMagic == null)
+				return;
+
 			IMapMagic mm = GraphWindow.current.mapMagic;
 			if (mm == null)
 				return;

@@ -93,6 +93,9 @@ void UpdateDynamicWaves(uint3 id)
     worldPosXZFlowed -= velocity * dt;
 #endif
 
+    // TODO: causes some smearing which mutes ripples.
+    worldPosXZFlowed -=  g_Crest_DataChange.xz;
+
     const float3 uv_source = cascadeSource.WorldToUV(worldPosXZFlowed);
 
     // weighting for source position - weight 0 for off texture accesses to stop streaky artifacts

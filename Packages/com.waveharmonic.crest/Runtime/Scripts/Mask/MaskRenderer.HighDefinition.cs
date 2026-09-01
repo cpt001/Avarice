@@ -86,7 +86,7 @@ namespace WaveHarmonic.Crest
 
                 // HDRP does not need ReAllocate. But it is easier to also call Allocate here.
                 // Allocating RTHandles outside the render loop raises an error. Seriously, do not
-                // attempt to optmize this away.
+                // attempt to optimize this away.
                 _MaskPass.Allocate();
                 _MaskPass.Execute(camera, context.cmd);
             }

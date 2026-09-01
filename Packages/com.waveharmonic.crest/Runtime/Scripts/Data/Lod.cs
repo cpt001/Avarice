@@ -36,7 +36,7 @@ namespace WaveHarmonic.Crest
     }
 
     /// <summary>
-    /// Base class for data/behaviours created on each LOD.
+    /// Base class for data/behaviors created on each LOD.
     /// </summary>
     [System.Serializable]
     public abstract partial class Lod : Versioned
@@ -66,7 +66,7 @@ namespace WaveHarmonic.Crest
         [SerializeField]
         private protected LodTextureFormatMode _TextureFormatMode = LodTextureFormatMode.Performance;
 
-        [Tooltip("The render texture format used for this simulation data.\n\nIt will be overriden if the format is incompatible with the platform.")]
+        [Tooltip("The render texture format used for this simulation data.\n\nIt will be overridden if the format is incompatible with the platform.")]
         [@ShowComputedProperty(nameof(RequestedTextureFormat))]
         [@Show(nameof(_TextureFormatMode), nameof(LodTextureFormatMode.Manual))]
         [@GenerateAPI(Setter.Dirty)]
@@ -106,6 +106,7 @@ namespace WaveHarmonic.Crest
         {
             public static readonly int s_LodIndex = Shader.PropertyToID("_Crest_LodIndex");
             public static readonly int s_LodChange = Shader.PropertyToID("_Crest_LodChange");
+            public static readonly int s_LodOffset = Shader.PropertyToID("_Crest_LodOffset");
             public static readonly int s_TemporaryBlurLodTexture = Shader.PropertyToID("_Crest_TemporaryBlurLodTexture");
         }
 
@@ -115,7 +116,7 @@ namespace WaveHarmonic.Crest
 
         /// <summary>
         /// The requested texture format used for this simulation, either by manual mode or
-        /// one of the aliases. It will be overriden if the format is incompatible with the
+        /// one of the aliases. It will be overridden if the format is incompatible with the
         /// platform (<see cref="CompatibleTextureFormat"/>).
         /// </summary>
         private protected abstract GraphicsFormat RequestedTextureFormat { get; }
@@ -133,6 +134,16 @@ namespace WaveHarmonic.Crest
         private protected virtual Texture2DArray NullTexture => _Water.BlackTextureArray;
         private protected virtual bool RequiresClearBorder => false;
 
+        // Enable only for data sampled exclusively at the undisplaced mesh. Does not
+        // support PositionToSliceIndices, as it misaligned each LOD with the global
+        // center which is used to find the correct slice. We would need to snap the
+        // entire system to the largest texel.
+        private protected virtual bool SnapToGeometry => false;
+
+        internal virtual bool NeedsOffset => CanRenderToOneSlice;
+        private protected virtual bool CanRenderToOneSlice => false;
+        private protected virtual bool CanBeSampledOnce => false;
+
         private protected IQueryable Queryable { get; set; }
 
         private protected bool Persistent => BufferCount > 1;
@@ -144,7 +155,7 @@ namespace WaveHarmonic.Crest
         private protected Matrix4x4[] _ViewMatrices = new Matrix4x4[k_MaximumSlices];
         private protected Cascade[] _Cascades = new Cascade[k_MaximumSlices];
         internal Cascade[] Cascades => _Cascades;
-        private protected BufferedData<Vector4[]> _SamplingParameters;
+        private protected BufferedData<Vector4[]> _SamplingParameters; // SnappedXZ, Texel, Resolution
 
         internal int Slices => _Water.LodLevels;
 
@@ -272,9 +283,56 @@ namespace WaveHarmonic.Crest
             buffer.EndSample(ID);
         }
 
+        internal int OverlappingSlicesCount(Rect rect, out int offset)
+        {
+            var smallest = 0;
+            var largest = Slices - 1;
+            offset = 0;
+
+            if (rect != Rect.zero)
+            {
+                smallest = -1;
+                for (var slice = Slices - 1; slice >= 0; slice--)
+                {
+                    if (!rect.Overlaps(Cascades[slice].TexelRect))
+                    {
+                        break;
+                    }
+
+                    smallest = slice;
+
+                    // Cannot optimize further, as interpolation is border to border.
+                    if (CanRenderToOneSlice && Cascades[slice].TexelRect.Encapsulates(rect))
+                    {
+                        largest = slice;
+                    }
+                }
+
+                if (CanRenderToOneSlice)
+                {
+                    if (!CanBeSampledOnce)
+                    {
+                        largest += 1;
+                        largest = Mathf.Min(largest, Slices - 1);
+                    }
+
+                    offset = Slices - 1 - largest;
+                }
+            }
+
+            if (smallest < 0)
+            {
+                return 0;
+            }
+
+            return largest + 1 - smallest;
+        }
+
         private protected bool SubmitDraws(CommandBuffer buffer, Inputs draws, RenderTargetIdentifier target, int pass = -1, bool filter = false)
         {
             var drawn = false;
+
+            var offset = CanBeSampledOnce ? 0 : 1;
 
             foreach (var draw in draws)
             {
@@ -294,28 +352,33 @@ namespace WaveHarmonic.Crest
 
                 if (input.IsCompute)
                 {
-                    var smallest = 0;
-                    if (rect != Rect.zero)
-                    {
-                        smallest = -1;
-                        for (var slice = Slices - 1; slice >= 0; slice--)
-                        {
-                            if (rect != Rect.zero && !rect.Overlaps(Cascades[slice].TexelRect)) break;
-                            smallest = slice;
-                        }
-
-                        if (smallest < 0) continue;
-                    }
+                    var slices = OverlappingSlicesCount(rect, out var sliceOffset);
+                    if (slices < 1) continue;
 
                     // Pass the slice count to only draw to valid slices.
-                    input.Draw(this, buffer, target, pass, slice: Slices - smallest);
+                    input.Draw(this, buffer, target, pass, slice: slices, offset: sliceOffset);
                     drawn = true;
                     continue;
                 }
 
                 for (var slice = Slices - 1; slice >= 0; slice--)
                 {
-                    if (rect != Rect.zero && !rect.Overlaps(Cascades[slice].TexelRect)) break;
+                    if (rect != Rect.zero)
+                    {
+                        if (!rect.Overlaps(Cascades[slice].TexelRect))
+                        {
+                            break;
+                        }
+
+                        // Skip larger LODs if already rendered by smaller LODs.
+                        if (CanRenderToOneSlice && slice > 0 + offset)
+                        {
+                            if (Cascades[slice - (1 + offset)].TexelRect.Encapsulates(rect))
+                            {
+                                continue;
+                            }
+                        }
+                    }
 
                     var weight = filter ? input.Filter(_Water, slice) : 1f;
                     if (weight <= 0f) continue;
@@ -325,7 +388,7 @@ namespace WaveHarmonic.Crest
                     CoreUtils.SetRenderTarget(buffer, target, depthSlice: slice);
                     buffer.SetGlobalInteger(ShaderIDs.s_LodIndex, slice);
 
-                    // This will work for CG but not for HDRP hlsl files.
+                    // This will work for CG but not for HDRP HLSL files.
                     buffer.SetViewProjectionMatrices(_ViewMatrices[slice], _Water.GetProjectionMatrix(slice));
 
                     input.Draw(this, buffer, target, pass, weight, slice);
@@ -353,7 +416,7 @@ namespace WaveHarmonic.Crest
             });
         }
 
-        void ClearBorder(CommandBuffer buffer)
+        private protected void ClearBorder(CommandBuffer buffer)
         {
             var size = Resolution / 8;
 
@@ -387,9 +450,18 @@ namespace WaveHarmonic.Crest
             for (var slice = 0; slice < levels; slice++)
             {
                 // Find snap period.
-                var texel = 2f * 2f * _Water.CascadeData.Current[slice].x / resolution;
+                var scale = 2f * 2f * _Water.CascadeData.Current[slice].x;
+                var texel = scale / resolution;
+                var texel2 = texel;
+
+                if (SnapToGeometry)
+                {
+                    texel2 = scale / _Water.LodResolution;
+                    texel2 *= 4f * _Water.GeometryDownSampleFactor;
+                }
+
                 // Snap so that shape texels are stationary.
-                var snapped = position - new Vector3(Mathf.Repeat(position.x, texel), 0, Mathf.Repeat(position.z, texel));
+                var snapped = position - new Vector3(Mathf.Repeat(position.x, texel2), 0, Mathf.Repeat(position.z, texel2));
 
                 var cascade = new Cascade(snapped.XZ(), texel, resolution);
                 _Cascades[slice] = cascade;
@@ -419,6 +491,16 @@ namespace WaveHarmonic.Crest
             {
                 Shader.SetGlobalVectorArray(_SamplingParametersCascadeSourceShaderID, _SamplingParameters.Previous(1));
             }
+        }
+
+        private protected Vector2Int WorldToID(Vector2 world, float texel)
+        {
+            // TODO: could be + 0.5f
+            return new Vector2Int
+            (
+                Mathf.RoundToInt(world.x / texel + _Resolution * 0.5f),
+                Mathf.RoundToInt(world.y / texel + _Resolution * 0.5f)
+            );
         }
 
         /// <summary>

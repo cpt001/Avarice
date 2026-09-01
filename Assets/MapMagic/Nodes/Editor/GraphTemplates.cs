@@ -21,13 +21,33 @@ namespace MapMagic.Nodes.GUI
 			[MenuItem("Assets/Create/MapMagic/Simple Graph", priority = 102)]
 			static void MenuCreateMapMagicGraph(MenuCommand menuCommand)
 			{
-				ProjectWindowUtil.StartNameEditingIfProjectWindowExists(0, 
+				ProjectWindowUtil.StartNameEditingIfProjectWindowExists(
+					#if UNITY_6000_3_OR_NEWER
+						EntityId.None,
+					#else
+						0, 
+					#endif
 					ScriptableObject.CreateInstance<TmpCallbackReciever>(), 
 					"MapMagic Graph.asset", 
 					TexturesCache.LoadTextureAtPath("MapMagic/Icons/AssetBig"), 
 					null);
 			}
 
+			#if UNITY_6000_5_OR_NEWER
+			class TmpCallbackReciever : UnityEditor.ProjectWindowCallback.AssetCreationEndAction
+			{
+				public override void Action (EntityId entityId, string pathName, string resourceFile)
+				{
+					Graph graph = CreateTemplate();
+					graph.name = System.IO.Path.GetFileName(pathName);
+					AssetDatabase.CreateAsset(graph, pathName);
+
+					ProjectWindowUtil.ShowCreatedAsset(graph);
+
+					GraphInspector.allGraphsGuids = new HashSet<string>(AssetDatabase.FindAssets("t:Graph"));
+				}
+			}
+			#else
 			class TmpCallbackReciever : UnityEditor.ProjectWindowCallback.EndNameEditAction
 			{
 				public override void Action(int instanceId, string pathName, string resourceFile)
@@ -41,6 +61,7 @@ namespace MapMagic.Nodes.GUI
 					GraphInspector.allGraphsGuids = new HashSet<string>(AssetDatabase.FindAssets("t:Graph"));
 				} 
 			}
+			#endif
 
 			public static Graph CreateTemplate ()
 			{

@@ -285,7 +285,7 @@ namespace WaveHarmonic.Crest
                 Debug.LogError("Crest: no valid query provider. Report this to developers!");
             }
         }
-        public static void UpdateQueries(this ICollisionProvider self, WaterRenderer water) => (self as IQueryable)?.UpdateQueries(water);
+
         public static void SendReadBack(this ICollisionProvider self, WaterRenderer water, CollisionLayers layer)
         {
             if (self is CollisionQueryPerCamera a)
@@ -305,6 +305,5 @@ namespace WaveHarmonic.Crest
                 Debug.LogError("Crest: no valid query provider. Report this to developers!");
             }
         }
-        public static void CleanUp(this ICollisionProvider self) => (self as IQueryable)?.CleanUp();
     }
 }

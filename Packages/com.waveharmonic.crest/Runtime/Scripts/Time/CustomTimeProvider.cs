@@ -9,11 +9,12 @@ namespace WaveHarmonic.Crest
     /// This time provider fixes the water time at a custom value which is usable for testing/debugging.
     /// </summary>
     [AddComponentMenu(Constants.k_MenuPrefixTime + "Custom Time Provider")]
-    [@HelpURL("Manual/Advanced/TimeProviders.html#supporting-pause")]
+    [@HelpURL(typeof(CustomTimeProvider))]
     public sealed partial class CustomTimeProvider : TimeProvider
     {
         [Tooltip("Freeze progression of time. Only works properly in Play mode.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         bool _Paused = false;
 
@@ -56,7 +57,7 @@ namespace WaveHarmonic.Crest
 
         void OnUpdate(WaterRenderer water)
         {
-            // Use default TP delta time to update our time, because this dt works
+            // Use default TP delta time to update our time, because this DT works
             // well in edit mode
             if (_FirstUpdate)
             {

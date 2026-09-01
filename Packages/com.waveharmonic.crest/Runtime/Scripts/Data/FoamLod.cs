@@ -3,6 +3,7 @@
 
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using WaveHarmonic.Crest.Internal;
 using WaveHarmonic.Crest.Utility;
 
 namespace WaveHarmonic.Crest
@@ -31,9 +32,10 @@ namespace WaveHarmonic.Crest
             public static readonly int s_FoamFadeRate = Shader.PropertyToID("_Crest_FoamFadeRate");
             public static readonly int s_WaveFoamStrength = Shader.PropertyToID("_Crest_WaveFoamStrength");
             public static readonly int s_WaveFoamCoverage = Shader.PropertyToID("_Crest_WaveFoamCoverage");
+            public static readonly int s_ShorelineFoam = Shader.PropertyToID("_Crest_ShorelineFoam");
+            public static readonly int s_ShorelineFoamBlend = Shader.PropertyToID("_Crest_ShorelineFoamBlend");
             public static readonly int s_ShorelineFoamMaxDepth = Shader.PropertyToID("_Crest_ShorelineFoamMaxDepth");
             public static readonly int s_ShorelineFoamStrength = Shader.PropertyToID("_Crest_ShorelineFoamStrength");
-            public static readonly int s_NeedsPrewarming = Shader.PropertyToID("_Crest_NeedsPrewarming");
             public static readonly int s_FoamNegativeDepthPriming = Shader.PropertyToID("_Crest_FoamNegativeDepthPriming");
         }
 
@@ -43,6 +45,10 @@ namespace WaveHarmonic.Crest
         internal override Color GizmoColor => s_GizmoColor;
         private protected override Color ClearColor => Color.black;
         private protected override ComputeShader SimulationShader => WaterResources.Instance.Compute._UpdateFoam;
+
+        // Prewarm simulation for first frame or teleporting. It will not be the same
+        // results as running the simulation for multiple frames - but good enough.
+        private protected override bool RequiresPrewarming => Prewarm;
 
         private protected override GraphicsFormat RequestedTextureFormat => _TextureFormatMode switch
         {
@@ -56,17 +62,45 @@ namespace WaveHarmonic.Crest
         {
             base.SetAdditionalSimulationParameters(properties);
 
-            // Prewarm simulation for first frame or teleporting. It will not be the same results as running the
-            // simulation for multiple frames - but good enough.
-            properties.SetBoolean(ShaderIDs.s_NeedsPrewarming, _Prewarm && _NeedsPrewarmingThisStep);
             properties.SetFloat(ShaderIDs.s_FoamFadeRate, Settings._FoamFadeRate);
             properties.SetFloat(ShaderIDs.s_WaveFoamStrength, Settings._WaveFoamStrength);
             properties.SetFloat(ShaderIDs.s_WaveFoamCoverage, Settings._WaveFoamCoverage);
+            properties.SetBoolean(ShaderIDs.s_ShorelineFoam, Settings._ShorelineFoamEnabled);
             properties.SetFloat(ShaderIDs.s_ShorelineFoamMaxDepth, Settings._ShorelineFoamMaximumDepth);
             properties.SetFloat(ShaderIDs.s_ShorelineFoamStrength, Settings._ShorelineFoamStrength);
             properties.SetFloat(ShaderIDs.s_FoamMaximum, Settings.Maximum);
             properties.SetFloat(ShaderIDs.s_FoamNegativeDepthPriming, -Settings._ShorelineFoamPriming);
-            properties.SetInteger(ShaderIDs.s_MinimumWavesSlice, Settings.FilterWaves);
+            properties.SetInteger(ShaderIDs.s_MinimumWavesSlice, Mathf.Min(Settings.FilterWaves, Slices - 2));
+        }
+
+        internal void SetMaterialRenderingParameters(PropertyWrapperMPB wrapper, Material material)
+        {
+            // NOTE: happened in test harness.
+            if (material == null)
+            {
+                return;
+            }
+
+            if (!material.HasBoolean(ShaderIDs.s_ShorelineFoam))
+            {
+                return;
+            }
+
+            if (Enabled && Settings._ShorelineFoamEnabled && material.GetFloat(ShaderIDs.s_ShorelineFoam) == 0f)
+            {
+                wrapper.SetBoolean(ShaderIDs.s_ShorelineFoamBlend, true);
+                wrapper.SetBoolean(ShaderIDs.s_ShorelineFoam, true);
+                wrapper.SetFloat(ShaderIDs.s_ShorelineFoamMaxDepth, Settings.ShorelineFoamMaximumDepth);
+                wrapper.SetFloat(ShaderIDs.s_ShorelineFoamStrength, Settings.ShorelineFoamStrength * Mathf.Max(1f / _SimulationFrequency, 1f / Settings.FoamFadeRate));
+            }
+            else
+            {
+                // TODO: We could use Clear instead.
+                wrapper.SetBoolean(ShaderIDs.s_ShorelineFoamBlend, false);
+                wrapper.SetFloat(ShaderIDs.s_ShorelineFoam, material.GetFloat(ShaderIDs.s_ShorelineFoam));
+                wrapper.SetFloat(ShaderIDs.s_ShorelineFoamMaxDepth, material.GetFloat(ShaderIDs.s_ShorelineFoamMaxDepth));
+                wrapper.SetFloat(ShaderIDs.s_ShorelineFoamStrength, material.GetFloat(ShaderIDs.s_ShorelineFoamStrength));
+            }
         }
 
         internal FoamLod()

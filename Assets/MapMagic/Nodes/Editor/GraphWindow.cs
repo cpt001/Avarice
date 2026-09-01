@@ -67,7 +67,15 @@ namespace MapMagic.Nodes.GUI
 			UnityEngine.SceneManagement.Scene scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
 			if (scene != prevSceneLoaded || scene.rootCount != prevRootObjsCount || Selection.activeObject != prevObjSelected)
 			{
-				MapMagicObject[] allMM = GameObject.FindObjectsOfType<MapMagicObject>();
+				MapMagicObject[] allMM = 
+				#if UNITY_6000_5_OR_NEWER
+					FindObjectsByType<MapMagicObject>();
+				#elif UNITY_6000_3_OR_NEWER
+					FindObjectsByType<MapMagicObject>(FindObjectsSortMode.None);
+				#else
+					GameObject.FindObjectsOfType<MapMagicObject>();
+				#endif
+
 				for (int m=0; m<allMM.Length; m++)
 					if (allMM[m].ContainsGraph(graph)) return allMM[m];
 
@@ -109,7 +117,7 @@ namespace MapMagic.Nodes.GUI
 
 		const int toolbarSize = 20;
 
-		public UI graphUI = UI.ScrolledUI(maxZoom:1, minZoom:0.375f);  //public for snapshot
+		[NonSerialized] public UI graphUI = UI.ScrolledUI(maxZoom:1, minZoom:0.375f);  //public for snapshot
 		UI toolbarUI = new UI();
 		UI dragUI = new UI();
 		UI miniSelectedUI = new UI();
@@ -904,7 +912,7 @@ namespace MapMagic.Nodes.GUI
 						//Vector2 mousePos = graphUI.scrollZoom.ToInternal(addDragTo + new Vector2(addDragSize/2,addDragSize/2)); //add button center
 
 						RightClick.ClickedNear (graphUI, mousePos, 
-							out Group clickedGroup, out Generator clickedGen, out IInlet<object> clickedLink, out IInlet<object> clickedInlet, out IOutlet<object> clickedOutlet, out RightClickExpose clickedField);
+							out Auxiliary clickedGroup, out Generator clickedGen, out IInlet<object> clickedLink, out IInlet<object> clickedInlet, out IOutlet<object> clickedOutlet, out RightClickExpose clickedField);
 
 						if (clickedOutlet != null)
 							CreateRightClick.DrawAppendItems(mousePos, graph, clickedOutlet);
@@ -1142,15 +1150,30 @@ namespace MapMagic.Nodes.GUI
 			[MenuItem ("Window/MapMagic/Editor")]
 			public static void ShowEditor ()
 			{
-				MapMagicObject mm = FindObjectOfType<MapMagicObject>();
+				MapMagicObject mm = 
+				#if UNITY_6000_3_OR_NEWER
+					GameObject.FindAnyObjectByType<MapMagicObject>();
+				#else
+					GameObject.FindObjectOfType<MapMagicObject>();
+				#endif
+
 				Graph gens = mm!=null? mm.graph : null;
 				GraphWindow.Show(mm?.graph);
 			}
 
 			[UnityEditor.Callbacks.OnOpenAsset(0)]
+			#if UNITY_6000_5_OR_NEWER
+			public static bool ShowEditor (EntityId instanceID, int line)
+			#else
 			public static bool ShowEditor (int instanceID, int line)
+			#endif
 			{
+				#if UNITY_6000_3_OR_NEWER
+				UnityEngine.Object obj = EditorUtility.EntityIdToObject(instanceID);
+				#else
 				UnityEngine.Object obj = EditorUtility.InstanceIDToObject(instanceID);
+				#endif
+
 				if (obj is Nodes.Graph graph) 
 				{ 
 					if (graph.generators == null)

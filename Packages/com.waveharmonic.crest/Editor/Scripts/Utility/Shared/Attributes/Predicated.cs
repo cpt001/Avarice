@@ -12,7 +12,7 @@ namespace WaveHarmonic.Crest
 {
     abstract class Predicated : Decorator
     {
-        enum Mode
+        public enum Mode
         {
             Property,
             Member,
@@ -20,16 +20,16 @@ namespace WaveHarmonic.Crest
             RenderPipeline,
         }
 
-        readonly Mode _Mode;
+        public readonly Mode _Mode;
 
         readonly bool _Inverted;
-        readonly bool _Hide;
+        public readonly bool _Hide;
         readonly bool _Implicit;
 
         readonly string _PropertyName;
         readonly object _DisableValue;
 
-        readonly Type _Type;
+        public readonly Type _Type;
         readonly MemberInfo _Member;
 
         readonly RenderPipeline _RenderPipeline;
@@ -40,7 +40,7 @@ namespace WaveHarmonic.Crest
         /// <param name="type">The type to call the method on. Must be either a static type or the type the field is defined on.</param>
         /// <param name="member">Member name. Method must match signature: bool MethodName(Component component). Can be any visibility and static or instance.</param>
         /// <param name="value">Disable/Hide if matches this value.</param>
-        /// <param name="inverted">Flip behaviour - for example disable if a bool field is set to true (instead of false).</param>
+        /// <param name="inverted">Flip behavior - for example disable if a bool field is set to true (instead of false).</param>
         /// <param name="hide">Hide this component in the inspector.</param>
         public Predicated(Type type, string member, object value, bool inverted = false, bool hide = false)
         {
@@ -62,7 +62,7 @@ namespace WaveHarmonic.Crest
         /// Enable/Disable field depending on the current type of the component.
         /// </summary>
         /// <param name="type">If a component of this type is not attached to this GameObject, disable the GUI (or enable if inverted is true).</param>
-        /// <param name="inverted">Flip behaviour - for example disable if a bool field is set to true (instead of false).</param>
+        /// <param name="inverted">Flip behavior - for example disable if a bool field is set to true (instead of false).</param>
         /// <param name="hide">Hide this component in the inspector.</param>
         public Predicated(Type type, bool inverted = false, bool hide = false)
         {
@@ -86,7 +86,7 @@ namespace WaveHarmonic.Crest
         /// to disable a field if a toggle is false.
         /// </summary>
         /// <param name="property">The name of the other property whose value dictates whether this field is enabled or not.</param>
-        /// <param name="inverted">Flip behaviour - for example disable if a bool field is set to true (instead of false).</param>
+        /// <param name="inverted">Flip behavior - for example disable if a bool field is set to true (instead of false).</param>
         /// <param name="value">If the field has this value, disable the GUI (or enable if inverted is true).</param>
         /// <param name="hide">Hide this component in the inspector.</param>
         public Predicated(string property, object value, bool inverted = false, bool hide = false)
@@ -102,7 +102,7 @@ namespace WaveHarmonic.Crest
         /// Field is predicated (enabled/shown) on which render pipeline is active.
         /// </summary>
         /// <param name="rp">Enable if this render pipeline is active.</param>
-        /// <param name="inverted">Invert behaviour.</param>
+        /// <param name="inverted">Invert behavior.</param>
         /// <param name="hide">Hide instead of disable.</param>
         public Predicated(RenderPipeline rp, bool inverted = false, bool hide = false)
         {
@@ -156,7 +156,10 @@ namespace WaveHarmonic.Crest
                 // Do not use property.FindPropertyRelative as it does not work with nested properties.
                 // Try and find the nested property first and then fallback to the root object.
                 var otherProperty = property.serializedObject.FindProperty(propertyPath) ?? property.serializedObject.FindProperty(_PropertyName);
-                Debug.AssertFormat(otherProperty != null, "Crest.Predicated: {0} or {1} property on {2} ({3}) could not be found!", propertyPath, _PropertyName, property.serializedObject.targetObject.GetType(), property.name);
+                if (otherProperty == null)
+                {
+                    Debug.LogErrorFormat("Crest.Predicated: {0} or {1} property on {2} ({3}) could not be found!", propertyPath, _PropertyName, property.serializedObject.targetObject.GetType(), property.name);
+                }
 
                 if (otherProperty != null)
                 {
@@ -225,11 +228,35 @@ namespace WaveHarmonic.Crest
                 enabled = RenderPipelineHelper.RenderPipeline == _RenderPipeline == _Inverted;
             }
 
-            // Keep current disabled state.
-            GUI.enabled &= enabled;
+            // Always "or" operations.
+            if (_Hide)
+            {
+                if (_Inverted)
+                {
+                    DecoratedDrawer.s_MarkedShow |= enabled;
+                }
+                else
+                {
+                    DecoratedDrawer.s_MarkedHide |= !enabled;
+                }
 
-            // Keep previous hidden state.
-            DecoratedDrawer.s_HideInInspector = DecoratedDrawer.s_HideInInspector || (_Hide && !enabled);
+                // Last rule determines operation so we must not mix show/hide.
+                DecoratedDrawer.s_HideInInspector = _Inverted ? !DecoratedDrawer.s_MarkedShow : DecoratedDrawer.s_MarkedHide;
+            }
+            else
+            {
+                if (_Inverted)
+                {
+                    DecoratedDrawer.s_MarkedEnable |= enabled;
+                }
+                else
+                {
+                    DecoratedDrawer.s_MarkedDisable |= !enabled;
+                }
+
+                // Last rule determines operation so we must not mix enable/disable.
+                DecoratedDrawer.s_LockInInspector = _Inverted ? !DecoratedDrawer.s_MarkedEnable : DecoratedDrawer.s_MarkedDisable;
+            }
         }
     }
 

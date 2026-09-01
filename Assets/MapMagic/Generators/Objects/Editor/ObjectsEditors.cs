@@ -389,8 +389,14 @@ namespace MapMagic.Nodes.GUI
 		{
 			if (gen.posSettings == null) gen.posSettings = ObjectsOutput.CreatePosSettings(gen);
 
+			if (!gen.randomBaseSerialized)
+			{
+				gen.randomBase = ObjectsOutput.RandomBase.Hash; //updating already existing generators to same behavior
+				gen.randomBaseSerialized = true;
+			}
+
 			using (Cell.LineStd)
-				DrawObjectPrefabs(ref gen.prefabs, gen.guiMultiprefab, treeIcon:false);
+				DrawObjectPrefabs(ref gen.prefabs, gen.guiMultiprefab, treeIcon:false, gen.id);
 
 			using (Cell.LinePx(0))
 				using (Cell.Padded(2,2,0,0))
@@ -404,10 +410,31 @@ namespace MapMagic.Nodes.GUI
 						if (gen.guiProperties)
 						{
 							Cell.current.fieldWidth = 0.481f;
-							using (Cell.LineStd) Draw.Field(ref gen.seed, "Seed");
-							using (Cell.LineStd) Draw.ToggleLeft(ref gen.allowReposition, "Use Pool");
-							using (Cell.LineStd) Draw.ToggleLeft(ref gen.instantiateClones, "As Clones"); 
-							using (Cell.LineStd) Draw.Field(ref gen.biomeBlend, "Biome Blend");
+							using (Cell.LineStd) 
+							{
+								Draw.Field(ref gen.seed, "Seed");
+								Cell.current.Expose(gen.id, "seed", typeof(int));
+							}
+							using (Cell.LineStd) 
+							{
+								Draw.ToggleLeft(ref gen.allowReposition, "Use Pool");
+								Cell.current.Expose(gen.id, "allowReposition", typeof(bool));
+							}
+							using (Cell.LineStd) 
+							{
+								Draw.ToggleLeft(ref gen.instantiateClones, "As Clones"); 
+								Cell.current.Expose(gen.id, "instantiateClones", typeof(bool));
+							}
+							using (Cell.LineStd) 
+							{
+								Draw.Field(ref gen.biomeBlend, "Biome Blend");
+								Cell.current.Expose(gen.id, "biomeBlend", typeof(int));
+							}
+							using (Cell.LineStd) 
+							{
+								Draw.Field(ref gen.randomBase, "Rnd Base");
+								Cell.current.Expose(gen.id, "randomBase", typeof(int));
+							}
 
 							if (GraphWindow.current.mapMagic != null)
 								using (Cell.LineStd) GeneratorDraw.DrawGlobalVar(ref GraphWindow.current.mapMagic.Globals.objectsNumPerFrame, "Num/Frame");
@@ -424,8 +451,14 @@ namespace MapMagic.Nodes.GUI
 		{
 			if (gen.posSettings == null) gen.posSettings = TreesOutput.CreatePosSettings(gen);
 
+			if (!gen.randomBaseSerialized)
+			{
+				gen.randomBase = TreesOutput.RandomBase.Hash; //updating already existing generators to same behavior
+				gen.randomBaseSerialized = true;
+			}
+
 			using (Cell.LineStd)
-				DrawObjectPrefabs(ref gen.prefabs, gen.guiMultiprefab, treeIcon:true);
+				DrawObjectPrefabs(ref gen.prefabs, gen.guiMultiprefab, treeIcon:true, gen.id);
 
 			using (Cell.LinePx(0))
 				using (Cell.Padded(2,2,0,0))
@@ -439,11 +472,36 @@ namespace MapMagic.Nodes.GUI
 						if (gen.guiProperties)
 						{
 							Cell.current.fieldWidth = 0.481f;
-							using (Cell.LineStd) Draw.Field(ref gen.seed, "Seed");
-							using (Cell.LineStd) Draw.Field(ref gen.color, "Color");
-							using (Cell.LineStd) Draw.Field(ref gen.lightmapColor, "Lightmap");
-							using (Cell.LineStd) gen.bendFactor = Draw.Field(gen.bendFactor, "Bend Factor");
-							using (Cell.LineStd) Draw.Field(ref gen.biomeBlend, "Biome Blend");
+							using (Cell.LineStd) 
+							{
+								Draw.Field(ref gen.seed, "Seed");
+								Cell.current.Expose(gen.id, "seed", typeof(int));
+							}
+							using (Cell.LineStd) 
+							{
+								Draw.Field(ref gen.color, "Color");
+								Cell.current.Expose(gen.id, "color", typeof(Vector4));
+							}
+							using (Cell.LineStd) 
+							{
+								Draw.Field(ref gen.lightmapColor, "Lightmap");
+								Cell.current.Expose(gen.id, "lightmapColor", typeof(Vector4));
+							}
+							using (Cell.LineStd) 
+							{
+								gen.bendFactor = Draw.Field(gen.bendFactor, "Bend Factor");
+								Cell.current.Expose(gen.id, "bendFactor", typeof(float));
+							}
+							using (Cell.LineStd) 
+							{
+								Draw.Field(ref gen.biomeBlend, "Biome Blend");
+								Cell.current.Expose(gen.id, "biomeBlend", typeof(int));
+							}
+							using (Cell.LineStd) 
+							{
+								Draw.Field(ref gen.randomBase, "Rnd Base");
+								Cell.current.Expose(gen.id, "randomBase", typeof(int));
+							}
 						}
 
 				Cell.EmptyRowPx(2);
@@ -457,11 +515,23 @@ namespace MapMagic.Nodes.GUI
 		{
 			using (Cell.LinePx(0))
 				using (Cell.Padded(1,1,0,0)) 
-			{
-				using (Cell.LineStd) Draw.Field(ref gen.distance, "Distance");
-				using (Cell.LineStd) Draw.Field(ref gen.sizeFactor, "Size Factor");
-				using (Cell.LineStd) Draw.Toggle(ref gen.self, "Use Self");
-			}
+				{
+					using (Cell.LineStd) 
+					{
+						Draw.Field(ref gen.distance, "Distance");
+						Cell.current.Expose(gen.id, "distance", typeof(float));
+					}
+					using (Cell.LineStd) 
+					{
+						Draw.Field(ref gen.sizeFactor, "Size Factor");
+						Cell.current.Expose(gen.id, "sizeFactor", typeof(float));
+					}
+					using (Cell.LineStd) 
+					{
+						Draw.Toggle(ref gen.self, "Use Self");
+						Cell.current.Expose(gen.id, "self", typeof(bool));
+					}
+				}
 
 			using (Cell.LinePx(0))
 			LayersEditor.DrawLayers(ref gen.layers, 
@@ -492,6 +562,103 @@ namespace MapMagic.Nodes.GUI
 					Cell.EmptyLinePx(2);
 				},
 				onCreate: num => new ObjectsGenerators.Rarefy200.Layer(gen) );
+		}
+
+
+		[Draw.Editor(typeof(ObjectsGenerators.Transitions2119))]
+		public static void DrawTransitionsGenerator (ObjectsGenerators.Transitions2119 gen)
+		{
+			using (Cell.LinePx(0))
+				using (Cell.Padded(1,1,0,0)) 
+					using (Cell.LineStd) Draw.ToggleLeft(ref gen.drawGizmo, "Draw Gizmos");
+
+//			using (Cell.LinePx(0))
+//			LayersEditor.DrawLayers(ref gen.transitions,
+//				onDraw: num =>
+//				{
+//					if (num>=gen.transitions.Length) return; //on layer remove
+//					int iNum = gen.transitions.Length-1 - num;
+
+					Cell.EmptyLinePx(2);
+					using (Cell.LineStd)
+					{
+						Cell.current.fieldWidth = 0.7f;
+						Cell.EmptyRowPx(2);
+						//using (Cell.RowPx(15)) Draw.Icon( UI.current.textures.GetTexture("DPUI/Icons/Layer") );
+						using (Cell.Row)
+						{
+							using (Cell.LineStd) 
+							{
+								using (Cell.RowPx(15)) Draw.Label("P");
+								using (Cell.Row) 
+								{
+									Draw.Field(ref gen.pos.x);
+									Cell.current.Expose(gen.id, "pos", typeof(float), chNum:0);
+								}
+								using (Cell.Row) 
+								{
+									Draw.Field(ref gen.pos.y);
+									Cell.current.Expose(gen.id, "pos", typeof(float), chNum:1);
+								}
+								using (Cell.Row) 
+								{
+									Draw.Field(ref gen.pos.z);
+									Cell.current.Expose(gen.id, "pos", typeof(float), chNum:2);
+								}
+
+								Cell.current.Expose(gen.id, "pos", typeof(Vector3));
+							}
+							
+							using (Cell.LineStd) 
+							{
+								using (Cell.RowPx(15)) Draw.Label("R");
+								using (Cell.Row) 
+								{
+									Draw.Field(ref gen.eulerRot.x);
+									Cell.current.Expose(gen.id, "eulerRot", typeof(float), chNum:0);
+								}
+								using (Cell.Row) 
+								{
+									Draw.Field(ref gen.eulerRot.y);
+									Cell.current.Expose(gen.id, "eulerRot", typeof(float), chNum:1);
+								}
+								using (Cell.Row) 
+								{
+									Draw.Field(ref gen.eulerRot.z);
+									Cell.current.Expose(gen.id, "eulerRot", typeof(float), chNum:2);
+								}
+
+								Cell.current.Expose(gen.id, "eulerRot", typeof(Vector3));
+							}
+
+							using (Cell.LineStd) 
+							{
+								using (Cell.RowPx(15)) Draw.Label("S");
+								using (Cell.Row) 
+								{
+									Draw.Field(ref gen.scale.x);
+									Cell.current.Expose(gen.id, "scale", typeof(float), chNum:0);
+								}
+								using (Cell.Row) 
+								{
+									Draw.Field(ref gen.scale.y);
+									Cell.current.Expose(gen.id, "scale", typeof(float), chNum:1);
+								}
+								using (Cell.Row) 
+								{
+									Draw.Field(ref gen.scale.z);
+									Cell.current.Expose(gen.id, "scale", typeof(float), chNum:2);
+								}
+
+								Cell.current.Expose(gen.id, "scale", typeof(Vector3));
+							}
+
+							
+						}
+						Cell.EmptyRowPx(2);
+					}
+					Cell.EmptyLinePx(2);
+//				} );
 		}
 
 

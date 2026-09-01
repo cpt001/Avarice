@@ -13,6 +13,7 @@ namespace WaveHarmonic.Crest.Examples
     sealed class SampleHeightDemo : ManagedBehaviour<WaterRenderer>
     {
         [Tooltip(ICollisionProvider.k_LayerTooltip)]
+        [@DecoratedField]
         [SerializeField]
         CollisionLayer _Layer;
 
@@ -22,13 +23,14 @@ namespace WaveHarmonic.Crest.Examples
         void OnUpdate(WaterRenderer water)
         {
             // Assume a primitive like a sphere or box.
-            var r = transform.lossyScale.magnitude;
+            var r = Transform.lossyScale.magnitude;
+            var p = Transform.position;
 
-            if (_SampleHeightHelper.SampleHeight(transform.position, out var height, minimumLength: 2f * r, _Layer))
+            if (_SampleHeightHelper.SampleHeight(p, out var height, minimumLength: 2f * r, _Layer))
             {
-                var pos = transform.position;
-                pos.y = height;
-                transform.position = pos;
+                p = Transform.position;
+                p.y = height;
+                Transform.position = p;
             }
         }
     }

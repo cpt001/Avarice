@@ -24,7 +24,7 @@ namespace MapMagic.Expose.GUI
 		[SerializeField] private Graph graph;
 		[SerializeField] private Exposed.Entry entry;
 
-		[SerializeField] private UI ui = new UI();
+		private UI ui = new UI();
 
 		private static readonly Dictionary<int,string> chToName = new Dictionary<int, string> { {-1,"None"}, {0,"X"}, {1,"Y"}, {2,"Z"}, {3,"W"} };
 

@@ -24,15 +24,18 @@ namespace Den.Tools
 		public float Yaw
 		{
 			get{
-				return Mathf.Acos(rotation.w) / Mathf.Deg2Rad * 2;
+				Vector3 fwd = rotation * Vector3.forward;
+
+				if (Mathf.Abs(fwd.x) < 1e-6f && Mathf.Abs(fwd.z) < 1e-6f)
+					return 0f;
+
+				return Mathf.Atan2(fwd.x, fwd.z) * Mathf.Rad2Deg;
 			}
 
 			set{
-				float halfVal = value/2 * Mathf.Deg2Rad;
-				rotation.w = Mathf.Cos(halfVal);
-				rotation.z = 0;
-				rotation.y = Mathf.Sin(halfVal);
-				rotation.x = 0;
+				Vector3 euler = rotation.eulerAngles;
+				euler.y = value;
+				rotation = Quaternion.Euler(euler);
 			}
 		}
 

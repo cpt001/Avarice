@@ -105,7 +105,7 @@ namespace WaveHarmonic.Crest
         [System.Diagnostics.Conditional(Constants.Symbols.k_Refraction)]
         void OnLegacyCopyPass(Camera camera)
         {
-            if (!SurfaceRenderer.IsTransparent(Surface.Material))
+            if (!Surface._MaybeTransparent && !SurfaceRenderer.IsTransparent(Surface.Material))
             {
                 return;
             }

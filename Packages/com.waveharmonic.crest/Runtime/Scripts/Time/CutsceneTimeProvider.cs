@@ -10,28 +10,32 @@ namespace WaveHarmonic.Crest
     /// This time provider feeds a Timeline time to the water system, using a Playable Director.
     /// </summary>
     [AddComponentMenu(Constants.k_MenuPrefixTime + "Cutscene Time Provider")]
-    [@HelpURL("Manual/Advanced/TimeProviders.html#timelines-and-cutscenes")]
+    [@HelpURL(typeof(CutsceneTimeProvider))]
     public sealed partial class CutsceneTimeProvider : TimeProvider
     {
 #if d_ModuleUnityDirector
         [Tooltip("Playable Director to take time from.")]
         [@GenerateAPI(symbol: "d_ModuleUnityDirector")]
+        [@DecoratedField]
         [SerializeField]
         internal PlayableDirector _PlayableDirector;
 #endif
 
         [Tooltip("Time offset which will be added to the Timeline time.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         float _TimeOffset = 0f;
 
         [Tooltip("Assign this time provider to the water system when this component becomes active.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         bool _AssignToWaterComponentOnEnable = true;
 
         [Tooltip("Restore the time provider that was previously assigned to water system when this component disables.")]
         [@GenerateAPI]
+        [@DecoratedField]
         [SerializeField]
         bool _RestorePreviousTimeProviderOnDisable = true;
 
@@ -70,7 +74,7 @@ namespace WaveHarmonic.Crest
 
         /// <remarks>
         /// If there is a PlayableDirector which is playing, return its time, otherwise use
-        /// the <see cref="TimeProvider"/> being used before this component initialised,
+        /// the <see cref="TimeProvider"/> being used before this component initialized,
         /// else fallback to a default <see cref="TimeProvider"/>.
         /// </remarks>
         /// <inheritdoc/>

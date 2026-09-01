@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace WaveHarmonic.Crest.Internal
 {
@@ -17,6 +18,7 @@ namespace WaveHarmonic.Crest.Internal
         internal static readonly List<Action<T>> s_OnFixedUpdate = new();
         internal static readonly List<Action<T>> s_OnEnable = new();
         internal static readonly List<Action<T>> s_OnDisable = new();
+        internal static readonly List<Action<T, Camera>> s_OnBeginCameraRendering = new();
 
         /// <summary>
         /// The singleton instance.
@@ -28,6 +30,14 @@ namespace WaveHarmonic.Crest.Internal
             for (var i = listeners.Count - 1; i >= 0; --i)
             {
                 listeners[i].Invoke(instance);
+            }
+        }
+
+        void Broadcast(List<Action<T, Camera>> listeners, Camera camera)
+        {
+            for (var i = listeners.Count - 1; i >= 0; --i)
+            {
+                listeners[i].Invoke(Instance, camera);
             }
         }
 
@@ -54,6 +64,7 @@ namespace WaveHarmonic.Crest.Internal
         private protected virtual void FixedUpdate() => Broadcast(s_OnFixedUpdate);
         private protected void BroadcastUpdate() => Broadcast(s_OnUpdate);
         private protected virtual void LateUpdate() => Broadcast(s_OnLateUpdate);
+        private protected void BroadcastBeginCameraRendering(Camera camera) => Broadcast(s_OnBeginCameraRendering, camera);
 
         // OnLoad etc cannot be used on open generic types.
         internal static void AfterRuntimeLoad()
@@ -78,6 +89,7 @@ namespace WaveHarmonic.Crest.Internal
         readonly Action<T> _OnFixedUpdate;
         readonly Action<T> _OnEnable;
         readonly Action<T> _OnDisable;
+        readonly Action<T, Camera> _OnBeginCameraRendering;
 
         /// <summary>
         /// The Update method called by the manager class.
@@ -105,6 +117,11 @@ namespace WaveHarmonic.Crest.Internal
         private protected virtual Action<T> OnDisableMethod => null;
 
         /// <summary>
+        /// The OnBeginCameraRendering method called by the manager class.
+        /// </summary>
+        private protected virtual Action<T, Camera> OnBeginCameraRenderingMethod => null;
+
+        /// <summary>
         /// Constructor which caches Actions to avoid allocations.
         /// </summary>
         public ManagedBehaviour()
@@ -114,6 +131,7 @@ namespace WaveHarmonic.Crest.Internal
             if (OnFixedUpdateMethod != null) _OnFixedUpdate = new(OnFixedUpdateMethod);
             if (OnEnableMethod != null) _OnEnable = new(OnEnableMethod);
             if (OnDisableMethod != null) _OnDisable = new(OnDisableMethod);
+            if (OnBeginCameraRenderingMethod != null) _OnBeginCameraRendering = new(OnBeginCameraRenderingMethod);
         }
 
         /// <inheritdoc/>
@@ -131,7 +149,7 @@ namespace WaveHarmonic.Crest.Internal
         }
 
         /// <summary>
-        /// Unity's OnDisable method. Make sure to call base if overriden.
+        /// Unity's OnDisable method. Make sure to call base if overridden.
         /// </summary>
         private protected override void OnDisable()
         {
@@ -175,6 +193,12 @@ namespace WaveHarmonic.Crest.Internal
             {
                 ManagerBehaviour<T>.s_OnDisable.Remove(_OnDisable);
                 if (listen) ManagerBehaviour<T>.s_OnDisable.Add(_OnDisable);
+            }
+
+            if (_OnBeginCameraRendering != null)
+            {
+                ManagerBehaviour<T>.s_OnBeginCameraRendering.Remove(_OnBeginCameraRendering);
+                if (listen) ManagerBehaviour<T>.s_OnBeginCameraRendering.Add(_OnBeginCameraRendering);
             }
         }
     }

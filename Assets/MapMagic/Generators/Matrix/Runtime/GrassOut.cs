@@ -28,7 +28,10 @@ namespace MapMagic.Nodes.MatrixGenerators
 		public override OutputLevel OutputLevel { get{ return outputLevel; } }
 
 		public float density = 0.5f; //number of meshes per map pixel. Should not be confused with opacity, it's not used for layer blending.
+
+		#pragma warning disable UAC1001 //prototype should be serializable, but Unity haven't added this attribute to DetailPrototype!
 		public DetailPrototype prototype = new DetailPrototype() { dryColor = new Color(0.95f, 1f, 0.65f), healthyColor = new Color(0.5f, 0.65f, 0.35f) };
+		#pragma warning restore UAC1001
 
 		public enum GrassRenderMode { Grass, Billboard, MeshVertexLit, MeshUnlit };
 		public GrassRenderMode renderMode;

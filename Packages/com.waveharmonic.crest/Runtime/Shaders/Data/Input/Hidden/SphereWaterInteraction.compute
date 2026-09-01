@@ -25,6 +25,8 @@ float _Crest_Radius;
 float _Crest_InnerSphereOffset;
 float _Crest_InnerSphereMultiplier;
 float _Crest_LargeWaveMultiplier;
+bool  _Crest_TargetRegion;
+uint2 _Crest_TargetRegionSize;
 CBUFFER_END
 
 m_CrestNameSpace
@@ -56,6 +58,11 @@ void Execute(uint3 id)
     if (_Crest_LargeWaveMultiplier * _Crest_Radius < cascade._Texel)
     {
         return;
+    }
+
+    if (_Crest_TargetRegion)
+    {
+        id.xy = cascade.InputIDToLodID(id.xy, _Crest_TargetRegionSize, _Crest_Position.xz);
     }
 
     float2 positionXZ = cascade.IDToWorld(id.xy);

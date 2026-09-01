@@ -31,8 +31,8 @@ namespace WaveHarmonic.Crest
         // NOTE: Must match CREST_WATER_DEPTH_BASELINE in Constants.hlsl.
         internal const float k_DepthBaseline = Mathf.Infinity;
         internal static readonly Color s_GizmoColor = new(1f, 0f, 0f, 0.5f);
-        // We want the clear color to be the mininimum terrain height (-1000m).
-        // Mathf.Infinity can cause problems for distance.
+        // We want the clear color to be the minimum terrain height (-1000m).
+        // Infinity can cause problems for distance.
         static readonly Color s_NullColor = new(-k_DepthBaseline, k_DepthBaseline, 0, 0);
         static Color NullColor => Helpers.IsWebGPU ? new(float.MinValue, float.MaxValue, 0, 0) : s_NullColor;
 
@@ -147,7 +147,7 @@ namespace WaveHarmonic.Crest
                 _DepthLod = lod;
             }
 
-            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slices = -1)
+            public void Draw(Lod lod, CommandBuffer buffer, RenderTargetIdentifier target, int pass = -1, float weight = 1, int slices = -1, int offset = 0)
             {
                 var resources = WaterResources.Instance;
                 var wrapper = new PropertyWrapperCompute(buffer, resources.Compute._DepthTexture, 0);
@@ -158,6 +158,9 @@ namespace WaveHarmonic.Crest
                 wrapper.SetVector(Crest.ShaderIDs.s_TextureRotation, new(0, 1));
                 wrapper.SetBoolean(DepthLodInput.ShaderIDs.s_SDF, false);
                 wrapper.SetKeyword(resources.Keywords.DepthTextureSDF, lod._Water._DepthLod._EnableSignedDistanceFields);
+
+                // Cannot because rect is zero.
+                wrapper.SetBoolean(LodInput.ShaderIDs.s_TargetRegion, false);
 
                 Terrain.GetActiveTerrains(_Terrains);
                 foreach (var terrain in _Terrains)

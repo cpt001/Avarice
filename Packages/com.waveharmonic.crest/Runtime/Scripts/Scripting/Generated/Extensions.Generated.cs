@@ -22,6 +22,7 @@ namespace WaveHarmonic.Crest
 #if d_CrestPaint
                 case LodInputMode.Paint when input is AbsorptionLodInput: AddData<AbsorptionPaintLodInputData>(input, mode); break;
 #endif
+                case LodInputMode.Area when input is AbsorptionLodInput: AddData<AbsorptionAreaLodInputData>(input, mode); break;
                 case LodInputMode.Renderer when input is AlbedoLodInput: AddData<AlbedoRendererLodInputData>(input, mode); break;
                 case LodInputMode.Renderer when input is AnimatedWavesLodInput: AddData<AnimatedWavesRendererLodInputData>(input, mode); break;
                 case LodInputMode.Renderer when input is ClipLodInput: AddData<ClipRendererLodInputData>(input, mode); break;
@@ -41,6 +42,7 @@ namespace WaveHarmonic.Crest
 #if d_CrestSplines
                 case LodInputMode.Spline when input is FlowLodInput: AddData<FlowSplineLodInputData>(input, mode); break;
 #endif
+                case LodInputMode.Area when input is FlowLodInput: AddData<FlowAreaLodInputData>(input, mode); break;
                 case LodInputMode.Renderer when input is FoamLodInput: AddData<FoamRendererLodInputData>(input, mode); break;
                 case LodInputMode.Texture when input is FoamLodInput: AddData<FoamTextureLodInputData>(input, mode); break;
 #if d_CrestPaint
@@ -49,6 +51,7 @@ namespace WaveHarmonic.Crest
 #if d_CrestSplines
                 case LodInputMode.Spline when input is FoamLodInput: AddData<FoamSplineLodInputData>(input, mode); break;
 #endif
+                case LodInputMode.Area when input is FoamLodInput: AddData<FoamAreaLodInputData>(input, mode); break;
                 case LodInputMode.Renderer when input is LevelLodInput: AddData<LevelRendererLodInputData>(input, mode); break;
                 case LodInputMode.Texture when input is LevelLodInput: AddData<LevelTextureLodInputData>(input, mode); break;
 #if d_CrestPaint
@@ -58,6 +61,7 @@ namespace WaveHarmonic.Crest
                 case LodInputMode.Spline when input is LevelLodInput: AddData<LevelSplineLodInputData>(input, mode); break;
 #endif
                 case LodInputMode.Geometry when input is LevelLodInput: AddData<LevelGeometryLodInputData>(input, mode); break;
+                case LodInputMode.Area when input is LevelLodInput: AddData<LevelAreaLodInputData>(input, mode); break;
                 case LodInputMode.Renderer when input is ScatteringLodInput: AddData<ScatteringRendererLodInputData>(input, mode); break;
                 case LodInputMode.Texture when input is ScatteringLodInput: AddData<ScatteringTextureLodInputData>(input, mode); break;
 #if d_CrestSplines
@@ -66,7 +70,9 @@ namespace WaveHarmonic.Crest
 #if d_CrestPaint
                 case LodInputMode.Paint when input is ScatteringLodInput: AddData<ScatteringPaintLodInputData>(input, mode); break;
 #endif
+                case LodInputMode.Area when input is ScatteringLodInput: AddData<ScatteringAreaLodInputData>(input, mode); break;
                 case LodInputMode.Renderer when input is ShadowLodInput: AddData<ShadowRendererLodInputData>(input, mode); break;
+                case LodInputMode.Area when input is ShadowLodInput: AddData<ShadowAreaLodInputData>(input, mode); break;
                 case LodInputMode.Renderer when input is ShapeWaves: AddData<ShapeWavesRendererLodInputData>(input, mode); break;
                 case LodInputMode.Texture when input is ShapeWaves: AddData<ShapeWavesTextureLodInputData>(input, mode); break;
 #if d_CrestPaint
@@ -75,6 +81,7 @@ namespace WaveHarmonic.Crest
 #if d_CrestSplines
                 case LodInputMode.Spline when input is ShapeWaves: AddData<ShapeWavesSplineLodInputData>(input, mode); break;
 #endif
+                case LodInputMode.Area when input is ShapeWaves: AddData<ShapeWavesAreaLodInputData>(input, mode); break;
             }
         }
     }

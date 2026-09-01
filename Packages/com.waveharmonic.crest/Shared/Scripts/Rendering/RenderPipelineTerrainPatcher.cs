@@ -12,12 +12,15 @@ namespace WaveHarmonic.Crest.Editor
 #endif
     sealed class RenderPipelineTerrainPatcher : RenderPipelinePatcher
     {
+        [@DecoratedField]
         [SerializeField]
         Material _Material;
 
+        [@DecoratedField]
         [SerializeField]
         Material _MaterialHDRP;
 
+        [@DecoratedField]
         [SerializeField]
         Material _MaterialURP;
 

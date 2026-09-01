@@ -26,7 +26,7 @@ namespace WaveHarmonic.Crest
         RenderTexture _SpectrumInitial;
 
         /// <summary>
-        /// Generated 'raw', uncombined, wave data. Input for putting into AnimWaves data before combine pass.
+        /// Generated 'raw', uncombined, wave data. Input for putting into AnimatedWaves data before combine pass.
         /// </summary>
         RenderTexture _WaveBuffers;
         public RenderTexture WaveBuffers => _WaveBuffers;
@@ -205,7 +205,7 @@ namespace WaveHarmonic.Crest
                 Release();
 
                 _ShaderSpectrum = WaterResources.Instance.Compute._FFTSpectrum;
-                _KernelSpectrumInitial = _ShaderSpectrum.FindKernel("SpectrumInitalize");
+                _KernelSpectrumInitial = _ShaderSpectrum.FindKernel("SpectrumInitialize");
                 _KernelSpectrumUpdate = _ShaderSpectrum.FindKernel("SpectrumUpdate");
                 _ShaderFFT = WaterResources.Instance.Compute._FFT;
 
@@ -239,7 +239,7 @@ namespace WaveHarmonic.Crest
                 };
                 WaveBuffers.Create();
 
-                // Initialize bufferfly. Cached per resolution.
+                // Initialize butterfly. Cached per resolution.
                 if (!s_ButterflyTextures.ContainsKey(resolution))
                 {
                     // Computes the offsets used for the FFT calculation.
@@ -361,7 +361,7 @@ namespace WaveHarmonic.Crest
         }
 
         /// <summary>
-        /// Changing wave gen data can result in creating lots of new generators. This gives a way to notify
+        /// Changing wave generated data can result in creating lots of new generators. This gives a way to notify
         /// that a parameter has changed. If there is no existing generator for the new param values, but there
         /// is one for the old param values, this old generator is repurposed.
         /// </summary>

@@ -17,40 +17,50 @@ namespace WaveHarmonic.Crest
     [AddComponentMenu(Constants.k_MenuPrefixDebug + "Debug GUI")]
     sealed class DebugGUI : ManagedBehaviour<WaterRenderer>
     {
+        [@DecoratedField]
         [SerializeField]
         bool _ShowWaterData = true;
 
+        [@DecoratedField]
         [SerializeField]
         bool _GuiVisible = true;
 
+        [@DecoratedField]
         [SerializeField]
         bool _DrawLodDatasActualSize = false;
 
-        [UnityEngine.Range(0f, 1f)]
+        [@Range(0f, 1f)]
         [SerializeField]
         float _PausedScroll;
 
 
-        [Header("Simulations")]
+        [@Heading("Simulations")]
 
+        [@DecoratedField]
         [SerializeField]
         bool _DrawAnimatedWaves = true;
 
+        [@DecoratedField]
         [SerializeField]
         bool _DrawDynamicWaves = false;
 
+        [@DecoratedField]
         [SerializeField]
         bool _DrawFoam = false;
 
+        [@DecoratedField]
         [SerializeField]
         bool _DrawFlow = false;
 
+        [@DecoratedField]
         [SerializeField]
         bool _DrawShadow = false;
 
+        [@DecoratedField]
         [SerializeField]
         bool _DrawDepth = false;
 
+        [@DecoratedField]
         [SerializeField]
         bool _DrawClip = false;
 
@@ -384,6 +394,7 @@ namespace WaveHarmonic.Crest
         {
             if (lodData == null) return;
             if (!lodData.Enabled) return;
+            if (lodData.DataTexture == null) return;
 
             // Compute short names that will fit in UI and cache them.
             var type = lodData.GetType();
@@ -475,7 +486,6 @@ namespace WaveHarmonic.Crest
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void InitStatics()
         {
-            // Init here from 2019.3 onwards
             s_SimulationNames.Clear();
             s_DebugArrayMaterial = null;
             s_Instance = null;

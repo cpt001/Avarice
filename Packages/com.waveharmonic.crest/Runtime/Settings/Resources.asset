@@ -29,6 +29,8 @@ MonoBehaviour:
     _Portals: {fileID: 4800000, guid: 370ffa403718b4982a8a3e0101263093, type: 3}
     _PortalsMask: {fileID: 4800000, guid: 3e6aaf795e0984bacb7a9fc4785f1f6a, type: 3}
     _ClipConvexHull: {fileID: 4800000, guid: 1f5d1e029c7564da8855bf97e3b9247a, type: 3}
+    _AnimatedWavesConvexHull: {fileID: 4800000, guid: 9fef73da7e1814e00a1e840d67406723,
+      type: 3}
     _ShallowWaterSimulationVisualizer: {fileID: 4800000, guid: 613caf76dccc3ea45b0501b731a55ec2,
       type: 3}
     _DebugTextureArray: {fileID: 4800000, guid: 9984e3507dd424fd49ce01182989250a,
@@ -64,6 +66,12 @@ MonoBehaviour:
     _DepthTexture: {fileID: 7200000, guid: 025c29236eb8341f0a2078d93379be6a, type: 3}
     _ScatteringTexture: {fileID: 7200000, guid: 78d6b75ecfb664f0cbb70001b1446627,
       type: 3}
+    _AbsorptionArea: {fileID: 7200000, guid: d773feffe247f4512a553cebd71cabd2, type: 3}
+    _FlowArea: {fileID: 7200000, guid: 2e74f9618f4774b31ac23b0e15cd27ed, type: 3}
+    _FoamArea: {fileID: 7200000, guid: 212a9fa14e1e44e76b46a8b19400945d, type: 3}
+    _LevelArea: {fileID: 7200000, guid: 723583b337d7d446895248a0b0910099, type: 3}
+    _ScatteringArea: {fileID: 7200000, guid: 471d47acacbdf4df1a9658a6408dcedf, type: 3}
+    _ShadowArea: {fileID: 7200000, guid: bdfb0d444434147bd80c95ceab83183d, type: 3}
     _ClipPrimitive: {fileID: 7200000, guid: ad943abdbda794e98b8decce3329fcd8, type: 3}
     _SphereWaterInteraction: {fileID: 7200000, guid: 98fb0af5d79724a2c945809b974524eb,
       type: 3}

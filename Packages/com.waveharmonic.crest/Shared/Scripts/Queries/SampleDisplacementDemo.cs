@@ -14,13 +14,15 @@ namespace WaveHarmonic.Crest.Examples
     sealed class SampleDisplacementDemo : ManagedBehaviour<WaterRenderer>
     {
         [Tooltip(ICollisionProvider.k_LayerTooltip)]
+        [@DecoratedField]
         [SerializeField]
         CollisionLayer _Layer;
 
+        [@DecoratedField]
         [SerializeField]
         bool _TrackCamera = true;
 
-        [UnityEngine.Range(0f, 32f)]
+        [@Range(0f, 32f)]
         [SerializeField]
         float _MinimumGridSize = 0f;
 

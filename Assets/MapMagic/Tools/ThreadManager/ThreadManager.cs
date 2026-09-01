@@ -221,8 +221,8 @@ namespace Den.Tools.Tasks
 			catch (ThreadAbortException) { }
 
 			#if !MM_DEBUG
-			catch (Exception e)
-				{ Debug.LogError("Thread failed: " + e); }  //throw exception ignores VS
+			catch
+				{ throw; } //throw exception ignores VS 
 				//{ throw new Exception("Thread failed: " + e); }
 			#endif
 

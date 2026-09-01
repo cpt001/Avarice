@@ -168,7 +168,7 @@ namespace WaveHarmonic.Crest.Editor
                 return;
             }
 
-            // Convert an authored absorption colour to density values.
+            // Convert an authored absorption color to density values.
             WaterRenderer.UpdateAbsorptionFromColor(material);
 
             if (!material.IsPropertyOverriden(WaterRenderer.ShaderIDs.s_AbsorptionColor))
@@ -209,7 +209,7 @@ namespace WaveHarmonic.Crest.Editor
 #if UNITY_6000_0_OR_NEWER
             else
             {
-                // Always show specular control for U5, as it cannot be overriden by the material.
+                // Always show specular control for U5, as it cannot be overridden by the material.
                 specular = properties
                     .First(x => x.name == "_MaterialID").floatValue == 4;
             }

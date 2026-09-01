@@ -58,7 +58,7 @@ namespace MapMagic.Brush
 
 			if (gen.specificPrefabs)
 				using (Cell.LineStd)
-					ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs, true, treeIcon:true);
+					ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs, true, treeIcon:true, gen.id);
 		}
 
 
@@ -66,7 +66,7 @@ namespace MapMagic.Brush
 		public static void DrawWriteObjects (BrushWriteObjects gen) 
 		{
 			using (Cell.LineStd)
-				ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs,multiPrefab:true, treeIcon:true);
+				ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs,multiPrefab:true, treeIcon:true, gen.id);
 
 			using (Cell.LinePx(0))
 				using (Cell.Padded(2,2,0,0))
@@ -93,7 +93,7 @@ namespace MapMagic.Brush
 
 			if (gen.specificPrefabs)
 				using (Cell.LineStd)
-					ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs, true, treeIcon:true);
+					ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs, true, treeIcon:true, gen.id);
 
 			using (Cell.LinePx(0))
 				using (Cell.Padded(2,2,0,0))
@@ -111,7 +111,7 @@ namespace MapMagic.Brush
 
 			if (gen.specificPrefabs)
 				using (Cell.LineStd)
-					ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs, true, treeIcon:true);
+					ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs, true, treeIcon:true, gen.id);
 		}
 
 
@@ -119,7 +119,7 @@ namespace MapMagic.Brush
 		public static void DrawWriteTrees (BrushWriteTrees gen)
 		{
 			using (Cell.LineStd)
-				ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs,multiPrefab:true, treeIcon:true);
+				ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs,multiPrefab:true, treeIcon:true, gen.id);
 
 			using (Cell.LinePx(0))
 				using (Cell.Padded(2,2,0,0))
@@ -150,7 +150,7 @@ namespace MapMagic.Brush
 
 			if (gen.specificPrefabs)
 				using (Cell.LineStd)
-					ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs, true, treeIcon:true);
+					ObjectsEditors.DrawObjectPrefabs(ref gen.prefabs, true, treeIcon:true, gen.id);
 
 			using (Cell.LinePx(0))
 				using (Cell.Padded(2,2,0,0))
