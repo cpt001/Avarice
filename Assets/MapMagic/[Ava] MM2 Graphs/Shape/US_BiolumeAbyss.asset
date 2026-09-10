@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c9bc43e142692db4e92eef81e1903ca4, type: 3}
-  m_Name: Swamp
+  m_Name: US_BiolumeAbyss
   m_EditorClassIdentifier: MapMagic::MapMagic.Nodes.Graph
   serializedVersion: 0
   guiShowDependent: 0
@@ -71,11 +71,11 @@ MonoBehaviour:
       - t: 4
         v: 4
       - t: 4
-        v: 16
+        v: 19
       - t: 1
-        v: 268697858
+        v: 319029506
       - t: 6
-        v: 268697858
+        v: 319029506
       special: 
       uniObj: {fileID: 0}
     - refId: 2
