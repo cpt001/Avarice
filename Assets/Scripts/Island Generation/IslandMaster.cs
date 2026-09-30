@@ -1,7 +1,9 @@
 using UnityEngine;
 using System.Collections.Generic;
+using MapMagic.Core;
 using MapMagic.Terrains;
 using MapMagic.Products;
+
 
 /// <summary>
 /// Contains data on initial island generation rules
@@ -40,14 +42,17 @@ public class IslandMaster : MonoBehaviour
     }
     public Allegiances islandAllegiance;
 
+    private MapMagicObject mmObject;
     private MapMagic.Terrains.TerrainTile attachedTileStatus;
 
     public List<InitialTownGen> townsOnIsland = new List<InitialTownGen>();
 
-    private Transform terrainTile;
+    private Transform terrainTile;    
 
     private void Start()
     {
+        bool isSettled = Random.Range(0, 2) == 1;
+        mmObject.graph.defaults["isSettledConst"] = isSettled ? 1 : 0;
         //Debug.Log("Targeted parent: " + transform.parent.parent);
         terrainTile = transform.parent.parent;
         terrainTile.Find("Main Terrain").gameObject.layer = LayerMask.NameToLayer("Terrain");
