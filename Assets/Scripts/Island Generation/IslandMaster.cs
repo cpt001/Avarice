@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using MapMagic.Core;
 using MapMagic.Terrains;
 using MapMagic.Nodes;
-using System.Collections;
 using Den.Tools;
 
 /// <summary>
@@ -56,52 +55,45 @@ public class IslandMaster : MonoBehaviour
 
     private void Start()
     {
-        StartCoroutine(DelayedGeneration());
+        if (isActiveAndEnabled)
+        {
+            IsolateIslandMaster();
 
-        //Debug.Log("Targeted parent: " + transform.parent.parent);
-        terrainTile = transform.parent.parent;
-        terrainTile.Find("Main Terrain").gameObject.layer = LayerMask.NameToLayer("Terrain");
-        //Debug.Log("Tile status: " + terrainTile.GetComponent<MapMagic.Terrains.TerrainTile>().)
-        //attachedTileStatus = transform.parent.parent.GetComponent<MapMagic.Terrains.TerrainTile>();
-        //Not sure what to access to view changes right now -- Its in terrainTile script, but not sure what variable <-- this is related to the render status
+            //Debug.Log("Targeted parent: " + transform.parent.parent);
+            terrainTile = transform.parent.parent;
+            terrainTile.Find("Main Terrain").gameObject.layer = LayerMask.NameToLayer("Terrain");
+            //Debug.Log("Tile status: " + terrainTile.GetComponent<MapMagic.Terrains.TerrainTile>().)
+            //attachedTileStatus = transform.parent.parent.GetComponent<MapMagic.Terrains.TerrainTile>();
+            //Not sure what to access to view changes right now -- Its in terrainTile script, but not sure what variable <-- this is related to the render status
+        }
     }
 
-    private IEnumerator DelayedGeneration()
+    private void IsolateIslandMaster()
     {
-        yield return new WaitForEndOfFrame();
-
+        // Gather this tile's IMs, including this one
         mmObject = GetComponentInParent<MapMagicObject>();
-        terrainGraph = mmObject.graph;
-
-        Coord tileCoord = Coord.Floor(
-            transform.position.x / mmObject.tileSize.x,
-            transform.position.z / mmObject.tileSize.z);
-
-        string tileKey = $"{tileCoord.x}_{tileCoord.z}";
-
-        // Respawned after StartGenerate, or sibling biome already claimed this tile
-        if (initializedTiles.Contains(tileKey))
+        List<IslandMaster> candidates = new List<IslandMaster>();
+        foreach (Transform t in transform.parent)
         {
-            terrainGraph.defaults["isSettledConst"] = tileSettlement[tileKey];
-            yield break;
+            IslandMaster im = t.GetComponent<IslandMaster>();
+            if (im != null) candidates.Add(im);
         }
 
-        initializedTiles.Add(tileKey);
-
-        bool isSettled = Random.Range(0, 2) == 1;
-        tileSettlement[tileKey] = isSettled ? 1 : 0;
-        terrainGraph.defaults["isSettledConst"] = isSettled ? 1 : 0;
-        Debug.Log($"[IM] isSettledConst reads back as: {terrainGraph.defaults["isSettledConst"]}");
-
-        Debug.Log($"[IM] Tile {tileKey} -> {(isSettled ? "SETTLED" : "natural")}");
-
-        if (isSettled)
+        // Stable order: biome first, then position as a tiebreaker
+        candidates.Sort((a, b) =>
         {
-            TerrainTile tt = mmObject.tiles[tileCoord];
-            if (tt != null)
-                tt.StartGenerate(terrainGraph, true, true);
-        }
+            int byBiome = a.islandBiome.CompareTo(b.islandBiome);
+            if (byBiome != 0) return byBiome;
+            return a.transform.position.x.CompareTo(b.transform.position.x);
+        });
 
-        yield return null;
+        // Seed from world seed + tile coordinate (integer math, stable across runs)
+        Vector2Int tile = new Vector2Int(
+            Mathf.FloorToInt(transform.position.x / mmObject.tileSize.x),
+            Mathf.FloorToInt(transform.position.z / mmObject.tileSize.z));
+        int seed = mmObject.graph.random.Seed ^ (tile.x * 73856093) ^ (tile.y * 19349663);
+
+        IslandMaster winner = candidates[new System.Random(seed).Next(candidates.Count)];
+        if (winner != this) gameObject.SetActive(false);
     }
 }
