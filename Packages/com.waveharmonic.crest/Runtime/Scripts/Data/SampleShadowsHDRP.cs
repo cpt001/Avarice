@@ -7,6 +7,7 @@ using UnityEngine.Rendering.HighDefinition;
 
 namespace WaveHarmonic.Crest
 {
+    [System.Serializable]
     sealed class SampleShadowsHDRP : CustomPass
     {
         static SampleShadowsHDRP s_Instance;

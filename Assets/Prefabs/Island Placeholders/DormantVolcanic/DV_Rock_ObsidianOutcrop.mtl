@@ -1,0 +1,16 @@
+newmtl dv_obsidian
+Ka 0 0 0
+Kd 0.080 0.060 0.100
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_obsidian2
+Ka 0 0 0
+Kd 0.180 0.140 0.240
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

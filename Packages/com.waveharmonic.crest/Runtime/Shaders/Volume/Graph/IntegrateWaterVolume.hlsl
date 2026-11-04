@@ -202,11 +202,6 @@ CREST_INTEGRATE_COLOR_FINAL(color.rgb)
 #if UNITY_VERSION < 60070000
 #define m_BlendUnityFog MixFog
 #define MixFog m_FogPatcher
-#else
-#define m_BlendUnityFog BlendDistanceFog
-#define BlendDistanceFog m_FogPatcher
-#endif
-
 // Color is RGB.
 #if d_Crest_DiscardAtmosphericScattering
 #define m_FogPatcher(color, coord) color; \
@@ -230,7 +225,76 @@ if (!m_Crest::s_IsUnderWater) \
 } \
 CREST_INTEGRATE_COLOR_FINAL(color)
 #endif
-#endif
+
+#else // Unity 6.7+
+
+#define UniversalFragmentPBR m_FogPatcher
+#define BlendDistanceFog(color, coord) (__FOGGED ? BlendDistanceFog(color, coord) :  (m_Crest::s_IsUnderWater ? color / inputData.preExposureMultiplier : color))
+#define MixVolumetricFog(color, alpha, blend, dunno, coord) (__FOGGED ? MixVolumetricFog(color, alpha, blend, dunno, coord) : color)
+
+#if defined(_SURFACE_TYPE_TRANSPARENT) && defined(_TRANSPARENT_RECEIVE_FOG)
+#if d_Crest_DiscardAtmosphericScattering
+#define m_FogPatcher(inputData, surface) 0.0; \
+color = UniversalFragmentPBR(inputData, surface); \
+bool __FOGGED = true; \
+if (m_Crest::s_IsUnderWater) \
+{ \
+    color.rgb = m_Crest::ApplyFog(color.rgb); \
+} \
+else \
+{ \
+    color.rgb = BlendDistanceFog(color.rgb, unpacked.positionCS); \
+    color.rgb = MixVolumetricFog(color.rgb, color.a, VolumetricFogBlendModeFromDefines(), false, unpacked.positionCS) / inputData.preExposureMultiplier; \
+    CREST_INTEGRATE_COLOR_AFTER_FOG(color.rgb); \
+} \
+color.rgb = ClampExposed(inputData.preExposureMultiplier * color.rgb); \
+CREST_INTEGRATE_COLOR_FINAL(color); \
+__FOGGED = false;
+#else // d_Crest_DiscardAtmosphericScattering
+#define m_FogPatcher(inputData, surface) 0.0; \
+color = UniversalFragmentPBR(inputData, surface); \
+bool __FOGGED = true; \
+color.rgb = BlendDistanceFog(color.rgb, unpacked.positionCS); \
+color.rgb = MixVolumetricFog(color.rgb, color.a, VolumetricFogBlendModeFromDefines(), false, unpacked.positionCS) / inputData.preExposureMultiplier; \
+CREST_INTEGRATE_COLOR_AFTER_FOG(color.rgb); \
+color.rgb = m_Crest::ApplyFog(color.rgb); \
+color.rgb = ClampExposed(inputData.preExposureMultiplier * color.rgb); \
+CREST_INTEGRATE_COLOR_FINAL(color); \
+__FOGGED = false;
+#endif // d_Crest_DiscardAtmosphericScattering
+#else // !_TRANSPARENT_RECEIVE_FOG
+#if d_Crest_DiscardAtmosphericScattering
+#define m_FogPatcher(inputData, surface) 0.0; \
+color = UniversalFragmentPBR(inputData, surface); \
+bool __FOGGED = true; \
+if (m_Crest::s_IsUnderWater) \
+{ \
+    color.rgb = m_Crest::ApplyFog(color.rgb); \
+} \
+else \
+{ \
+    color.rgb = BlendDistanceFog(color.rgb, unpacked.positionCS); \
+    CREST_INTEGRATE_COLOR_AFTER_FOG(color.rgb); \
+} \
+color.rgb = ClampExposed(inputData.preExposureMultiplier * color.rgb); \
+CREST_INTEGRATE_COLOR_FINAL(color); \
+__FOGGED = false;
+#else // d_Crest_DiscardAtmosphericScattering
+#define m_FogPatcher(inputData, surface) 0.0; \
+color = UniversalFragmentPBR(inputData, surface); \
+bool __FOGGED = true; \
+color.rgb = BlendDistanceFog(color.rgb, unpacked.positionCS); \
+CREST_INTEGRATE_COLOR_AFTER_FOG(color.rgb); \
+color.rgb = m_Crest::ApplyFog(color.rgb); \
+color.rgb = ClampExposed(inputData.preExposureMultiplier * color.rgb); \
+CREST_INTEGRATE_COLOR_FINAL(color); \
+__FOGGED = false;
+#endif // d_Crest_DiscardAtmosphericScattering
+#endif // _TRANSPARENT_RECEIVE_FOG
+// #define UniversalFragmentPBR m_FogPatcher
+
+#endif // Unity 6.7
+#endif // CREST_URP
 
 #endif // SHADERGRAPH_PREVIEW
 

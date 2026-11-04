@@ -1,0 +1,16 @@
+newmtl dl_stone
+Ka 0 0 0
+Kd 0.460 0.440 0.420
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dl_stone2
+Ka 0 0 0
+Kd 0.540 0.520 0.480
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

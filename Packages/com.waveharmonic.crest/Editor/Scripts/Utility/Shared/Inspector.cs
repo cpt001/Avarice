@@ -357,8 +357,16 @@ namespace WaveHarmonic.Crest.Editor
     // Reflection
     partial class Inspector
     {
-        static readonly PropertyInfo s_GUIViewCurrent = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GUIView").GetProperty("current", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-        static readonly PropertyInfo s_GUIViewNativeHandle = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GUIView").GetProperty("nativeHandle", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        static readonly Type s_GUIView = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GUIView");
+        static readonly PropertyInfo s_GUIViewCurrent = s_GUIView.GetProperty("current", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+#if UNITY_6000_5_OR_NEWER
+        static readonly Type s_NativeHandleMarshaller = s_GUIView.GetNestedType("NativeHandleMarshaller", BindingFlags.NonPublic | BindingFlags.Public);
+        static readonly MethodInfo s_ConvertToUnmanaged = s_NativeHandleMarshaller.GetMethod("ConvertToUnmanaged", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+        static readonly object[] s_ConvertToUnmanagedArgs = new object[1];
+#else
+        static readonly PropertyInfo s_GUIViewNativeHandle = s_GUIView.GetProperty("nativeHandle", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+#endif
 
         // Adapted from:
         // https://github.com/Unity-Technologies/UnityCsReference/blob/59b03b8a0f179c0b7e038178c90b6c80b340aa9f/Editor/Mono/Inspector/ReorderableListWrapper.cs#L77-L88
@@ -372,7 +380,12 @@ namespace WaveHarmonic.Crest.Editor
 
                 if (current != null)
                 {
+#if UNITY_6000_5_OR_NEWER
+                    s_ConvertToUnmanagedArgs[0] = current;
+                    handle = ((IntPtr)s_ConvertToUnmanaged.Invoke(null, s_ConvertToUnmanagedArgs)).ToInt32();
+#else
                     handle = ((IntPtr)s_GUIViewNativeHandle.GetValue(current)).ToInt32();
+#endif
                 }
 
                 return serializedProperty?.propertyPath + serializedProperty.serializedObject.targetObject.GetEntityId() + handle;

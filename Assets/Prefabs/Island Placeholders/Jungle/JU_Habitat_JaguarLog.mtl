@@ -1,0 +1,48 @@
+newmtl bone
+Ka 0 0 0
+Kd 0.860 0.830 0.740
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl den_dark
+Ka 0 0 0
+Kd 0.030 0.030 0.030
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl ju_litter
+Ka 0 0 0
+Kd 0.360 0.280 0.160
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl ju_log
+Ka 0 0 0
+Kd 0.330 0.250 0.180
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl ju_log_end
+Ka 0 0 0
+Kd 0.580 0.450 0.300
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl ju_moss
+Ka 0 0 0
+Kd 0.220 0.460 0.160
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

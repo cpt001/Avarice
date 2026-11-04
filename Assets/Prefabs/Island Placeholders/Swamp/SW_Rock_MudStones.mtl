@@ -1,0 +1,24 @@
+newmtl sw_moss_top
+Ka 0 0 0
+Kd 0.300 0.440 0.180
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl sw_mud
+Ka 0 0 0
+Kd 0.260 0.210 0.150
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl sw_stone_dk
+Ka 0 0 0
+Kd 0.220 0.220 0.200
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

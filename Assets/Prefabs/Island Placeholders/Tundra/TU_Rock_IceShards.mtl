@@ -1,0 +1,24 @@
+newmtl tu_ice
+Ka 0 0 0
+Kd 0.620 0.820 0.920
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl tu_ice2
+Ka 0 0 0
+Kd 0.780 0.900 0.960
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl tu_snow
+Ka 0 0 0
+Kd 0.930 0.950 0.980
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

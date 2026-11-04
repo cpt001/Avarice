@@ -1,0 +1,24 @@
+newmtl tu_bark
+Ka 0 0 0
+Kd 0.300 0.220 0.170
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl tu_pine
+Ka 0 0 0
+Kd 0.120 0.280 0.200
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl tu_snow
+Ka 0 0 0
+Kd 0.930 0.950 0.980
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

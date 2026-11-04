@@ -1,0 +1,16 @@
+newmtl et_crystal
+Ka 0 0 0
+Kd 0.720 0.620 0.950
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl et_crystal2
+Ka 0 0 0
+Kd 0.550 0.850 0.980
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

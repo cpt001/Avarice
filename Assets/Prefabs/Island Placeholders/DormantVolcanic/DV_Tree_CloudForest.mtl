@@ -1,0 +1,32 @@
+newmtl dv_bark
+Ka 0 0 0
+Kd 0.320 0.250 0.200
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_hanging
+Ka 0 0 0
+Kd 0.550 0.620 0.400
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_leaf
+Ka 0 0 0
+Kd 0.220 0.420 0.200
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_moss
+Ka 0 0 0
+Kd 0.360 0.500 0.220
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

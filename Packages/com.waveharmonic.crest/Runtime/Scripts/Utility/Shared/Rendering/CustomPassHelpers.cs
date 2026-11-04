@@ -9,6 +9,7 @@ using UnityEngine.Rendering.HighDefinition;
 
 namespace WaveHarmonic.Crest
 {
+    [System.Serializable]
     class CustomPass : UnityEngine.Rendering.HighDefinition.CustomPass
     {
         internal GameObject _GameObject;

@@ -1,0 +1,24 @@
+newmtl sw_bark
+Ka 0 0 0
+Kd 0.300 0.250 0.200
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl sw_leaf
+Ka 0 0 0
+Kd 0.200 0.360 0.180
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl sw_moss
+Ka 0 0 0
+Kd 0.550 0.600 0.480
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

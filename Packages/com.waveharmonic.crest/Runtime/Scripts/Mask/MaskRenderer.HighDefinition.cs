@@ -60,6 +60,7 @@ namespace WaveHarmonic.Crest
 
         }
 
+        [System.Serializable]
         sealed class MaskCustomPass : CustomPass
         {
             internal MaskRenderer _MaskPass;

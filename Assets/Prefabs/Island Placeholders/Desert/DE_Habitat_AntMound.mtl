@@ -1,0 +1,24 @@
+newmtl de_mound
+Ka 0 0 0
+Kd 0.660 0.460 0.300
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl de_sand_ground
+Ka 0 0 0
+Kd 0.840 0.700 0.500
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl den_dark
+Ka 0 0 0
+Kd 0.030 0.030 0.030
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

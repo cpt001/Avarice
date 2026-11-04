@@ -1,0 +1,16 @@
+newmtl dv_lichen
+Ka 0 0 0
+Kd 0.850 0.620 0.150
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_tuff
+Ka 0 0 0
+Kd 0.620 0.580 0.520
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

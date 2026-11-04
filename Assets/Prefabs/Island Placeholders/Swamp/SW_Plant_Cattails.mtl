@@ -1,0 +1,16 @@
+newmtl sw_cattail
+Ka 0 0 0
+Kd 0.400 0.240 0.140
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl sw_reed
+Ka 0 0 0
+Kd 0.440 0.540 0.260
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

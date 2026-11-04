@@ -1,0 +1,16 @@
+newmtl fern
+Ka 0 0 0
+Kd 0.420 0.550 0.160
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl fern_sulfur
+Ka 0 0 0
+Kd 0.620 0.620 0.200
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

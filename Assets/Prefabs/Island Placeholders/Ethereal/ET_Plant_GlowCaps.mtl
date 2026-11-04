@@ -1,0 +1,24 @@
+newmtl et_cap_blue
+Ka 0 0 0
+Kd 0.350 0.600 1.000
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl et_glow
+Ka 0 0 0
+Kd 0.400 0.950 0.900
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl et_stem
+Ka 0 0 0
+Kd 0.880 0.880 0.820
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

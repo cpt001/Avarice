@@ -1,0 +1,24 @@
+newmtl ju_moss
+Ka 0 0 0
+Kd 0.220 0.460 0.160
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl ju_stone
+Ka 0 0 0
+Kd 0.400 0.400 0.360
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl ju_stone2
+Ka 0 0 0
+Kd 0.330 0.350 0.310
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

@@ -1,0 +1,32 @@
+newmtl tu_birch
+Ka 0 0 0
+Kd 0.900 0.880 0.820
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl tu_birch_leaf
+Ka 0 0 0
+Kd 0.860 0.660 0.220
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl tu_birch_leaf2
+Ka 0 0 0
+Kd 0.740 0.520 0.160
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl tu_birch_mark
+Ka 0 0 0
+Kd 0.200 0.190 0.180
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

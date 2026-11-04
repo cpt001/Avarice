@@ -404,13 +404,6 @@ namespace WaveHarmonic.Crest.Editor.ShaderGraph
 
                 foreach (var item in ssd.passes)
                 {
-                    // Many artifacts in U6 if our Write Depth enabled.
-                    // Caused by _SURFACE_TYPE_TRANSPARENT in m_ValidKeywords.
-                    if (item.descriptor.referenceName == "SceneSelectionPass")
-                    {
-                        continue;
-                    }
-
                     var result = item.descriptor;
 
                     var keywords = new KeywordCollection();

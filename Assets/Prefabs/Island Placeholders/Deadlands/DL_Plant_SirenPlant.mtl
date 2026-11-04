@@ -1,0 +1,24 @@
+newmtl dl_siren_bell
+Ka 0 0 0
+Kd 0.920 0.720 0.800
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dl_siren_leaf
+Ka 0 0 0
+Kd 0.420 0.400 0.400
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dl_siren_lure
+Ka 0 0 0
+Kd 1.000 0.550 0.700
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

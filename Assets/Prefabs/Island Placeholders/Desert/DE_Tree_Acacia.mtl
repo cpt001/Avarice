@@ -1,0 +1,24 @@
+newmtl de_acacia_leaf
+Ka 0 0 0
+Kd 0.470 0.520 0.270
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl de_acacia_leaf2
+Ka 0 0 0
+Kd 0.400 0.460 0.220
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl de_acacia_trunk
+Ka 0 0 0
+Kd 0.360 0.280 0.220
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

@@ -1,0 +1,16 @@
+newmtl dv_snare
+Ka 0 0 0
+Kd 0.160 0.260 0.120
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_snare_bulb
+Ka 0 0 0
+Kd 0.480 0.180 0.460
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

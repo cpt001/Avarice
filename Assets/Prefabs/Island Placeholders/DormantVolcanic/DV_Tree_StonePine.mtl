@@ -1,0 +1,24 @@
+newmtl dv_bark
+Ka 0 0 0
+Kd 0.320 0.250 0.200
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_pine
+Ka 0 0 0
+Kd 0.180 0.340 0.200
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_pine2
+Ka 0 0 0
+Kd 0.240 0.400 0.220
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

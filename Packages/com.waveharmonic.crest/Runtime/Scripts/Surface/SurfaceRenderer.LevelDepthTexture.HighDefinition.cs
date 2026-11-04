@@ -11,6 +11,7 @@ namespace WaveHarmonic.Crest
 {
     partial class SurfaceRenderer
     {
+        [System.Serializable]
         sealed class WaterLevelDepthTextureHDRP : CustomPass
         {
             static WaterLevelDepthTextureHDRP s_Instance;

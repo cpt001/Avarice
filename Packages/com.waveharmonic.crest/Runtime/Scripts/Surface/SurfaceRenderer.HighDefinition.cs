@@ -11,6 +11,7 @@ namespace WaveHarmonic.Crest
 {
     partial class SurfaceRenderer
     {
+        [System.Serializable]
         internal sealed class WaterSurfaceCustomPass : CustomPass
         {
             const string k_Name = "Water Surface";

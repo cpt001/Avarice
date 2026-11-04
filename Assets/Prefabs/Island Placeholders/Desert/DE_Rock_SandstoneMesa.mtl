@@ -1,0 +1,16 @@
+newmtl de_sand_a
+Ka 0 0 0
+Kd 0.800 0.600 0.400
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl de_sand_b
+Ka 0 0 0
+Kd 0.700 0.420 0.260
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

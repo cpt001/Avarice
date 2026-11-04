@@ -10,6 +10,7 @@ using UnityEngine.Rendering.HighDefinition;
 
 namespace WaveHarmonic.Crest
 {
+    [System.Serializable]
     sealed class UnderwaterEffectPassHDRP : CustomPass
     {
         const string k_Name = "Underwater Effect";
@@ -122,8 +123,10 @@ namespace WaveHarmonic.Crest
         }
     }
 
+    [System.Serializable]
     sealed class CopyDepthBufferPassHDRP : CustomPass
     {
+        [System.NonSerialized]
         public RTHandle _DepthBufferCopy;
 
         protected override void Execute(CustomPassContext context)

@@ -1,0 +1,16 @@
+newmtl de_cactus
+Ka 0 0 0
+Kd 0.300 0.480 0.260
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl de_cactus_flower
+Ka 0 0 0
+Kd 0.920 0.420 0.600
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

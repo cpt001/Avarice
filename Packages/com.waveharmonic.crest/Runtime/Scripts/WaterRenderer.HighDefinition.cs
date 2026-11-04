@@ -52,6 +52,7 @@ namespace WaveHarmonic.Crest
         }
     }
 
+    [System.Serializable]
     sealed class CrestInternalCopyToTextureCustomPass : CustomPass
     {
         const string k_Name = "Update Pyramids";

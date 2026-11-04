@@ -161,6 +161,13 @@ void Vertex_float(m_Properties(out))
 #if d_Crest_CustomMesh
     o_PositionWS.y += 0.01;
 #endif
+
+#if BUILTIN_TARGET_API
+#if SCENESELECTIONPASS
+    // Fixes z-fighting when our write depth enabled.
+    o_PositionWS.y += 0.001;
+#endif
+#endif
 }
 
 #undef m_Properties

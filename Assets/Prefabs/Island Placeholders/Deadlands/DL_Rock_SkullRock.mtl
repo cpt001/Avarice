@@ -1,0 +1,16 @@
+newmtl den_dark
+Ka 0 0 0
+Kd 0.030 0.030 0.030
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dl_skullstone
+Ka 0 0 0
+Kd 0.700 0.670 0.600
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

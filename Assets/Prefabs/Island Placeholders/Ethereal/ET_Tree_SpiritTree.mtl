@@ -1,0 +1,32 @@
+newmtl et_bark
+Ka 0 0 0
+Kd 0.860 0.860 0.900
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl et_glow
+Ka 0 0 0
+Kd 0.400 0.950 0.900
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl et_glow2
+Ka 0 0 0
+Kd 0.700 1.000 0.950
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl et_violet
+Ka 0 0 0
+Kd 0.620 0.420 0.920
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

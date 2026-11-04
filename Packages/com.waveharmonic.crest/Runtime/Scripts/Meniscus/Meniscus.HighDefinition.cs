@@ -65,6 +65,7 @@ namespace WaveHarmonic.Crest
 
             }
 
+            [System.Serializable]
             sealed class MeniscusCustomPass : CustomPass
             {
                 internal MeniscusRenderer _Renderer;

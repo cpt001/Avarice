@@ -682,7 +682,7 @@ namespace WaveHarmonic.Crest
 
         internal virtual void Enable()
         {
-            // Blank
+            Queryable?.Initialize(_Water);
         }
 
         internal virtual void Disable()

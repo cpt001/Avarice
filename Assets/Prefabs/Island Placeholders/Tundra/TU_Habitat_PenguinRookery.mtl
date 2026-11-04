@@ -1,0 +1,32 @@
+newmtl tu_egg
+Ka 0 0 0
+Kd 0.920 0.900 0.800
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl tu_pebble
+Ka 0 0 0
+Kd 0.400 0.400 0.420
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl tu_snow
+Ka 0 0 0
+Kd 0.930 0.950 0.980
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl tu_stone
+Ka 0 0 0
+Kd 0.450 0.470 0.500
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

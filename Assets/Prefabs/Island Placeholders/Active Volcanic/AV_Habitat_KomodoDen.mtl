@@ -1,0 +1,32 @@
+newmtl ash_ground
+Ka 0 0 0
+Kd 0.360 0.340 0.330
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl bone
+Ka 0 0 0
+Kd 0.860 0.830 0.740
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl den_dark
+Ka 0 0 0
+Kd 0.030 0.030 0.030
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl den_stone
+Ka 0 0 0
+Kd 0.240 0.220 0.210
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

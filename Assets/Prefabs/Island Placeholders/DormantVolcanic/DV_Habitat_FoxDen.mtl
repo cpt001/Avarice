@@ -1,0 +1,40 @@
+newmtl den_dark
+Ka 0 0 0
+Kd 0.030 0.030 0.030
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_dirt
+Ka 0 0 0
+Kd 0.500 0.380 0.260
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_earth
+Ka 0 0 0
+Kd 0.420 0.320 0.220
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_grass
+Ka 0 0 0
+Kd 0.360 0.460 0.220
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl dv_moss
+Ka 0 0 0
+Kd 0.360 0.500 0.220
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

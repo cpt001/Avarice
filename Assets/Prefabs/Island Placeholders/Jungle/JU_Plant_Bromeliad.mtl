@@ -1,0 +1,16 @@
+newmtl ju_brom
+Ka 0 0 0
+Kd 0.300 0.550 0.300
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl ju_brom_red
+Ka 0 0 0
+Kd 0.850 0.150 0.200
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

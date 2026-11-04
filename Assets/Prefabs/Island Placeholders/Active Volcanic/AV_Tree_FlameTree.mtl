@@ -1,0 +1,32 @@
+newmtl flame_bloom
+Ka 0 0 0
+Kd 0.860 0.270 0.100
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl flame_bloom_dk
+Ka 0 0 0
+Kd 0.660 0.150 0.080
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl flame_leaf
+Ka 0 0 0
+Kd 0.270 0.360 0.170
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl flame_trunk
+Ka 0 0 0
+Kd 0.170 0.140 0.130
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

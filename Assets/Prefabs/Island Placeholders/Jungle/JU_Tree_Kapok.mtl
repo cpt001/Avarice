@@ -1,0 +1,24 @@
+newmtl ju_bark
+Ka 0 0 0
+Kd 0.420 0.360 0.300
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl ju_leaf
+Ka 0 0 0
+Kd 0.160 0.420 0.160
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl ju_leaf2
+Ka 0 0 0
+Kd 0.220 0.520 0.180
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

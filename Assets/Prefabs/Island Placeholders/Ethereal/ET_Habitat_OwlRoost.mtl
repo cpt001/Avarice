@@ -1,0 +1,32 @@
+newmtl den_dark
+Ka 0 0 0
+Kd 0.030 0.030 0.030
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl et_bark
+Ka 0 0 0
+Kd 0.860 0.860 0.900
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl et_glow
+Ka 0 0 0
+Kd 0.400 0.950 0.900
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+
+newmtl et_moss
+Ka 0 0 0
+Kd 0.420 0.700 0.620
+Ks 0 0 0
+Ns 1
+d 1
+illum 1
+

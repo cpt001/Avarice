@@ -351,6 +351,14 @@ half3 ApplyUnderwaterEffect
     volumeLight *= GetCurrentExposureMultiplier();
 #endif
 
+#if UNITY_VERSION >= 60070000
+#if CREST_URP
+#if !d_Crest_WaterSurface
+    volumeLight *= GetPreExposureMultiplier();
+#endif
+#endif
+#endif
+
 #ifndef k_DisableDithering
 #if d_Dithering
     // Increasing intensity can be required for HDRP.
