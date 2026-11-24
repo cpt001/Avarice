@@ -12,6 +12,8 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _CREST_FLOW_LOD
+  - d_Crest_NoMaskColor
   - d_Crest_NoMaskDepth
   - d_Dithering
   m_InvalidKeywords:
@@ -48,7 +50,7 @@ Material:
     - _Crest_Version: 0
     m_Floats:
     - CREST_FLOW: 0
-    - _CREST_FLOW_LOD: 0
+    - _CREST_FLOW_LOD: 1
     - _Crest_AmbientTerm: 1
     - _Crest_Anisotropy: 0.5
     - _Crest_CausticsDepthOfField: 6

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7bda50e85ef8d455c9e9bc3b393f801b
+RoslynAnalyzerConfigImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276972
+  packageName: Crest Water 5 - Splines
+  packageVersion: 1.7.0
+  assetPath: Packages/com.waveharmonic.crest.splines/Editor/Scripts/WaveHarmonic.Crest.Spline.Editor.globalconfig
+  uploadId: 981426

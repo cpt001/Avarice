@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 5403f2dde20464fad86e8022911db221
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276972
+  packageName: Crest Water 5 - Splines
+  packageVersion: 1.7.0
+  assetPath: Packages/com.waveharmonic.crest.splines/Samples~/Lakes/Settings/Lakes_Lod_Foam.asset
+  uploadId: 981426

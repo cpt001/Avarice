@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 1e6f7ac69c647420eb778b9c9462c5bb
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276972
+  packageName: Crest Water 5 - Splines
+  packageVersion: 1.7.0
+  assetPath: Packages/com.waveharmonic.crest.splines/Runtime/Shaders/ColorSplineGeometry.shader
+  uploadId: 981426

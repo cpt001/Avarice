@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 16faf1fe835994aec864371d1d6e0058
+ShaderIncludeImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276972
+  packageName: Crest Water 5 - Splines
+  packageVersion: 1.7.0
+  assetPath: Packages/com.waveharmonic.crest.splines/Runtime/Shaders/Library/Common.hlsl
+  uploadId: 981426

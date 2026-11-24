@@ -1,0 +1,146 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7010430966444120028
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 67984997423067703}
+  - component: {fileID: 351454314847361185}
+  - component: {fileID: 6594373490466065933}
+  - component: {fileID: 5149203276208306438}
+  - component: {fileID: 6788416094926645845}
+  m_Layer: 0
+  m_Name: CrestSplinePrefab
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &67984997423067703
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7010430966444120028}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &351454314847361185
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7010430966444120028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc3bfc3f544914cf5b6f3bced95711c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: WaveHarmonic.Crest.Splines::WaveHarmonic.Crest.Splines.Spline
+  _Version: 0
+  _RenderMaximumLOD: 1
+  _Source: {fileID: 0}
+  _Offset: 1
+  _Closed: 0
+  _Radius: 5
+  _Subdivisions: 1
+  _Debug:
+    _UpdateEveryFrame: 0
+--- !u!114 &6594373490466065933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7010430966444120028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4edd034314af4679ba066d79580dc1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: WaveHarmonic.Crest::WaveHarmonic.Crest.LevelLodInput
+  _Version: 1
+  _Mode: 2
+  _Weight: 1
+  _Queue: 0
+  _Blend: 0
+  _FeatherWidth: 0
+  _FollowHorizontalWaveMotion: 1
+  _Data:
+    rid: 4936496556712132910
+  _DrawBounds: 0
+  _OverrideHeight: 0
+  _HeightRange: {x: -100, y: 500}
+  _RenderMaximumLOD: 1
+  references:
+    version: 2
+    RefIds:
+    - rid: 4936496556712132910
+      type: {class: LevelSplineLodInputData, ns: WaveHarmonic.Crest.Splines, asm: WaveHarmonic.Crest.Splines}
+      data:
+        _Version: 1
+        _Input: {fileID: 6594373490466065933}
+        _Spline: {fileID: 351454314847361185}
+        _OverrideRadius: 0
+        _Radius: 20
+        _OverrideSubdivisions: 1
+        _Subdivisions: 6
+        _OverrideSplineSettings: 0
+--- !u!114 &5149203276208306438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7010430966444120028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0cdc7659b2c244dbbb625ccd8ae65ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: WaveHarmonic.Crest::WaveHarmonic.Crest.FlowLodInput
+  _Version: 0
+  _Mode: 2
+  _Weight: 1
+  _Queue: 0
+  _Blend: 1
+  _FeatherWidth: 0.1
+  _FollowHorizontalWaveMotion: 0
+  _Data:
+    rid: 4936496556712132911
+  _DrawBounds: 0
+  references:
+    version: 2
+    RefIds:
+    - rid: 4936496556712132911
+      type: {class: FlowSplineLodInputData, ns: WaveHarmonic.Crest.Splines, asm: WaveHarmonic.Crest.Splines}
+      data:
+        _Version: 1
+        _Input: {fileID: 5149203276208306438}
+        _Spline: {fileID: 351454314847361185}
+        _OverrideRadius: 0
+        _Radius: 20
+        _OverrideSubdivisions: 0
+        _Subdivisions: 1
+        _OverrideSplineSettings: 0
+        _FlowVelocity: 2
+--- !u!114 &6788416094926645845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7010430966444120028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb92f7505d3d8ee46b61edf681f12396, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RiverProcessed

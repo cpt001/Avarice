@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f3ad47f1a43f84a40b8cb54157d5112b
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276972
+  packageName: Crest Water 5 - Splines
+  packageVersion: 1.7.0
+  assetPath: Packages/com.waveharmonic.crest.splines/Samples~/Lakes/Settings/Lakes_Spectrum_LargeLake.asset
+  uploadId: 981426

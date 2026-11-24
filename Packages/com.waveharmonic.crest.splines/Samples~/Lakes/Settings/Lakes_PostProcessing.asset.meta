@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 460556b2228b74be0bc06beb5e6f30ba
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276972
+  packageName: Crest Water 5 - Splines
+  packageVersion: 1.7.0
+  assetPath: Packages/com.waveharmonic.crest.splines/Samples~/Lakes/Settings/Lakes_PostProcessing.asset
+  uploadId: 981426

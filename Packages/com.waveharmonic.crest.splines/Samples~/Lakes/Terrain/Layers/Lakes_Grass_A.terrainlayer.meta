@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: bbd696ae8fbda4530879ab33c7a6df95
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 8574412962073106934
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276972
+  packageName: Crest Water 5 - Splines
+  packageVersion: 1.7.0
+  assetPath: Packages/com.waveharmonic.crest.splines/Samples~/Lakes/Terrain/Layers/Lakes_Grass_A.terrainlayer
+  uploadId: 981426

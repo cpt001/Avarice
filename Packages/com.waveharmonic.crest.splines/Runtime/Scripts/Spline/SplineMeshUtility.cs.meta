@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 4dc845ac418534428a724041fd21fe33
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276972
+  packageName: Crest Water 5 - Splines
+  packageVersion: 1.7.0
+  assetPath: Packages/com.waveharmonic.crest.splines/Runtime/Scripts/Spline/SplineMeshUtility.cs
+  uploadId: 981426

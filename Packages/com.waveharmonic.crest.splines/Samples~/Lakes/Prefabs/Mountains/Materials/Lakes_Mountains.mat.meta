@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 26d684623b4fa433c90381ad70d0f5ea
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276972
+  packageName: Crest Water 5 - Splines
+  packageVersion: 1.7.0
+  assetPath: Packages/com.waveharmonic.crest.splines/Samples~/Lakes/Prefabs/Mountains/Materials/Lakes_Mountains.mat
+  uploadId: 981426
