@@ -58,26 +58,36 @@ public class CrestMM2RiverBuilder : MonoBehaviour
         return pts;
     }
 
-    private float[] SampleGround(List<Vector3> pts)
+    private float[] SampleGround(List<Vector3> pts, out bool hitDraft)
     {
+        hitDraft = false;
         var g = new float[pts.Count];
         for (int i = 0; i < pts.Count; i++)
-            g[i] = Physics.Raycast(pts[i] + Vector3.up * 1000f, Vector3.down, out var hit, 3000f, terrainMask)
-                 ? hit.point.y
-                 : pts[i].y - 100f;   // fallback if the ray misses: the old offset
-                int misses = 0;
-                // in the loop: if (!Physics.Raycast(...)) misses++;
-                //Debug.Log($"River ground samples: {pts.Count}, misses: {misses}");
+        {
+            if (Physics.Raycast(pts[i] + Vector3.up * 1000f, Vector3.down, out var hit, 3000f, terrainMask))
+            {
+                if (hit.collider.name.Contains("Draft")) hitDraft = true;
+                g[i] = hit.point.y;
+            }
+            else g[i] = pts[i].y - 100f;
+        }
         return g;
     }
 
+    [SerializeField] float maxPoolDepth = 2f;
     private float[] FillFromMouth(float[] ground)
     {
         int n = ground.Length;
         var level = new float[n];
-        level[n - 1] = ground[n - 1] + waterDepth;
+
+        // Reached the sea? Pin to sea level. Otherwise it's a pond or terminus.
+        level[n - 1] = ground[n - 1] <= seaLevel ? seaLevel : ground[n - 1] + waterDepth;
+
         for (int i = n - 2; i >= 0; i--)
-            level[i] = Mathf.Max(ground[i] + waterDepth, level[i + 1]);
+        {
+            level[i] = Mathf.Max(ground[i] + waterDepth,
+                                 Mathf.Min(level[i + 1], ground[i] + waterDepth + maxPoolDepth));
+        }
         return level;
     }
 
@@ -89,7 +99,12 @@ public class CrestMM2RiverBuilder : MonoBehaviour
         List<Vector3> pts = ResamplePath(src, srcSpline);
 
         // 2. Real ground height under each point
-        float[] ground = SampleGround(pts);
+        float[] ground = SampleGround(pts, out bool hitDraft);
+        if (hitDraft)
+        {
+            Destroy(src.GetComponent<RiverProcessed>());   // let the next event retry
+            yield break;
+        }
 
         // 3. Flow downhill: the start should be the high end
         if (ground[0] < ground[ground.Length - 1])
@@ -98,7 +113,12 @@ public class CrestMM2RiverBuilder : MonoBehaviour
             System.Array.Reverse(ground);
         }
 
-        // 4. Water levels: fill from the mouth upward (pools, no uphill flow)
+        // 3b. Run the mouth out past the coastline
+        var groundList = new List<float>(ground);
+        ExtendToSea(pts, groundList);
+        ground = groundList.ToArray();
+
+        // 4. Water levels
         float[] level = FillFromMouth(ground);
 
         // 5. Build the Crest points
@@ -118,5 +138,23 @@ public class CrestMM2RiverBuilder : MonoBehaviour
 
         go.SetActive(true);
         yield return null;
+    }
+
+
+    [SerializeField] float seaLevel = 5f;
+    [SerializeField] float lowTide = 0f;
+
+    private void ExtendToSea(List<Vector3> pts, List<float> ground)
+    {
+        if (ground[ground.Count - 1] > seaLevel + 10f) return;   // not near the coast: a pond river
+        Vector3 dir = pts[pts.Count - 1] - pts[pts.Count - 2];
+        dir.y = 0; dir.Normalize();
+        for (int k = 0; k < 4 && ground[ground.Count - 1] > lowTide; k++)
+        {
+            Vector3 next = pts[pts.Count - 1] + dir * pointSpacing;
+            pts.Add(next);
+            ground.Add(Physics.Raycast(next + Vector3.up * 1000f, Vector3.down, out var h, 3000f, terrainMask)
+                       ? h.point.y : lowTide - 1f);   // a miss means open water
+        }
     }
 }
