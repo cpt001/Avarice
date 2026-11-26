@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f455236bd60f334bae4f6b84684b353, type: 3}
+  m_Name: Active Volcanic SO
+  m_EditorClassIdentifier: Assembly-CSharp::BiomeScriptObjs
+  groundLayers:
+  - {fileID: 8574412962073106934, guid: 33372bc1f4a26cf47a8573e6100ff8fa, type: 2}
+  - {fileID: 8574412962073106934, guid: 878b242b92a43fa46b8595675e609c91, type: 2}
+  - {fileID: 8574412962073106934, guid: 12dfb227aa779a447b9e36ec089eb458, type: 2}
+  - {fileID: 8574412962073106934, guid: 5a39945cf3d57824a911bd1c4e85669e, type: 2}
+  - {fileID: 8574412962073106934, guid: 6e2b1ea8117920b4b9bd2ca542db9811, type: 2}
+  - {fileID: 8574412962073106934, guid: 07fd47cac00562346a4aa37ed5f18935, type: 2}
+  - {fileID: 8574412962073106934, guid: c98effcf93fe38b47ae6a32414f052b3, type: 2}
+  - {fileID: 8574412962073106934, guid: 3e893a9b9ffdf5e4a8e61ffa8a186518, type: 2}
+  tables:
+  - natSlotType: 0
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: 06661cc31234bdf43ab4f1241310e2f2,
+        type: 3}
+      weight: 100
+  - natSlotType: 1
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: 92893d0765e58354e8102c2c538e0438,
+        type: 3}
+      weight: 100
+  - natSlotType: 2
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: af3791af12e34ec4ab102b0c98be8fd3,
+        type: 3}
+      weight: 100
+  - natSlotType: 3
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: b4c1a08c54811254e94992d483b82187,
+        type: 3}
+      weight: 100
+  - natSlotType: 4
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: dba261d719667a74b94cccc6aa28ca55,
+        type: 3}
+      weight: 100
+  - natSlotType: 5
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: a839bd7e21831a94f8f2526ed90af036,
+        type: 3}
+      weight: 100
+  - natSlotType: 7
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: d204145a6e7ea6847850f61c28030752,
+        type: 3}
+      weight: 100
+  - natSlotType: 6
+    entries:
+    - prefab: {fileID: 8438966879356356595, guid: c808dc4d7f626f448a455c689fdb7acf,
+        type: 3}
+      weight: 100
+  - natSlotType: 8
+    entries:
+    - prefab: {fileID: 3153191067295771530, guid: 8c9f9cfe45ef99949a9cca417cfeb3b7,
+        type: 3}
+      weight: 100

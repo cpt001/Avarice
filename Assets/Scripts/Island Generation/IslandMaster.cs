@@ -53,19 +53,34 @@ public class IslandMaster : MonoBehaviour
     private static HashSet<string> initializedTiles = new HashSet<string>();
     private static Dictionary<string, int> tileSettlement = new Dictionary<string, int>();
 
+    public BiomeScriptObjs biome;
+    public bool resolved;
+
     private void Start()
     {
         if (isActiveAndEnabled)
         {
+            terrainTile = transform.parent.parent;
             IsolateIslandMaster();
 
-            //Debug.Log("Targeted parent: " + transform.parent.parent);
-            terrainTile = transform.parent.parent;
-            terrainTile.Find("Main Terrain").gameObject.layer = LayerMask.NameToLayer("Terrain");
+            var main = terrainTile.Find("Main Terrain");
+            if (main != null)
+            {
+                main.gameObject.layer = LayerMask.NameToLayer("Terrain");
+
+            }
             //Debug.Log("Tile status: " + terrainTile.GetComponent<MapMagic.Terrains.TerrainTile>().)
             //attachedTileStatus = transform.parent.parent.GetComponent<MapMagic.Terrains.TerrainTile>();
             //Not sure what to access to view changes right now -- Its in terrainTile script, but not sure what variable <-- this is related to the render status
         }
+    }
+
+    private void ApplyGround()
+    {
+        if (biome == null || biome.groundLayers == null || biome.groundLayers.Length == 0) return;
+        var main = terrainTile.Find("Main Terrain");
+        if (main == null) return;
+        main.GetComponent<Terrain>().terrainData.terrainLayers = biome.groundLayers;
     }
 
     private void IsolateIslandMaster()
@@ -93,7 +108,24 @@ public class IslandMaster : MonoBehaviour
             Mathf.FloorToInt(transform.position.z / mmObject.tileSize.z));
         int seed = mmObject.graph.random.Seed ^ (tile.x * 73856093) ^ (tile.y * 19349663);
 
-        IslandMaster winner = candidates[new System.Random(seed).Next(candidates.Count)];
-        if (winner != this) gameObject.SetActive(false);
+        // Group candidates by biome; candidates is already sorted, so insertion order is stable
+        var groups = new Dictionary<IslandBiome, List<IslandMaster>>();
+        foreach (var im in candidates)
+        {
+            if (!groups.TryGetValue(im.islandBiome, out var list))
+                groups[im.islandBiome] = list = new List<IslandMaster>();
+            list.Add(im);
+        }
+
+        // Biggest group wins (ties go to the first biome in sort order, deterministic)
+        List<IslandMaster> best = null;
+        foreach (var kv in groups)
+            if (best == null || kv.Value.Count > best.Count) best = kv.Value;
+
+        // Seeded pick inside the winning group
+        IslandMaster winner = best[new System.Random(seed).Next(best.Count)];
+
+        if (winner == this) { resolved = true; ApplyGround(); }
+        else gameObject.SetActive(false);
     }
 }

@@ -50,8 +50,6 @@ public class FutureTownPlanner : MonoBehaviour
     private List<GameObject> availableBeachSlots = new List<GameObject>();
     private List<GameObject> availableStandaloneSlots = new List<GameObject>();
 
-    private MM2InterlinkAdaptor interlinkGrabber;
-
     //This sorts through all structures to get their probabilities
     public void GetPossibleStructures(Any_Town_Phenotype town_Phenotype)
     {

@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f455236bd60f334bae4f6b84684b353, type: 3}
+  m_Name: Deadlands SO
+  m_EditorClassIdentifier: Assembly-CSharp::BiomeScriptObjs
+  groundLayers:
+  - {fileID: 8574412962073106934, guid: c4bd0b75aac146b498738db5fc8f7538, type: 2}
+  - {fileID: 8574412962073106934, guid: 7c7c9628518237d4aab85533d60df47a, type: 2}
+  - {fileID: 8574412962073106934, guid: 34afd91cb3dce3a4883e791a975f9e22, type: 2}
+  - {fileID: 8574412962073106934, guid: 6510254458a06f04ea88ab4c9375f76d, type: 2}
+  - {fileID: 8574412962073106934, guid: 2024db67fbabe89408e3e7d9cb4b1c2f, type: 2}
+  - {fileID: 8574412962073106934, guid: fcb6abe16cca67347b4e38ac935f1b46, type: 2}
+  - {fileID: 8574412962073106934, guid: 8a77ae54b6f88d44e97e1988b8965a9d, type: 2}
+  - {fileID: 8574412962073106934, guid: 9182701bfd7445d4cb7ec60e16736403, type: 2}
+  tables:
+  - natSlotType: 0
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: 42b4331a831479e43b5219e772af7e96,
+        type: 3}
+      weight: 100
+  - natSlotType: 1
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: 3db773290a9482a47af5a97a2821f06a,
+        type: 3}
+      weight: 100
+  - natSlotType: 2
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: 651cb727bea13a84fb5e24e72faf5163,
+        type: 3}
+      weight: 100
+  - natSlotType: 3
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: dd898ec9c760e5040804710df07122d0,
+        type: 3}
+      weight: 100
+  - natSlotType: 4
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: 130820fc0aa957443b2db769aab37741,
+        type: 3}
+      weight: 100
+  - natSlotType: 5
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: f8cc3508dc2f43e4a98cb9c2ca500ac1,
+        type: 3}
+      weight: 100
+  - natSlotType: 7
+    entries:
+    - prefab: {fileID: 919132149155446097, guid: 1eed688aa3171704d9a8a23928e22c02,
+        type: 3}
+      weight: 100
+  - natSlotType: 6
+    entries:
+    - prefab: {fileID: 8438966879356356595, guid: c808dc4d7f626f448a455c689fdb7acf,
+        type: 3}
+      weight: 100

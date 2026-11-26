@@ -47,3 +47,5 @@ MonoBehaviour:
   islandBiome: 0
   islandAllegiance: 0
   townsOnIsland: []
+  biome: {fileID: 11400000, guid: 3963ad1d96118a64ea9304445f172c7b, type: 2}
+  resolved: 0
